@@ -214,6 +214,48 @@ button:hover {
     border: 1px solid #f1c2c2;
 }
 
+.proposal-form {
+    display: grid;
+    gap: 18px;
+}
+
+.proposal-form label {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    color: var(--text-secondary);
+    font-weight: 600;
+}
+
+.proposal-form input,
+.proposal-form textarea {
+    width: 100%;
+    padding: 14px 16px;
+    border-radius: 14px;
+    border: 1px solid #dfe3ea;
+    background: var(--surface-soft);
+    transition: border-color 0.2s ease;
+}
+
+.proposal-form textarea {
+    min-height: 120px;
+}
+
+.proposal-form input:focus,
+.proposal-form textarea:focus {
+    outline: none;
+    border-color: var(--primary);
+}
+
+.proposal-output pre {
+    white-space: pre-wrap;
+    line-height: 1.75;
+    padding: 18px;
+    border-radius: 18px;
+    background: #eef4ff;
+    border: 1px solid #dfe7f4;
+}
+
 .mini-stats {
     display: grid;
     grid-template-columns: repeat(4, minmax(180px, 1fr));
