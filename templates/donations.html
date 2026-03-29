@@ -1,0 +1,164 @@
+﻿<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>捐款儀表板</title>
+    <link rel="stylesheet" href="/static/css/index.css">
+</head>
+<body>
+    <div class="page-bg"></div>
+
+    <div class="container">
+        <header class="hero-card">
+            <div class="hero-copy">
+                <span class="eyebrow">捐款儀表板</span>
+                <h1>捐款資料查詢系統</h1>
+                <p>這個頁面已經獨立成一個 URL，從首頁點選即可進入。</p>
+            </div>
+            <div class="hero-actions">
+                <a class="button" href="/admin">返回管理首頁</a>
+            </div>
+        </header>
+
+        <section class="card filters">
+            <div class="card-title">
+                <h2>查詢條件</h2>
+                <span>輸入年份與月份，取得對應捐款資料。</span>
+            </div>
+            <div class="filter-grid">
+                <label>
+                    年份
+                    <input type="number" id="year" placeholder="2026">
+                </label>
+                <label>
+                    月份
+                    <input type="number" id="month" placeholder="2" min="1" max="12">
+                </label>
+                <button onclick="fetchData()">立即查詢</button>
+            </div>
+        </section>
+
+        <section class="card mini-stats">
+            <div class="stat-box">
+                <span class="stat-label">總筆數</span>
+                <strong id="count">0</strong>
+            </div>
+            <div class="stat-box">
+                <span class="stat-label">總金額</span>
+                <strong id="total">0</strong>
+            </div>
+            <div class="stat-box">
+                <span class="stat-label">平均單筆</span>
+                <strong id="average">0</strong>
+            </div>
+            <div class="stat-box">
+                <span class="stat-label">最高捐款</span>
+                <strong id="topDonation">0</strong>
+            </div>
+        </section>
+
+        <section class="card insights">
+            <div class="card-title">
+                <h2>資料洞察</h2>
+                <span>系統自動彙整，快速掌握重要趨勢。</span>
+            </div>
+            <div class="insight-grid">
+                <div class="insight-card">
+                    <h3>當月平均捐款</h3>
+                    <p id="insightAverage">0</p>
+                </div>
+                <div class="insight-card">
+                    <h3>最高單筆捐款</h3>
+                    <p id="insightTop">0</p>
+                </div>
+                <div class="insight-card">
+                    <h3>最高捐款人</h3>
+                    <p id="insightTopDonor"></p>
+                </div>
+            </div>
+        </section>
+
+        <section class="card table-card">
+            <div class="card-title">
+                <h2>捐款列表</h2>
+                <span>依查詢條件顯示對應資料，包含捐款人、日期、金額與用途。</span>
+            </div>
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>捐款人</th>
+                            <th>日期</th>
+                            <th>金額</th>
+                            <th>用途</th>
+                        </tr>
+                    </thead>
+                    <tbody id="donationTable"></tbody>
+                </table>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        function formatCurrency(value) {
+            return Number(value).toLocaleString('zh-TW', {
+                style: 'currency',
+                currency: 'TWD',
+                maximumFractionDigits: 0
+            });
+        }
+
+        async function fetchData() {
+            const year = document.getElementById('year').value;
+            const month = document.getElementById('month').value;
+            const url = `/api/donations?year=${year}&month=${month}`;
+
+            try {
+                const res = await fetch(url);
+                const data = await res.json();
+
+                const table = document.getElementById('donationTable');
+                table.innerHTML = '';
+
+                let total = 0;
+                let topDonation = 0;
+                let topDonor = '—';
+
+                data.forEach(item => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${item.donor}</td>
+                        <td>${item.date}</td>
+                        <td>${formatCurrency(item.amount)}</td>
+                        <td>${item.note || ''}</td>
+                    `;
+                    table.appendChild(row);
+
+                    const amount = Number(item.amount);
+                    total += amount;
+
+                    if (amount > topDonation) {
+                        topDonation = amount;
+                        topDonor = item.donor || '';
+                    }
+                });
+
+                const count = data.length;
+                const average = count ? Math.round(total / count) : 0;
+
+                document.getElementById('count').innerText = count;
+                document.getElementById('total').innerText = formatCurrency(total);
+                document.getElementById('average').innerText = formatCurrency(average);
+                document.getElementById('topDonation').innerText = formatCurrency(topDonation);
+                document.getElementById('insightAverage').innerText = formatCurrency(average);
+                document.getElementById('insightTop').innerText = formatCurrency(topDonation);
+                document.getElementById('insightTopDonor').innerText = topDonor;
+
+            } catch (err) {
+                console.error(err);
+                alert('讀取資料失敗');
+            }
+        }
+    </script>
+</body>
+</html>
