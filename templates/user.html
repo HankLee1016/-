@@ -30,6 +30,47 @@
                 <li>聯絡方式</li>
             </ul>
         </section>
+
+        <section class="card">
+            <div class="card-title">
+                <h2>AI 個案企畫書產生器</h2>
+                <span>填寫個案資料，系統將協助生成企畫書草稿。</span>
+            </div>
+            <div class="ai-agent-panel">
+                <strong>AI 代理人：</strong> {{ ai_agent | default('企劃小助手') }}
+                <span class="badge">模型：{{ ai_model | default('ChatAssist GPT') }}</span>
+                <span class="badge">引擎：{{ ai_engine | default('GPT-Assist-2.0') }}</span>
+                <p>{{ ai_agent_note | default('這個代理人會即時分析您提供的個案內容，並產出不一樣的智慧建議。') }}</p>
+            </div>
+            {% if error %}
+            <div class="message error">{{ error }}</div>
+            {% endif %}
+            <form class="proposal-form" method="post" action="/user/proposal">
+                <label>案名
+                    <input type="text" name="case_title" value="{{ case_title | default('') }}" placeholder="輸入個案名稱" required>
+                </label>
+                <label>背景與現況
+                    <textarea name="background" placeholder="描述個案背景與需求" required>{{ background | default('') }}</textarea>
+                </label>
+                <label>主要問題
+                    <textarea name="issues" placeholder="列出目前面臨的問題">{{ issues | default('') }}</textarea>
+                </label>
+                <label>目標與成效
+                    <textarea name="goals" placeholder="預期達成的目標與成效">{{ goals | default('') }}</textarea>
+                </label>
+                <button type="submit">產生企畫書</button>
+            </form>
+        </section>
+
+        {% if proposal %}
+        <section class="card proposal-output">
+            <div class="card-title">
+                <h2>AI 企畫書草稿</h2>
+                <span>以下為系統自動生成的個案企畫書草稿，您可以進一步編輯補充。</span>
+            </div>
+            <pre>{{ proposal }}</pre>
+        </section>
+        {% endif %}
     </div>
 </body>
 </html>
