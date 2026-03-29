@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>管理者畫面</title>
+    <link rel="stylesheet" href="/static/css/index.css">
+</head>
+<body>
+    <div class="page-bg"></div>
+    <div class="container">
+        <header class="hero-card">
+            <div class="hero-copy">
+                <span class="eyebrow">管理者後台</span>
+                <h1>歡迎，{{ username or '管理者' }}</h1>
+                <p>您可以查看捐款資料、管理系統內容，並進行後台操作。</p>
+            </div>
+            <div class="hero-actions">
+                <a class="button" href="/donations">查看捐款資料</a>
+                <a class="button" href="/logout">登出</a>
+            </div>
+        </header>
+
+        <section class="card">
+            <div class="card-title">
+                <h2>管理者功能</h2>
+                <span>這裡是管理者專屬內容頁面。</span>
+            </div>
+            <ul>
+                <li>查看捐款資料</li>
+                <li>管理使用者與資料</li>
+                <li>維護系統設定</li>
+            </ul>
+        </section>
+    </div>
+</body>
+</html>
