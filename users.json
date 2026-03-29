@@ -1,0 +1,14 @@
+{
+  "users": [
+    {
+      "username": "11156034",
+      "password": "401755948a6cce5f7f2b9a2c2687b194df42208935268d832ca6a8311c4954ea",
+      "role": "admin"
+    },
+    {
+      "username": "user",
+      "password": "401755948a6cce5f7f2b9a2c2687b194df42208935268d832ca6a8311c4954ea",
+      "role": "user"
+    }
+  ]
+}
