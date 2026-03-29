@@ -48,6 +48,19 @@ def create_user(username, password, role="user"):
     })
     save_users(users)
 
+
+def delete_user(username):
+    users = [user for user in load_users() if user["username"] != username]
+    save_users(users)
+
+
+def update_user_role(username, role):
+    users = load_users()
+    for user in users:
+        if user["username"] == username:
+            user["role"] = role
+    save_users(users)
+
 @app.route("/css/<path:filename>")
 def css(filename):
     return send_from_directory(os.path.join(app.root_path, "static", "css"), filename)
@@ -127,6 +140,33 @@ def admin_dashboard():
     if session.get("role") != "admin":
         return redirect(url_for("home"))
     return render_template("admin.html", username=session.get("username"))
+
+@app.route("/admin/members")
+def admin_members():
+    if session.get("role") != "admin":
+        return redirect(url_for("home"))
+    users = load_users()
+    return render_template("members.html", users=users, username=session.get("username"))
+
+@app.route("/admin/members/delete/<username>", methods=["POST"])
+def admin_delete_member(username):
+    if session.get("role") != "admin":
+        return redirect(url_for("home"))
+    if username == session.get("username"):
+        return render_template("members.html", users=load_users(), username=session.get("username"), error="無法刪除目前登入帳號。")
+    delete_user(username)
+    return redirect(url_for("admin_members"))
+
+@app.route("/admin/members/role/<username>", methods=["POST"])
+def admin_change_member_role(username):
+    if session.get("role") != "admin":
+        return redirect(url_for("home"))
+    new_role = request.form.get("new_role")
+    if username == session.get("username"):
+        return render_template("members.html", users=load_users(), username=session.get("username"), error="無法變更目前登入帳號的身分。")
+    if new_role in ("user", "admin"):
+        update_user_role(username, new_role)
+    return redirect(url_for("admin_members"))
 
 @app.route("/logout")
 def logout():
