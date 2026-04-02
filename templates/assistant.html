@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>企劃助理 — 社福資源平台</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/assistant.css') }}">
+</head>
+
+<body class="app-assistant">
+  <div class="sidebar">
+    <a href="/user" class="logo">🌱 社福 AI 平台</a>
+    <a href="/user/assistant?save_history=1"><button class="new-btn">＋ 新企劃對話</button></a>
+
+    <div class="section-title">歷史對話</div>
+    <ul class="history-list">
+      {% set ch = session.get('conversation_history', []) %}
+      {% if ch %}
+        {% for c in ch %}
+        <li>
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px;">
+            <span id="conv-name-{{ loop.index0 }}" onclick="editConversationName({{ loop.index0 }})" style="flex:1;cursor:pointer;padding:4px;border-radius:4px;word-break:break-word;" title="點擊編輯名稱">{{ c.name | default(c.timestamp) }}</span>
+            <button class="btn btn-plain" onclick="editConversationName({{ loop.index0 }})" title="編輯名稱" style="font-size:11px;">編輯</button>
+          </div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;">
+            <a class="btn btn-plain" href="/user/assistant/load_conversation/{{ loop.index0 }}" title="載入此對話">繼續</a>
+            <button class="btn btn-plain" onclick="downloadConversation({{ loop.index0 }})" title="下載此對話">下載</button>
+          </div>
+        </li>
+        {% endfor %}
+      {% else %}
+        <li style="color:#999;font-size:12px;">尚無對話紀錄</li>
+      {% endif %}
+    </ul>
+
+    <div class="section-title">歷史企劃</div>
+    <ul class="history-list">
+      {% set ph = session.get('proposal_history', []) %}
+      {% if ph %}
+        {% for p in ph %}
+        <li>
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px;word-break:break-word;">
+            <a href="/user/proposal/download/{{ loop.index0 }}" style="flex:1;color:var(--accent-start);text-decoration:none;font-size:12px;" title="{{ p[:100] }}">{{ p[:50] }}{% if p|length>50 %}…{% endif %}</a>
+          </div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;">
+            <a class="btn btn-plain" href="/user/assistant/from_proposal/{{ loop.index0 }}" title="從此企劃開始新對話">從此開始</a>
+            <button class="btn btn-plain" onclick="downloadHistory({{ loop.index0 }})" title="下載此企劃">下載</button>
+          </div>
+        </li>
+        {% endfor %}
+      {% else %}
+        <li style="color:#999;font-size:12px;">尚無歷史企劃</li>
+      {% endif %}
+    </ul>
+  </div>
+
+  <div class="main">
+    <div class="header">
+      <div>智慧社福資源輔助系統（MVP）</div>
+      <div class="controls">
+        <a href="/user" class="btn">使用者專區</a>
+        <button class="btn btn-plain" id="btn-enter-select" onclick="enableSelectionMode()">選取匯出</button>
+        <a href="/user/assistant/export?subsidy_summary={{ subsidy_summary | urlencode }}" class="btn">全部匯出</a>
+        <div class="export-panel" style="display:none;align-items:center;gap:8px;margin-left:12px;">
+          <input id="export-filename" placeholder="檔名 (例：my_plan.txt)" />
+          <button class="btn" onclick="exportSelectedNow()">立即匯出</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="chat-box" id="chat" aria-live="polite">
+      {% if chat_history %}
+        {% for message in chat_history %}
+        <div class="msg-row">
+          <input type="checkbox" id="chk-{{ loop.index0 }}" class="msg-checkbox" value="{{ loop.index0 }}">
+          <div class="message {{ 'user' if message.role == 'user' else 'bot' }} show" data-idx="{{ loop.index0 }}" onclick="messageClicked({{ loop.index0 }})">{{ message.content }}</div>
+        </div>
+        {% endfor %}
+      {% else %}
+        <div class="msg-row"><div class="message bot show">您好，歡迎使用對話式企劃助理。請描述您的組織、服務對象或申請補助類型，我會協助整理內容。</div></div>
+      {% endif %}
+    </div>
+
+    <div class="input-area">
+      <form id="chat-form" onsubmit="if(isLoading) { event.preventDefault(); return false; } event.preventDefault(); sendMessage();">
+        <div class="input-wrapper">
+          <input id="input" placeholder="請輸入訊息..." onkeydown="handleKey(event)" autocomplete="off">
+          <button type="submit">送出</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+  let isLoading = false;  // 防止連續輸入
+
+  function scrollToBottom(){
+    const chat = document.getElementById('chat');
+    if(chat) chat.scrollTop = chat.scrollHeight;
+  }
+
+  function addMessage(text, cls){
+    const div = document.createElement('div');
+    div.className = 'message ' + cls + ' show';
+    div.innerText = text;
+    const row = document.createElement('div');
+    row.className = 'msg-row';
+    const chk = document.createElement('input');
+    chk.type = 'checkbox';
+    chk.className = 'msg-checkbox';
+    chk.style.display = document.body.classList.contains('selection-mode') ? 'inline-block' : 'none';
+    row.appendChild(chk);
+    row.appendChild(div);
+    document.getElementById('chat').appendChild(row);
+    scrollToBottom();
+  }
+
+  function addLoading(){
+    const div = document.createElement('div');
+    div.className = 'message bot loading show';
+    div.id = 'loading';
+    div.innerText = 'AI 回覆中...';
+    const row = document.createElement('div');
+    row.className = 'msg-row';
+    row.appendChild(div);
+    document.getElementById('chat').appendChild(row);
+    scrollToBottom();
+  }
+
+  function removeLoading(){
+    const loading = document.getElementById('loading');
+    if(loading) loading.remove();
+  }
+
+  async function sendMessage(){
+    if(isLoading) return;  // 防止連續輸入
+    const input = document.getElementById('input');
+    const text = input.value.trim();
+    if(!text) return;
+    
+    // 立即設置 flag，防止任何其他觸發都能執行
+    isLoading = true;
+    const btn = document.querySelector('#chat-form button');
+    if(btn) btn.disabled = true;
+    
+    addMessage(text, 'user');
+    input.value = '';
+    addLoading();
+    
+    try{
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: text })
+      });
+      if(!res.ok){
+        removeLoading();
+        addMessage('伺服器錯誤或未登入。', 'bot');
+        return;
+      }
+      const data = await res.json();
+      removeLoading();
+      addMessage(data.reply, 'bot');
+    }catch(e){
+      removeLoading();
+      addMessage('網路錯誤，請稍後再試。', 'bot');
+    }finally{
+      isLoading = false;
+      const btn = document.querySelector('#chat-form button');
+      if(btn) btn.disabled = false;
+    }
+  }
+
+  function handleKey(e){
+    if(e.key === 'Enter' && !e.shiftKey){
+      if(isLoading) {
+        e.preventDefault();
+        return;  // 防止連續輸入
+      }
+      e.preventDefault();
+      sendMessage();
+    }
+  }
+
+  function enableSelectionMode(){
+    document.body.classList.add('selection-mode');
+    document.getElementById('btn-enter-select').innerText = '取消選取';
+    document.getElementById('btn-enter-select').onclick = disableSelectionMode;
+    document.querySelectorAll('.msg-checkbox').forEach(c => c.style.display = 'inline-block');
+    document.querySelector('.export-panel').style.display = 'flex';
+  }
+
+  function disableSelectionMode(){
+    document.body.classList.remove('selection-mode');
+    document.getElementById('btn-enter-select').innerText = '選取匯出';
+    document.getElementById('btn-enter-select').onclick = enableSelectionMode;
+    document.querySelectorAll('.msg-checkbox').forEach(c => {
+      c.style.display = 'none';
+      c.checked = false;
+    });
+    document.querySelectorAll('.message.selected').forEach(m => m.classList.remove('selected'));
+    document.querySelector('.export-panel').style.display = 'none';
+  }
+
+  function exportSelectedNow(){
+    const checks = Array.from(document.querySelectorAll('.msg-checkbox:checked'));
+    if(!checks.length){
+      alert('請先勾選要匯出的訊息。');
+      return;
+    }
+    const params = new URLSearchParams();
+    checks.forEach(c => params.append('idx', c.value));
+    const filename = (document.getElementById('export-filename')?.value || '').trim();
+    if(filename) params.append('filename', filename);
+    if ("{{ subsidy_summary | default('') }}") params.append('subsidy_summary', "{{ subsidy_summary | urlencode }}");
+    window.location = '/user/assistant/export_selected?' + params.toString();
+  }
+
+  function messageClicked(idx){
+    if(!document.body.classList.contains('selection-mode')) return;
+    toggleSelection(idx);
+  }
+
+  function toggleSelection(idx){
+    const chk = document.getElementById('chk-' + idx);
+    const msg = document.querySelector('.message[data-idx="' + idx + '"]');
+    if(!chk || !msg) return;
+    chk.checked = !chk.checked;
+    if(chk.checked) msg.classList.add('selected');
+    else msg.classList.remove('selected');
+  }
+
+  function downloadHistory(idx){
+    const defaultName = `proposal_${idx+1}.txt`;
+    const filename = prompt('請輸入檔名（含副檔名），或留空使用預設：', defaultName);
+    if(filename === null) return;
+    const params = new URLSearchParams();
+    if(filename.trim()) params.append('filename', filename.trim());
+    window.location = '/user/proposal/download/' + idx + '?' + params.toString();
+  }
+
+  function downloadConversation(idx){
+    const defaultName = `conversation_${idx+1}.txt`;
+    const filename = prompt('請輸入檔名（含副檔名），或留空使用預設：', defaultName);
+    if(filename === null) return;
+    const params = new URLSearchParams();
+    if(filename.trim()) params.append('filename', filename.trim());
+    window.location = '/user/assistant/download_conversation/' + idx + '?' + params.toString();
+  }
+
+  function editConversationName(idx){
+    const elem = document.getElementById('conv-name-' + idx);
+    if(!elem) return;
+    
+    const currentName = elem.innerText.trim();
+    const newName = prompt('請輸入新的對話名稱：', currentName);
+    if(newName === null || newName.trim() === '') return;
+    
+    fetch('/user/assistant/rename_conversation/' + idx, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: newName.trim() })
+    })
+    .then(res => res.json())
+    .then(data => {
+      if(data.success){
+        elem.innerText = newName.trim();
+        alert('對話名稱已更新');
+      } else {
+        alert('更新失敗：' + (data.error || '未知錯誤'));
+      }
+    })
+    .catch(err => {
+      console.error(err);
+      alert('網路錯誤');
+    });
+  }
+
+  window.addEventListener('load', function(){
+    const chats = document.querySelectorAll('.chat-box');
+    if(chats.length > 1){
+      for(let i = 1; i < chats.length; i++) chats[i].remove();
+    }
+    scrollToBottom();
+  });
+  </script>
+
+</body>
+</html>
