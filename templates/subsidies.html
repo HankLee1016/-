@@ -1,0 +1,80 @@
+{% extends 'base.html' %}
+
+{% block title %}補助諮詢 — 社福資源平台{% endblock %}
+
+{% block content %}
+    <div class="page-bg"></div>
+    <header class="hero-card">
+        <div class="hero-copy">
+            <span class="eyebrow">補助諮詢</span>
+            <h1>公家機關補助查詢</h1>
+            <p>此頁面列出常見公家機關補助公告，可透過分類與關鍵字檢索。</p>
+        </div>
+        <div class="hero-actions">
+            <a class="button" href="/user">返回使用者首頁</a>
+            <a class="button" href="/logout">登出</a>
+        </div>
+    </header>
+
+    <section class="card filters">
+        <div class="card-title">
+            <h2>查詢條件</h2>
+            <span>依補助分類或關鍵字篩選資料。</span>
+        </div>
+        <form class="filter-grid" method="get" action="/subsidies">
+            <label>
+                類別
+                <select name="category">
+                    <option value="">全部</option>
+                    {% for cat in categories %}
+                        <option value="{{ cat }}" {% if selected_category == cat %}selected{% endif %}>{{ cat }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+            <label>
+                關鍵字
+                <input type="text" name="q" value="{{ keyword }}" placeholder="輸入補助名稱、機關、內容">
+            </label>
+            <button type="submit">查詢</button>
+        </form>
+    </section>
+
+    <section class="card table-card">
+        <div class="card-title">
+            <h2>補助列表</h2>
+            <span>點選補助名稱查看詳細資訊與企劃書快速生成。</span>
+        </div>
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>補助名稱</th>
+                        <th>機關</th>
+                        <th>類別</th>
+                        <th>截止日</th>
+                        <th>金額</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if subsidies %}
+                        {% for subsidy in subsidies %}
+                            <tr>
+                                <td><a href="/subsidies/{{ subsidy.id }}">{{ subsidy.title }}</a></td>
+                                <td>{{ subsidy.agency }}</td>
+                                <td>{{ subsidy.category }}</td>
+                                <td>{{ subsidy.deadline }}</td>
+                                <td>{{ subsidy.amount_range }}</td>
+                                <td><a class="button" href="/subsidies/{{ subsidy.id }}">查看</a></td>
+                            </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="6">目前沒有符合條件的補助資料。</td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+{% endblock %}
