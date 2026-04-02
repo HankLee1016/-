@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+
+{% block title %}我的資料 — 社福資源平台{% endblock %}
+
+{% block content %}
+    <header class="hero-card">
+        <div class="hero-copy">
+            <span class="eyebrow">使用者資料</span>
+            <h1>社福團體背景設定</h1>
+            <p>請在此填寫您的團體背景與服務特色，系統會幫您保存於個人資料中。</p>
+        </div>
+        <div class="hero-actions">
+            <a class="button" href="/user">返回使用者首頁</a>
+            <a class="button" href="/logout">登出</a>
+        </div>
+    </header>
+
+    <section class="card">
+        {% if success %}
+            <div class="message success">{{ success }}</div>
+        {% endif %}
+        {% if error %}
+            <div class="message error">{{ error }}</div>
+        {% endif %}
+        <form class="proposal-form" method="post" action="/user/profile">
+            <table class="profile-table">
+                <tr>
+                    <th>社福團體名稱</th>
+                    <td><input type="text" name="org_name" value="{{ org_profile.org_name | default('') }}" placeholder="輸入團體名稱"></td>
+                </tr>
+                <tr>
+                    <th>社福團體字號</th>
+                    <td><input type="text" name="org_id" value="{{ org_profile.org_id | default('') }}" placeholder="輸入團體字號"></td>
+                </tr>
+                <tr>
+                    <th>社員人數</th>
+                    <td><input type="text" name="member_count" value="{{ org_profile.member_count | default('') }}" placeholder="輸入社員人數"></td>
+                </tr>
+                <tr>
+                    <th>志工人數</th>
+                    <td><input type="text" name="volunteer_count" value="{{ org_profile.volunteer_count | default('') }}" placeholder="輸入志工人數"></td>
+                </tr>
+                <tr>
+                    <th>負責人</th>
+                    <td><input type="text" name="contact_person" value="{{ org_profile.contact_person | default('') }}" placeholder="輸入負責人姓名"></td>
+                </tr>
+                <tr>
+                    <th>登記地址</th>
+                    <td><textarea name="address" placeholder="輸入登記地址">{{ org_profile.address | default('') }}</textarea></td>
+                </tr>
+            </table>
+            <button type="submit">儲存資料</button>
+        </form>
+    </section>
+{% endblock %}
