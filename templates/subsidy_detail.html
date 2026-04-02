@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ subsidy.title }} — 補助詳情{% endblock %}
+
+{% block content %}
+    <div class="page-bg"></div>
+    <header class="hero-card">
+        <div class="hero-copy">
+            <span class="eyebrow">補助詳情</span>
+            <h1>{{ subsidy.title }}</h1>
+            <p>這裡顯示該補助的完整摘要、分類與來源連結。</p>
+        </div>
+        <div class="hero-actions">
+            <a class="button" href="/subsidies">返回補助列表</a>
+            <a class="button" href="/logout">登出</a>
+        </div>
+    </header>
+
+    <section class="card">
+        <div class="card-title">
+            <h2>補助資訊</h2>
+            <span>補助來源：{{ subsidy.agency }}，補助編號：{{ subsidy.subsidy_number }}</span>
+        </div>
+        <div class="detail-grid">
+            <div><strong>類別</strong><p>{{ subsidy.category }}</p></div>
+            <div><strong>截止日</strong><p>{{ subsidy.deadline }}</p></div>
+            <div><strong>補助金額</strong><p>{{ subsidy.amount_range }}</p></div>
+            <div><strong>適用資格</strong><p>{{ subsidy.eligibility }}</p></div>
+            <div style="grid-column: span 2;"><strong>補助說明</strong><p>{{ subsidy.description }}</p></div>
+        </div>
+        <div class="button-group" style="margin-top: 24px;">
+            <a class="button" href="{{ subsidy.source_url }}" target="_blank">查看來源</a>
+            <a class="button" href="{{ generate_url }}">製作企劃書</a>
+            {% if assistant_url %}
+                <a class="button" href="{{ assistant_url }}">對話生成企劃書</a>
+            {% endif %}
+        </div>
+    </section>
+{% endblock %}
