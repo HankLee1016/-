@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>新增公告</title>
+    <link rel="stylesheet" href="/static/css/index.css">
+    <style>
+        .form-group {
+            margin-bottom: 24px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+        input[type="text"],
+        textarea,
+        select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-family: 'Noto Sans TC', 'Segoe UI', Arial, sans-serif;
+            font-size: 1rem;
+            color: var(--text-primary);
+            background-color: var(--surface);
+            transition: border-color 0.2s;
+        }
+        input[type="text"]:focus,
+        textarea:focus,
+        select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(47, 128, 237, 0.1);
+        }
+        textarea {
+            resize: vertical;
+            min-height: 150px;
+        }
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+        }
+        @media (max-width: 640px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+        }
+        .form-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-start;
+        }
+        .form-actions button,
+        .form-actions a {
+            padding: 10px 20px;
+            text-decoration: none;
+            cursor: pointer;
+            border: none;
+            border-radius: 8px;
+        }
+        .error-message {
+            background-color: #ffebee;
+            color: #c62828;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="page-bg"></div>
+    <div class="container">
+        <header class="hero-card">
+            <div class="hero-copy">
+                <span class="eyebrow">公告管理</span>
+                <h1>新增公告</h1>
+                <p>發佈新公告通知使用者。</p>
+            </div>
+            <div class="hero-actions">
+                <a class="button" href="/admin/announcements">返回公告列表</a>
+                <a class="button" href="/logout">登出</a>
+            </div>
+        </header>
+
+        <section class="card">
+            <div class="card-title">
+                <h2>公告資訊表單</h2>
+            </div>
+
+            {% if error %}
+            <div class="error-message">{{ error }}</div>
+            {% endif %}
+
+            <form method="post" action="/admin/announcements/create">
+                <div class="form-group">
+                    <label for="title">標題 <span style="color: red;">*</span></label>
+                    <input type="text" id="title" name="title" required placeholder="輸入公告標題">
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="priority">優先級</label>
+                        <select id="priority" name="priority">
+                            <option value="普通" selected>普通</option>
+                            <option value="重要">重要</option>
+                            <option value="緊急">緊急</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="status">狀態</label>
+                        <select id="status" name="status">
+                            <option value="已發佈" selected>已發佈</option>
+                            <option value="草稿">草稿</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="content">公告內容 <span style="color: red;">*</span></label>
+                    <textarea id="content" name="content" required placeholder="輸入公告內容..."></textarea>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" style="background-color: var(--primary); color: white;">發佈公告</button>
+                    <a href="/admin/announcements" style="background-color: var(--text-secondary); color: white; text-align: center;">取消</a>
+                </div>
+            </form>
+        </section>
+    </div>
+</body>
+</html>
