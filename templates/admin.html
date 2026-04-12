@@ -9,63 +9,111 @@
 <header class="hero-card">
     <div class="hero-copy">
         <span class="eyebrow">管理者後台</span>
-        <h1>歡迎，{{ username or '管理者' }}</h1>
-        <p>您可以查看捐款資料、管理系統內容，並進行後台操作。</p>
+        <h1>👋 歡迎，{{ username or '管理者' }}</h1>
+        <p>您可以查看系統數據、管理內容，並進行後台操作。讓我們一起維護這個幫助他人的平台。</p>
     </div>
     <div class="hero-actions">
-        <a class="button" href="/donations">查看捐款資料</a>
-        <a class="button" href="/admin/members">成員管理</a>
-        <a class="button" href="/logout">登出</a>
+        <a class="button" href="/donations">💳 查看捐款資料</a>
+        <a class="button button-secondary" href="/admin/members">👥 成員管理</a>
+        <a class="button button-secondary" href="/logout">🚪 登出</a>
     </div>
 </header>
 
+<!-- 統計資訊 -->
+<div class="stats-grid">
+    <div class="stat-box">
+        <h3>活動總數</h3>
+        <div class="value">12</div>
+    </div>
+    <div class="stat-box">
+        <h3>註冊成員</h3>
+        <div class="value">48</div>
+    </div>
+    <div class="stat-box">
+        <h3>待處理個案</h3>
+        <div class="value">5</div>
+    </div>
+    <div class="stat-box">
+        <h3>系統公告</h3>
+        <div class="value">8</div>
+    </div>
+</div>
+
 <section class="card">
     <div class="card-title">
-        <h2>管理者功能</h2>
-        <span>快速進入各管理模組</span>
+        <h2 class="section-title">⚙️ 管理者功能</h2>
+        <p class="text-muted">快速進入各管理模組</p>
     </div>
 
     <div class="features-grid">
         <div class="feature-card">
-            <h3>成員管理</h3>
-            <p>查看、編輯和刪除系統中的註冊成員。</p>
-            <a class="button" href="/admin/members">前往成員管理</a>
+            <h3>👥 成員管理</h3>
+            <p>查看、編輯和刪除系統中的註冊成員，管理使用者權限。</p>
+            <a class="button" href="/admin/members">進入成員管理</a>
         </div>
 
         <div class="feature-card">
-            <h3>個案管理</h3>
-            <p>管理並追蹤所有個案資料。</p>
-            <a class="button" href="/admin/cases">前往個案管理</a>
+            <h3>📋 個案管理</h3>
+            <p>管理並追蹤所有個案資料，記錄服務進度。</p>
+            <a class="button" href="/admin/cases">進入個案管理</a>
         </div>
 
         <div class="feature-card">
-            <h3>活動管理</h3>
-            <p>建立與管理社區活動。</p>
-            <a class="button" href="/admin/activities">前往活動管理</a>
+            <h3>🎯 活動管理</h3>
+            <p>建立與管理社區活動、志願者排班。</p>
+            <a class="button" href="/admin/activities">進入活動管理</a>
         </div>
 
         <div class="feature-card">
-            <h3>服務管理</h3>
-            <p>管理社會福利服務項目。</p>
-            <a class="button" href="/admin/services">前往服務管理</a>
+            <h3>🤝 服務管理</h3>
+            <p>管理社會福利服務項目及詳細資訊。</p>
+            <a class="button" href="/admin/services">進入服務管理</a>
         </div>
 
         <div class="feature-card">
-            <h3>內容管理</h3>
-            <p>管理新聞、文章與系統內容。</p>
-            <a class="button" href="/admin/contents">前往內容管理</a>
+            <h3>📝 內容管理</h3>
+            <p>管理新聞、文章與系統內容，保持資訊新鮮。</p>
+            <a class="button" href="/admin/contents">進入內容管理</a>
         </div>
 
         <div class="feature-card">
-            <h3>公告管理</h3>
-            <p>發布與管理重要公告。</p>
-            <a class="button" href="/admin/announcements">前往公告管理</a>
+            <h3>📢 公告管理</h3>
+            <p>發布與管理重要公告及系統升級訊息。</p>
+            <a class="button" href="/admin/announcements">進入公告管理</a>
         </div>
 
         <div class="feature-card">
-            <h3>捐款資料</h3>
-            <p>查看所有捐款紀錄與統計。</p>
-            <a class="button" href="/donations">前往捐款資料</a>
+            <h3>💳 捐款資料</h3>
+            <p>查看所有捐款紀錄、統計及捐獻者資訊。</p>
+            <a class="button" href="/donations">查看捐款資料</a>
+        </div>
+
+        <div class="feature-card">
+            <h3>📊 志願者管理</h3>
+            <p>管理志願者排班、時數記錄及評估。</p>
+            <a class="button" href="/admin/volunteer">進入志願者管理</a>
+        </div>
+    </div>
+</section>
+
+<section class="card" style="margin-top: 2rem;">
+    <div class="card-title">
+        <h2 class="section-title">🔔 最近的活動</h2>
+        <p class="text-muted">系統最近的變動</p>
+    </div>
+    
+    <div style="display: grid; gap: 1rem;">
+        <div style="padding: 1rem; background: #eff6ff; border-radius: 8px; border-left: 4px solid var(--primary);">
+            <p class="text-sm text-muted">今天 14:30</p>
+            <p class="font-semibold">新增活動：社區清潔日</p>
+        </div>
+        <div style="padding: 1rem; background: #ecfdf5; border-radius: 8px; border-left: 4px solid #10b981;">
+            <p class="text-sm text-muted">昨天 09:15</p>
+            <p class="font-semibold">成員王小明完成志願服務 8 小時</p>
+        </div>
+        <div style="padding: 1rem; background: #fffbeb; border-radius: 8px; border-left: 4px solid #f59e0b;">
+            <p class="text-sm text-muted">3 天前 11:00</p>
+            <p class="font-semibold">系統更新：新增補助資料 5 筆</p>
         </div>
     </div>
 </section>
