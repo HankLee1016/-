@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>公告管理</title>
+    <link rel="stylesheet" href="/static/css/index.css">
+    <style>
+        .announcement-priority {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 16px;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+        .announcement-priority.普通 {
+            background-color: #e3f2fd;
+            color: #1565c0;
+        }
+        .announcement-priority.重要 {
+            background-color: #fff3e0;
+            color: #e65100;
+        }
+        .announcement-priority.緊急 {
+            background-color: #ffebee;
+            color: #c62828;
+        }
+        .announcement-status {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 16px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            margin-left: 8px;
+        }
+        .announcement-status.已發佈 {
+            background-color: #c8e6c9;
+            color: #1b5e20;
+        }
+        .announcement-status.草稿 {
+            background-color: #f3e5f5;
+            color: #6a1b9a;
+        }
+        .announcement-actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .announcement-actions .button {
+            padding: 6px 12px;
+            font-size: 0.9rem;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-secondary);
+        }
+        .empty-state-icon {
+            font-size: 3rem;
+            margin-bottom: 16px;
+        }
+        .announcement-card {
+            background: var(--surface-soft);
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            border-left: 4px solid var(--accent);
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 16px;
+            align-items: start;
+        }
+        .announcement-card h3 {
+            margin: 0 0 8px 0;
+            color: var(--text-primary);
+        }
+        .announcement-content {
+            color: var(--text-primary);
+            margin-bottom: 12px;
+            line-height: 1.5;
+        }
+        @media (max-width: 768px) {
+            .announcement-card {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="page-bg"></div>
+    <div class="container">
+        <header class="hero-card">
+            <div class="hero-copy">
+                <span class="eyebrow">公告管理</span>
+                <h1>系統公告管理</h1>
+                <p>發佈和管理重要公告。</p>
+            </div>
+            <div class="hero-actions">
+                <a class="button" href="/admin/announcements/create">+ 新增公告</a>
+                <a class="button" href="/admin">返回管理首頁</a>
+                <a class="button" href="/logout">登出</a>
+            </div>
+        </header>
+
+        <section class="card">
+            <div class="card-title">
+                <h2>公告列表</h2>
+                <span>共 {{ announcements|length }} 則公告</span>
+            </div>
+            
+            {% if announcements %}
+            {% for announcement in announcements %}
+            <div class="announcement-card">
+                <div>
+                    <h3>{{ announcement.title }}</h3>
+                    <div class="announcement-content">{{ announcement.content[:80] }}{% if announcement.content|length > 80 %}...{% endif %}</div>
+                    <span class="announcement-priority {{ announcement.priority }}">{{ announcement.priority }}</span>
+                    <span class="announcement-status {{ announcement.status }}">{{ announcement.status }}</span>
+                </div>
+                <div class="announcement-actions">
+                    <a class="button" href="/admin/announcements/{{ announcement.id }}/edit">編輯</a>
+                    <form method="post" action="/admin/announcements/{{ announcement.id }}/delete" style="display:inline;">
+                        <button type="submit" class="button" onclick="return confirm('確認刪除此公告嗎？');">刪除</button>
+                    </form>
+                </div>
+            </div>
+            {% endfor %}
+            {% else %}
+            <div class="empty-state">
+                <div class="empty-state-icon">📢</div>
+                <p>還沒有任何公告。<a href="/admin/announcements/create">立即發佈第一則公告</a></p>
+            </div>
+            {% endif %}
+        </section>
+    </div>
+</body>
+</html>
