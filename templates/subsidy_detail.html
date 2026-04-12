@@ -7,32 +7,89 @@
     <header class="hero-card">
         <div class="hero-copy">
             <span class="eyebrow">補助詳情</span>
-            <h1>{{ subsidy.title }}</h1>
-            <p>這裡顯示該補助的完整摘要、分類與來源連結。</p>
+            <h1>💰 {{ subsidy.title }}</h1>
+            <p>詳細的補助信息、申請資格與截止日期。</p>
         </div>
         <div class="hero-actions">
-            <a class="button" href="/subsidies">返回補助列表</a>
-            <a class="button" href="/logout">登出</a>
+            <a class="button button-secondary" href="/subsidies">返回補助列表</a>
+            <a class="button button-secondary" href="/logout">登出</a>
         </div>
     </header>
 
     <section class="card">
         <div class="card-title">
-            <h2>補助資訊</h2>
-            <span>補助來源：{{ subsidy.agency }}，補助編號：{{ subsidy.subsidy_number }}</span>
+            <h2 class="section-title">📋 補助資訊</h2>
+            <p class="text-muted">補助來源：<span class="font-semibold">{{ subsidy.agency }}</span></p>
         </div>
-        <div class="detail-grid">
-            <div><strong>類別</strong><p>{{ subsidy.category }}</p></div>
-            <div><strong>截止日</strong><p>{{ subsidy.deadline }}</p></div>
-            <div><strong>補助金額</strong><p>{{ subsidy.amount_range }}</p></div>
-            <div><strong>適用資格</strong><p>{{ subsidy.eligibility }}</p></div>
-            <div style="grid-column: span 2;"><strong>補助說明</strong><p>{{ subsidy.description }}</p></div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+            <div style="
+                background: linear-gradient(135deg, #eff6ff, #dbeafe);
+                padding: 1.5rem;
+                border-radius: 12px;
+                border: 2px solid var(--primary-light);
+            ">
+                <h4 style="color: var(--primary); margin: 0 0 0.5rem 0; font-size: 0.9rem; text-transform: uppercase;">📁 類別</h4>
+                <p style="margin: 0; font-size: 1.1rem; font-weight: 600;">{{ subsidy.category }}</p>
+            </div>
+
+            <div style="
+                background: linear-gradient(135deg, #fef3c7, #fde68a);
+                padding: 1.5rem;
+                border-radius: 12px;
+                border: 2px solid #fcd34d;
+            ">
+                <h4 style="color: #b45309; margin: 0 0 0.5rem 0; font-size: 0.9rem; text-transform: uppercase;">📅 截止日期</h4>
+                <p style="margin: 0; font-size: 1.1rem; font-weight: 600;">{{ subsidy.deadline }}</p>
+            </div>
+
+            <div style="
+                background: linear-gradient(135deg, #dcfce7, #bbf7d0);
+                padding: 1.5rem;
+                border-radius: 12px;
+                border: 2px solid #86efac;
+            ">
+                <h4 style="color: #167a2c; margin: 0 0 0.5rem 0; font-size: 0.9rem; text-transform: uppercase;">💵 金額</h4>
+                <p style="margin: 0; font-size: 1.1rem; font-weight: 600;">{{ subsidy.amount_range }}</p>
+            </div>
+
+            <div style="
+                background: linear-gradient(135deg, #fee2e2, #fecaca);
+                padding: 1.5rem;
+                border-radius: 12px;
+                border: 2px solid #fca5a5;
+            ">
+                <h4 style="color: #991b1b; margin: 0 0 0.5rem 0; font-size: 0.9rem; text-transform: uppercase;">🔢 編號</h4>
+                <p style="margin: 0; font-size: 0.95rem; font-weight: 600; word-break: break-all;">{{ subsidy.subsidy_number }}</p>
+            </div>
         </div>
-        <div class="button-group" style="margin-top: 24px;">
-            <a class="button" href="{{ subsidy.source_url }}" target="_blank">查看來源</a>
-            <a class="button" href="{{ generate_url }}">製作企劃書</a>
+
+        <div style="
+            background: linear-gradient(135deg, #f3f4f6, #e5e7eb);
+            padding: 1.5rem;
+            border-radius: 12px;
+            border-left: 4px solid var(--primary);
+            margin-bottom: 1.5rem;
+        ">
+            <h4 style="color: var(--text-primary); margin: 0 0 0.75rem 0; font-weight: 600;">👥 申請資格</h4>
+            <p style="margin: 0; color: var(--text-secondary); line-height: 1.6;">{{ subsidy.eligibility }}</p>
+        </div>
+
+        <div style="
+            background: linear-gradient(135deg, #f9fafb, #f3f4f6);
+            padding: 1.5rem;
+            border-radius: 12px;
+            margin-bottom: 1.5rem;
+        ">
+            <h4 style="color: var(--text-primary); margin: 0 0 0.75rem 0; font-weight: 600;">📝 補助說明</h4>
+            <p style="margin: 0; color: var(--text-secondary); line-height: 1.8;">{{ subsidy.description }}</p>
+        </div>
+
+        <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+            <a class="button" href="{{ subsidy.source_url }}" target="_blank">🔗 查看官方來源</a>
+            <a class="button" href="{{ generate_url }}">📄 製作企劃書</a>
             {% if assistant_url %}
-                <a class="button" href="{{ assistant_url }}">對話生成企劃書</a>
+                <a class="button button-secondary" href="{{ assistant_url }}">🤖 對話生成企劃書</a>
             {% endif %}
         </div>
     </section>
