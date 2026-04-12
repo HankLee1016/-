@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>新增服務</title>
+    <link rel="stylesheet" href="/static/css/index.css">
+    <style>
+        .form-group {
+            margin-bottom: 24px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+        input[type="text"],
+        textarea,
+        select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-family: 'Noto Sans TC', 'Segoe UI', Arial, sans-serif;
+            font-size: 1rem;
+            color: var(--text-primary);
+            background-color: var(--surface);
+            transition: border-color 0.2s;
+        }
+        input[type="text"]:focus,
+        textarea:focus,
+        select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(47, 128, 237, 0.1);
+        }
+        textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+        }
+        @media (max-width: 640px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+        }
+        .form-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-start;
+        }
+        .form-actions button,
+        .form-actions a {
+            padding: 10px 20px;
+            text-decoration: none;
+            cursor: pointer;
+            border: none;
+            border-radius: 8px;
+        }
+        .error-message {
+            background-color: #ffebee;
+            color: #c62828;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="page-bg"></div>
+    <div class="container">
+        <header class="hero-card">
+            <div class="hero-copy">
+                <span class="eyebrow">服務管理</span>
+                <h1>新增服務</h1>
+                <p>填寫以下資訊來建立一個新服務。</p>
+            </div>
+            <div class="hero-actions">
+                <a class="button" href="/admin/services">返回服務列表</a>
+                <a class="button" href="/logout">登出</a>
+            </div>
+        </header>
+
+        <section class="card">
+            <div class="card-title">
+                <h2>服務資訊表單</h2>
+            </div>
+
+            {% if error %}
+            <div class="error-message">{{ error }}</div>
+            {% endif %}
+
+            <form method="post" action="/admin/services/create">
+                <div class="form-group">
+                    <label for="service_name">服務名稱 <span style="color: red;">*</span></label>
+                    <input type="text" id="service_name" name="service_name" required placeholder="輸入服務名稱">
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="service_type">服務類型</label>
+                        <select id="service_type" name="service_type">
+                            <option value="其他">其他</option>
+                            <option value="輔導諮詢">輔導諮詢</option>
+                            <option value="教育培訓">教育培訓</option>
+                            <option value="物資援助">物資援助</option>
+                            <option value="心理支持">心理支持</option>
+                            <option value="社區服務">社區服務</option>
+                            <option value="技能培養">技能培養</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="status">開放狀態</label>
+                        <select id="status" name="status">
+                            <option value="開放申請" selected>開放申請</option>
+                            <option value="額滿">額滿</option>
+                            <option value="停止申請">停止申請</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="target_group">服務對象</label>
+                        <input type="text" id="target_group" name="target_group" placeholder="例如：低收入戶、獨居長者等">
+                    </div>
+                    <div class="form-group">
+                        <label for="contact">聯絡方式</label>
+                        <input type="text" id="contact" name="contact" placeholder="電話或Email">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="description">服務描述</label>
+                    <textarea id="description" name="description" placeholder="詳細描述此服務的內容、目的、時間和其他重要資訊..."></textarea>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" style="background-color: var(--primary); color: white;">保存服務</button>
+                    <a href="/admin/services" style="background-color: var(--text-secondary); color: white; text-align: center;">取消</a>
+                </div>
+            </form>
+        </section>
+    </div>
+</body>
+</html>
