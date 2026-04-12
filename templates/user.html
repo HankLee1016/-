@@ -3,49 +3,106 @@
 {% block title %}使用者專區 — 社福資源平台{% endblock %}
 
 {% block content %}
+    <div class="page-bg"></div>
     <header class="hero-card">
         <div class="hero-copy">
             <span class="eyebrow">使用者專區</span>
-            <h1>歡迎，{{ username or '使用者' }}</h1>
-            <p>這裡是一般使用者畫面，您可以瀏覽公共資訊與服務內容。</p>
+            <h1>👋 歡迎，{{ username or '使用者' }}</h1>
+            <p>這裡是您的個人空間，可以查詢補助、使用AI企劃助理，或更新個人資料。</p>
         </div>
         <div class="hero-actions">
-            <a class="button" href="/subsidies">補助查詢</a>
-            <a class="button" href="/user/assistant">對話生成企劃</a>
-            <a class="button" href="/user/profile">我的資料</a>
-            <a class="button" href="/logout">登出</a>
+            <a class="button" href="/subsidies">💰 補助查詢</a>
+            <a class="button" href="/user/assistant">🤖 AI企劃助理</a>
+            <a class="button button-secondary" href="/user/profile">👤 我的資料</a>
+            <a class="button button-secondary" href="/logout">🚪 登出</a>
         </div>
     </header>
 
+    <div class="stats-grid">
+        <div class="stat-box">
+            <h3>可用補助</h3>
+            <div class="value">{{ available_subsidies | default('—') }}</div>
+        </div>
+        <div class="stat-box">
+            <h3>已查詢方案</h3>
+            <div class="value">{{ reviewed_subsidies | default('—') }}</div>
+        </div>
+        <div class="stat-box">
+            <h3>企劃書草稿</h3>
+            <div class="value">{{ drafted_proposals | default('—') }}</div>
+        </div>
+    </div>
+
     <section class="card">
         <div class="card-title">
-            <h2>使用者內容</h2>
-            <span>您可以在此頁面查看系統提供的社會輔助相關資訊。</span>
+            <h2 class="section-title">📢 最新消息與服務</h2>
+            <p class="text-muted">瀏覽系統提供的社會福利相關資訊</p>
         </div>
-        <ul>
-            <li>最新消息</li>
-            <li>服務介紹</li>
-            <li>聯絡方式</li>
-        </ul>
+        
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem;">
+            <div style="
+                background: linear-gradient(135deg, #eff6ff, #e0f2fe);
+                padding: 1.5rem;
+                border-radius: 12px;
+                border: 2px solid var(--primary-light);
+            ">
+                <h3 style="color: var(--primary); margin: 0 0 0.75rem 0;">📰 最新消息</h3>
+                <p style="margin: 0; color: var(--text-secondary); line-height: 1.6;">掌握社福相關政策與重要公告，獲得第一手資訊。</p>
+                <a href="#news" style="margin-top: 1rem; display: inline-block;" class="button btn-small">閱讀更多</a>
+            </div>
+
+            <div style="
+                background: linear-gradient(135deg, #ecfdf5, #d1fae5);
+                padding: 1.5rem;
+                border-radius: 12px;
+                border: 2px solid #a7f3d0;
+            ">
+                <h3 style="color: #047857; margin: 0 0 0.75rem 0;">🤝 服務介紹</h3>
+                <p style="margin: 0; color: var(--text-secondary); line-height: 1.6;">了解本平台提供的各項社會福利服務與諮詢。</p>
+                <a href="#services" style="margin-top: 1rem; display: inline-block;" class="button btn-small">瀏覽服務</a>
+            </div>
+
+            <div style="
+                background: linear-gradient(135deg, #fef3c7, #fde68a);
+                padding: 1.5rem;
+                border-radius: 12px;
+                border: 2px solid #fcd34d;
+            ">
+                <h3 style="color: #b45309; margin: 0 0 0.75rem 0;">📞 聯絡方式</h3>
+                <p style="margin: 0; color: var(--text-secondary); line-height: 1.6;">有任何疑問？歡迎聯絡我們的服務團隊。</p>
+                <a href="#contact" style="margin-top: 1rem; display: inline-block;" class="button btn-small">立即聯絡</a>
+            </div>
+        </div>
     </section>
 
     <section class="card">
         <div class="card-title">
-            <h2>AI 個案企畫書產生器</h2>
-            <span>填寫個案資料，系統將協助生成企畫書草稿。</span>
+            <h2 class="section-title">🤖 AI 個案企劃書產生器</h2>
+            <p class="text-muted">填寫個案資料，系統協助生成企劃書草稿</p>
         </div>
-        <div class="ai-agent-panel">
-            <strong>AI 代理人：</strong> {{ ai_agent | default('企劃小助手') }}
-            <span class="badge">模型：{{ ai_model | default('ChatAssist GPT') }}</span>
-            <span class="badge">引擎：{{ ai_engine | default('GPT-Assist-2.0') }}</span>
-            <p>{{ ai_agent_note | default('這個代理人會即時分析您提供的個案內容，並產出不一樣的智慧建議。') }}</p>
+        
+        <div style="
+            background: linear-gradient(135deg, #f0f4ff, #e0e7ff);
+            padding: 1.5rem;
+            border-radius: 12px;
+            border: 2px solid var(--primary-light);
+            margin-bottom: 1.5rem;
+        ">
+            <h4 style="margin: 0 0 0.5rem 0; color: var(--primary);">🤖 {{ ai_agent | default('企劃小助手') }}</h4>
+            <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem; flex-wrap: wrap;">
+                <span class="badge badge-info">模型：{{ ai_model | default('ChatAssist GPT') }}</span>
+                <span class="badge badge-info">引擎：{{ ai_engine | default('GPT-Assist-2.0') }}</span>
+            </div>
+            <p style="margin: 0; color: var(--text-secondary);">{{ ai_agent_note | default('這個代理人會即時分析您提供的個案內容，並產出不一樣的智慧建議。') }}</p>
         </div>
+
         {% if subsidy_summary %}
-            <div class="message info">補助摘要提示：{{ subsidy_summary }}</div>
+            <div class="message info">💡 補助摘要：{{ subsidy_summary }}</div>
         {% endif %}
         {% if error %}
-            <div class="message error">{{ error }}</div>
+            <div class="message error">❌ {{ error }}</div>
         {% endif %}
+
         <form class="proposal-form" method="post" action="/user/proposal" enctype="multipart/form-data">
             <input type="hidden" name="subsidy_summary" value="{{ subsidy_summary | default('') }}">
             <label>案名 <span style="color:#d00">*</span>
