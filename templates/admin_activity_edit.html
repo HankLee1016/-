@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>編輯活動</title>
+    <link rel="stylesheet" href="/static/css/index.css">
+    <style>
+        .form-group {
+            margin-bottom: 24px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+        input[type="text"],
+        input[type="date"],
+        textarea,
+        select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-family: 'Noto Sans TC', 'Segoe UI', Arial, sans-serif;
+            font-size: 1rem;
+            color: var(--text-primary);
+            background-color: var(--surface);
+            transition: border-color 0.2s;
+        }
+        input[type="text"]:focus,
+        input[type="date"]:focus,
+        textarea:focus,
+        select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(47, 128, 237, 0.1);
+        }
+        textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+        }
+        @media (max-width: 640px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+        }
+        .form-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-start;
+        }
+        .form-actions button,
+        .form-actions a {
+            padding: 10px 20px;
+            text-decoration: none;
+            cursor: pointer;
+            border: none;
+            border-radius: 8px;
+        }
+        .error-message {
+            background-color: #ffebee;
+            color: #c62828;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .activity-id-info {
+            background-color: var(--surface-soft);
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 24px;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+    </style>
+</head>
+<body>
+    <div class="page-bg"></div>
+    <div class="container">
+        <header class="hero-card">
+            <div class="hero-copy">
+                <span class="eyebrow">活動管理</span>
+                <h1>編輯活動</h1>
+                <p>更新活動資訊。</p>
+            </div>
+            <div class="hero-actions">
+                <a class="button" href="/admin/activities">返回活動列表</a>
+                <a class="button" href="/logout">登出</a>
+            </div>
+        </header>
+
+        <section class="card">
+            <div class="card-title">
+                <h2>活動編輯表單</h2>
+            </div>
+
+            {% if error %}
+            <div class="error-message">{{ error }}</div>
+            {% endif %}
+
+            {% if activity %}
+            <div class="activity-id-info">
+                <strong>活動代碼:</strong> {{ activity.id }}
+            </div>
+
+            <form method="post" action="/admin/activities/{{ activity.id }}/edit">
+                <div class="form-group">
+                    <label for="activity_name">活動名稱 <span style="color: red;">*</span></label>
+                    <input type="text" id="activity_name" name="activity_name" required placeholder="輸入活動名稱" value="{{ activity.activity_name }}">
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="category">活動分類</label>
+                        <select id="category" name="category">
+                            <option value="其他" {% if activity.category == '其他' %}selected{% endif %}>其他</option>
+                            <option value="講座" {% if activity.category == '講座' %}selected{% endif %}>講座</option>
+                            <option value="工作坊" {% if activity.category == '工作坊' %}selected{% endif %}>工作坊</option>
+                            <option value="志工服務" {% if activity.category == '志工服務' %}selected{% endif %}>志工服務</option>
+                            <option value="社區活動" {% if activity.category == '社區活動' %}selected{% endif %}>社區活動</option>
+                            <option value="訓練課程" {% if activity.category == '訓練課程' %}selected{% endif %}>訓練課程</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="status">狀態</label>
+                        <select id="status" name="status">
+                            <option value="進行中" {% if activity.status == '進行中' %}selected{% endif %}>進行中</option>
+                            <option value="已結束" {% if activity.status == '已結束' %}selected{% endif %}>已結束</option>
+                            <option value="已取消" {% if activity.status == '已取消' %}selected{% endif %}>已取消</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="start_date">開始日期</label>
+                        <input type="date" id="start_date" name="start_date" value="{{ activity.start_date or '' }}">
+                    </div>
+                    <div class="form-group">
+                        <label for="end_date">結束日期</label>
+                        <input type="date" id="end_date" name="end_date" value="{{ activity.end_date or '' }}">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="location">活動地點 <span style="color: red;">*</span></label>
+                        <input type="text" id="location" name="location" required placeholder="輸入活動地點" value="{{ activity.location or '' }}">
+                    </div>
+                    <div class="form-group">
+                        <label for="max_capacity">活動名額</label>
+                        <input type="number" id="max_capacity" name="max_capacity" placeholder="輸入最大參加人數" min="0" value="{{ activity.max_capacity or 0 }}">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="registration_deadline">報名截止日期</label>
+                    <input type="date" id="registration_deadline" name="registration_deadline" value="{{ activity.registration_deadline or '' }}">
+                </div>
+
+                <div class="form-group">
+                    <label for="description">活動描述</label>
+                    <textarea id="description" name="description" placeholder="詳細描述此活動的內容、目的和說明...">{{ activity.description }}</textarea>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" style="background-color: var(--primary); color: white;">更新活動</button>
+                    <a href="/admin/activities" style="background-color: var(--text-secondary); color: white; text-align: center;">取消</a>
+                </div>
+            </form>
+            {% else %}
+            <p>活動不存在。</p>
+            <a class="button" href="/admin/activities">返回活動列表</a>
+            {% endif %}
+        </section>
+    </div>
+</body>
+</html>
