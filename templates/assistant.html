@@ -174,10 +174,7 @@
 
   function handleKey(e){
     if(e.key === 'Enter' && !e.shiftKey){
-      if(isLoading) {
-        e.preventDefault();
-        return;  // 防止連續輸入
-      }
+      if(isLoading) return;  // 防止連續輸入
       e.preventDefault();
       sendMessage();
     }

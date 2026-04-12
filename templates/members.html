@@ -1,66 +1,60 @@
-<!DOCTYPE html>
-<html lang="zh-TW">
-<head>
-    <meta charset="UTF-8">
-    <title>成員管理</title>
-    <link rel="stylesheet" href="/static/css/index.css">
-</head>
-<body>
-    <div class="page-bg"></div>
-    <div class="container">
-        <header class="hero-card">
-            <div class="hero-copy">
-                <span class="eyebrow">成員管理</span>
-                <h1>管理者：{{ username or '管理者' }}</h1>
-                <p>在這裡您可以查看所有註冊帳號，並進行成員管理操作。</p>
-            </div>
-            <div class="hero-actions">
-                <a class="button" href="/admin">返回管理首頁</a>
-                <a class="button" href="/logout">登出</a>
-            </div>
-        </header>
+{% extends 'base.html' %}
 
-        <section class="card">
-            {% if error %}
+{% block title %}成員管理 — 管理者後台{% endblock %}
+
+{% block content %}
+    <div class="page-bg"></div>
+    <header class="hero-card">
+        <div class="hero-copy">
+            <span class="eyebrow">成員管理</span>
+            <h1>管理者：{{ username or '管理者' }}</h1>
+            <p>在這裡您可以查看所有註冊帳號，並進行成員管理操作。</p>
+        </div>
+        <div class="hero-actions">
+            <a class="button" href="/admin">返回管理首頁</a>
+            <a class="button" href="/logout">登出</a>
+        </div>
+    </header>
+
+    <section class="card">
+        {% if error %}
             <div class="message error">{{ error }}</div>
-            {% endif %}
-            <div class="card-title">
-                <h2>註冊成員列表</h2>
-                <span>點選操作按鈕即可編輯或刪除成員。</span>
-            </div>
-            <div class="table-wrapper">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>帳號</th>
-                            <th>身分</th>
-                            <th>操作</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for member in users %}
+        {% endif %}
+        <div class="card-title">
+            <h2>註冊成員列表</h2>
+            <span>點選操作按鈕即可編輯或刪除成員。</span>
+        </div>
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>帳號</th>
+                        <th>身分</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for member in users %}
                         <tr>
                             <td>{{ member.username }}</td>
                             <td>{{ member.role }}</td>
                             <td>
                                 {% if member.username != username %}
-                                <form method="post" action="/admin/members/delete/{{ member.username }}" style="display:inline;">
-                                    <button type="submit" class="button">刪除</button>
-                                </form>
-                                <form method="post" action="/admin/members/role/{{ member.username }}" style="display:inline; margin-left: 8px;">
-                                    <input type="hidden" name="new_role" value="{{ 'user' if member.role == 'admin' else 'admin' }}">
-                                    <button type="submit" class="button">轉為 {{ '使用者' if member.role == 'admin' else '管理者' }}</button>
-                                </form>
+                                    <form method="post" action="/admin/members/delete/{{ member.username }}" style="display:inline;">
+                                        <button type="submit" class="button">刪除</button>
+                                    </form>
+                                    <form method="post" action="/admin/members/role/{{ member.username }}" style="display:inline; margin-left: 8px;">
+                                        <input type="hidden" name="new_role" value="{{ 'user' if member.role == 'admin' else 'admin' }}">
+                                        <button type="submit" class="button">轉為 {{ '使用者' if member.role == 'admin' else '管理者' }}</button>
+                                    </form>
                                 {% else %}
-                                <span>目前登入</span>
+                                    <span>目前登入</span>
                                 {% endif %}
                             </td>
                         </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </section>
-    </div>
-</body>
-</html>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+{% endblock %}

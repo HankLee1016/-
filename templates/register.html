@@ -1,48 +1,41 @@
-<!DOCTYPE html>
-<html lang="zh-TW">
-<head>
-    <meta charset="UTF-8">
-    <title>註冊</title>
-    <link rel="stylesheet" href="/static/css/index.css">
-</head>
-<body>
-    <div class="page-bg"></div>
-    <div class="container">
-        <header class="hero-card">
-            <div class="hero-copy">
-                <span class="eyebrow">註冊</span>
-                <h1>建立新帳號</h1>
-                <p>一般使用者可直接註冊，管理者註冊需要代碼。</p>
-            </div>
-        </header>
+{% extends 'base.html' %}
 
-        <section class="card">
-            {% if error %}
+{% block title %}註冊 — 社福資源平台{% endblock %}
+
+{% block content %}
+    <header class="hero-card">
+        <div class="hero-copy">
+            <span class="eyebrow">註冊</span>
+            <h1>建立新帳號</h1>
+            <p>一般使用者可直接註冊，管理者註冊需要代碼。</p>
+        </div>
+    </header>
+
+    <section class="card">
+        {% if error %}
             <div class="message error">{{ error }}</div>
-            {% endif %}
-            <form class="auth-form" method="post" action="/register">
-                <label>帳號
-                    <input type="text" name="username" placeholder="請輸入帳號" required>
-                </label>
-                <label>密碼
-                    <input type="password" name="password" placeholder="請輸入密碼" required>
-                </label>
-                <label>確認密碼
-                    <input type="password" name="confirm_password" placeholder="再次輸入密碼" required>
-                </label>
-                <label>身分
-                    <select name="role">
-                        <option value="user">一般使用者</option>
-                        <option value="admin">管理者</option>
-                    </select>
-                </label>
-                <label>管理者註冊代碼
-                    <input type="text" name="admin_code" placeholder="僅管理者填寫">
-                </label>
-                <button type="submit">註冊</button>
-            </form>
-            <p>已經有帳號？<a href="/login">點此登入</a></p>
-        </section>
-    </div>
-</body>
-</html>
+        {% endif %}
+        <form class="auth-form" method="post" action="/register">
+            <label>帳號
+                <input type="text" name="username" placeholder="請輸入帳號" required>
+            </label>
+            <label>密碼
+                <input type="password" name="password" placeholder="請輸入密碼" required>
+            </label>
+            <label>確認密碼
+                <input type="password" name="confirm_password" placeholder="再次輸入密碼" required>
+            </label>
+            <label>身分
+                <select name="role">
+                    <option value="user">一般使用者</option>
+                    <option value="admin">管理者</option>
+                </select>
+            </label>
+            <label>管理者註冊代碼
+                <input type="text" name="admin_code" placeholder="僅管理者填寫">
+            </label>
+            <button type="submit">註冊</button>
+        </form>
+        <p>已經有帳號？<a href="/login">點此登入</a></p>
+    </section>
+{% endblock %}
