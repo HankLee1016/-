@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>新增志工排班</title>
+    <link rel="stylesheet" href="/static/css/index.css">
+    <style>
+        .form-group {
+            margin-bottom: 24px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+        input[type="text"],
+        input[type="time"],
+        input[type="number"],
+        textarea,
+        select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-family: 'Noto Sans TC', 'Segoe UI', Arial, sans-serif;
+            font-size: 1rem;
+            color: var(--text-primary);
+            background-color: var(--surface);
+            transition: border-color 0.2s;
+        }
+        input[type="text"]:focus,
+        input[type="time"]:focus,
+        input[type="number"]:focus,
+        textarea:focus,
+        select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(47, 128, 237, 0.1);
+        }
+        textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+        }
+        @media (max-width: 640px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+        }
+        .form-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-start;
+        }
+        .form-actions button,
+        .form-actions a {
+            padding: 10px 20px;
+            text-decoration: none;
+            cursor: pointer;
+            border: none;
+            border-radius: 8px;
+        }
+        .error-message {
+            background-color: #ffebee;
+            color: #c62828;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .activity-info {
+            background-color: var(--surface-soft);
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 24px;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+    </style>
+</head>
+<body>
+    <div class="page-bg"></div>
+    <div class="container">
+        <header class="hero-card">
+            <div class="hero-copy">
+                <span class="eyebrow">志工排班</span>
+                <h1>新增排班</h1>
+                <p>為活動創建新的志工排班班次。</p>
+            </div>
+            <div class="hero-actions">
+                <a class="button" href="/admin/activities/{{ activity.id }}/volunteer-shifts">返回排班列表</a>
+                <a class="button" href="/logout">登出</a>
+            </div>
+        </header>
+
+        <section class="card">
+            <div class="card-title">
+                <h2>排班資訊表單</h2>
+            </div>
+
+            {% if error %}
+            <div class="error-message">{{ error }}</div>
+            {% endif %}
+
+            <div class="activity-info">
+                <strong>活動:</strong> {{ activity.activity_name }}<br>
+                <strong>時間:</strong> {{ activity.start_date or '未設定' }} ~ {{ activity.end_date or '未設定' }}<br>
+                <strong>地點:</strong> {{ activity.location or '未設定' }}
+            </div>
+
+            <form method="post" action="/admin/activities/{{ activity.id }}/volunteer-shifts/create">
+                <div class="form-group">
+                    <label for="shift_name">班次名稱 <span style="color: red;">*</span></label>
+                    <input type="text" id="shift_name" name="shift_name" required placeholder="例如: 上午班、下午班、晚班">
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="start_time">開始時間 <span style="color: red;">*</span></label>
+                        <input type="time" id="start_time" name="start_time" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="end_time">結束時間 <span style="color: red;">*</span></label>
+                        <input type="time" id="end_time" name="end_time" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="required_count">需求人數</label>
+                    <input type="number" id="required_count" name="required_count" min="1" value="1" placeholder="輸入該班次需要的志工人數">
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" style="background-color: var(--primary); color: white;">創建排班</button>
+                    <a href="/admin/activities/{{ activity.id }}/volunteer-shifts" style="background-color: var(--text-secondary); color: white; text-align: center;">取消</a>
+                </div>
+            </form>
+        </section>
+    </div>
+</body>
+</html>
