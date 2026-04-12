@@ -4,6 +4,50 @@
     <meta charset="UTF-8">
     <title>管理者畫面</title>
     <link rel="stylesheet" href="/static/css/index.css">
+    <style>
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .feature-card {
+            background: linear-gradient(135deg, rgba(47, 128, 237, 0.05), rgba(242, 153, 74, 0.05));
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 24px;
+            transition: all 0.3s ease;
+        }
+        .feature-card:hover {
+            box-shadow: 0 8px 24px rgba(47, 128, 237, 0.15);
+            transform: translateY(-4px);
+        }
+        .feature-card h3 {
+            margin: 0 0 12px 0;
+            font-size: 1.3rem;
+            color: var(--text-primary);
+        }
+        .feature-card p {
+            margin: 0 0 16px 0;
+            color: var(--text-secondary);
+            line-height: 1.6;
+            font-size: 0.95rem;
+        }
+        .feature-card .button {
+            display: inline-block;
+            text-decoration: none;
+            padding: 8px 16px;
+            background-color: var(--primary);
+            color: white;
+            border-radius: 8px;
+            cursor: pointer;
+            border: none;
+            transition: background-color 0.2s;
+        }
+        .feature-card .button:hover {
+            background-color: var(--primary-dark);
+        }
+    </style>
 </head>
 <body>
     <div class="page-bg"></div>
@@ -26,11 +70,43 @@
                 <h2>管理者功能</h2>
                 <span>這裡是管理者專屬內容頁面。</span>
             </div>
-            <ul>
-                <li>查看捐款資料</li>
-                <li>管理使用者與資料</li>
-                <li>維護系統設定</li>
-            </ul>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <h3>成員管理</h3>
+                    <p>查看、編輯和刪除系統中的註冊成員。可以變更成員身分為管理者或一般使用者。</p>
+                    <a class="button" href="/admin/members">前往成員管理</a>
+                </div>
+                <div class="feature-card">
+                    <h3>個案管理</h3>
+                    <p>管理並追蹤所有個案，查看個案詳情、編輯個案資料或建立新個案。</p>
+                    <a class="button" href="/admin/cases">前往個案管理</a>
+                </div>
+                <div class="feature-card">
+                    <h3>活動管理</h3>
+                    <p>建立和管理社區活動，包括講座、工作坊、志工服務等各類活動。</p>
+                    <a class="button" href="/admin/activities">前往活動管理</a>
+                </div>
+                <div class="feature-card">
+                    <h3>服務管理</h3>
+                    <p>管理提供的各類社會福利服務，設定服務內容、對象和申請狀態。</p>
+                    <a class="button" href="/admin/services">前往服務管理</a>
+                </div>
+                <div class="feature-card">
+                    <h3>內容管理</h3>
+                    <p>發佈和管理系統內容，包括新聞、文章、通知、指南等各類內容。</p>
+                    <a class="button" href="/admin/contents">前往內容管理</a>
+                </div>
+                <div class="feature-card">
+                    <h3>公告管理</h3>
+                    <p>發佈重要公告，設定優先級別（普通、重要、緊急）以及發佈狀態。</p>
+                    <a class="button" href="/admin/announcements">前往公告管理</a>
+                </div>
+                <div class="feature-card">
+                    <h3>查看捐款資料</h3>
+                    <p>檢視所有捐款紀錄，按年份和月份篩選捐款資料。</p>
+                    <a class="button" href="/donations">前往捐款資料</a>
+                </div>
+            </div>
         </section>
     </div>
 </body>
