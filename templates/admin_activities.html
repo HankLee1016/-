@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>活動管理</title>
+    <link rel="stylesheet" href="/static/css/index.css">
+    <style>
+        .activity-status {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 16px;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+        .activity-status.進行中 {
+            background-color: #e3f2fd;
+            color: #1565c0;
+        }
+        .activity-status.已結束 {
+            background-color: #f3e5f5;
+            color: #6a1b9a;
+        }
+        .activity-status.已取消 {
+            background-color: #ffebee;
+            color: #c62828;
+        }
+        .activity-actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .activity-actions .button {
+            padding: 6px 12px;
+            font-size: 0.9rem;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-secondary);
+        }
+        .empty-state-icon {
+            font-size: 3rem;
+            margin-bottom: 16px;
+        }
+        .activity-card {
+            background: var(--surface-soft);
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            border-left: 4px solid var(--primary);
+        }
+        .activity-card h3 {
+            margin: 0 0 8px 0;
+            color: var(--text-primary);
+        }
+        .activity-meta {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
+        }
+        .activity-description {
+            color: var(--text-primary);
+            margin-bottom: 12px;
+            line-height: 1.5;
+        }
+    </style>
+</head>
+<body>
+    <div class="page-bg"></div>
+    <div class="container">
+        <header class="hero-card">
+            <div class="hero-copy">
+                <span class="eyebrow">活動管理</span>
+                <h1>系統活動管理</h1>
+                <p>建立和管理所有社區活動。</p>
+            </div>
+            <div class="hero-actions">
+                <a class="button" href="/admin/activities/create">+ 新增活動</a>
+                <a class="button" href="/admin">返回管理首頁</a>
+                <a class="button" href="/logout">登出</a>
+            </div>
+        </header>
+
+        <section class="card">
+            <div class="card-title">
+                <h2>活動列表</h2>
+                <span>共 {{ activities|length }} 個活動</span>
+            </div>
+            
+            {% if activities %}
+            {% for activity in activities %}
+            <div class="activity-card">
+                <div style="display: flex; justify-content: space-between; align-items: start;">
+                    <div style="flex: 1;">
+                        <h3>{{ activity.activity_name }}</h3>
+                        <div class="activity-meta">
+                            <strong>分類：</strong> {{ activity.category }} 
+                            {% if activity.start_date %}<strong>開始：</strong> {{ activity.start_date }}{% endif %}
+                            {% if activity.end_date %}<strong>結束：</strong> {{ activity.end_date }}{% endif %}
+                        </div>
+                        {% if activity.description %}
+                        <div class="activity-description">{{ activity.description }}</div>
+                        {% endif %}
+                        <span class="activity-status {{ activity.status }}">{{ activity.status }}</span>
+                    </div>
+                    <div class="activity-actions" style="margin-left: 16px;">
+                        <a class="button" href="/admin/activities/{{ activity.id }}/edit">編輯</a>
+                        <a class="button" href="/admin/activities/{{ activity.id }}/registrations">報名</a>
+                        <a class="button" href="/admin/activities/{{ activity.id }}/attendance">簽到</a>
+                        <a class="button" href="/admin/activities/{{ activity.id }}/volunteer-shifts">排班</a>
+                        <form method="post" action="/admin/activities/{{ activity.id }}/delete" style="display:inline;">
+                            <button type="submit" class="button" onclick="return confirm('確認刪除此活動嗎？');">刪除</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+            {% else %}
+            <div class="empty-state">
+                <div class="empty-state-icon">📅</div>
+                <p>還沒有任何活動。<a href="/admin/activities/create">立即創建第一個活動</a></p>
+            </div>
+            {% endif %}
+        </section>
+    </div>
+</body>
+</html>
