@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>活動出席記錄</title>
+    <link rel="stylesheet" href="/static/css/index.css">
+    <style>
+        .attendance-status {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 16px;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+        .attendance-status.已簽到 {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .attendance-status.已簽退 {
+            background-color: #d1ecf1;
+            color: #0c5460;
+        }
+        .attendance-status.未簽退 {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+        .attendance-card {
+            background: var(--surface-soft);
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            border-left: 4px solid var(--primary);
+        }
+        .attendance-card h3 {
+            margin: 0 0 8px 0;
+            color: var(--text-primary);
+        }
+        .attendance-meta {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
+            line-height: 1.6;
+        }
+        .attendance-time {
+            background-color: var(--surface);
+            padding: 12px;
+            border-radius: 6px;
+            margin-top: 12px;
+            font-family: 'Courier New', monospace;
+        }
+        .action-buttons {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+        }
+        .action-buttons button,
+        .action-buttons a {
+            padding: 6px 12px;
+            text-decoration: none;
+            font-size: 0.9rem;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        .btn-checkout {
+            background-color: #17a2b8;
+            color: white;
+        }
+        .btn-checkout:hover {
+            background-color: #138496;
+        }
+        .checkin-form {
+            background-color: var(--surface-soft);
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 24px;
+        }
+        .checkin-form .form-row {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 12px;
+            align-items: flex-end;
+        }
+        .checkin-form input {
+            padding: 10px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 1rem;
+        }
+        .checkin-form button {
+            padding: 10px 20px;
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-secondary);
+        }
+        .empty-state-icon {
+            font-size: 3rem;
+            margin-bottom: 16px;
+        }
+    </style>
+</head>
+<body>
+    <div class="page-bg"></div>
+    <div class="container">
+        <header class="hero-card">
+            <div class="hero-copy">
+                <span class="eyebrow">活動管理</span>
+                <h1>出席紀錄 - {{ activity.activity_name }}</h1>
+                <p>管理活動簽到和簽退記錄。</p>
+            </div>
+            <div class="hero-actions">
+                <a class="button" href="/admin/activities">返回活動列表</a>
+                <a class="button" href="/logout">登出</a>
+            </div>
+        </header>
+
+        <section class="card">
+            <div class="card-title">
+                <h2>簽到系統</h2>
+            </div>
+
+            <div class="checkin-form">
+                <form method="post" action="/admin/activities/{{ activity.id }}/checkin">
+                    <div class="checkin-form-row" style="display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: flex-end;">
+                        <div>
+                            <label for="username">參與者名稱</label>
+                            <input type="text" id="username" name="username" required placeholder="輸入簽到人名稱">
+                        </div>
+                        <button type="submit" style="background-color: var(--primary); color: white; padding: 10px 20px; border-radius: 6px; cursor: pointer; border: none;">簽到</button>
+                    </div>
+                </form>
+            </div>
+
+            <div class="card-title" style="margin-top: 32px;">
+                <h2>出席紀錄清單</h2>
+                <span>共 {{ attendances|length }} 筆紀錄</span>
+            </div>
+
+            {% if attendances %}
+                {% for attendance in attendances %}
+                <div class="attendance-card">
+                    <h3>{{ attendance.username }}</h3>
+                    <div class="attendance-meta">
+                        <div>
+                            <span class="attendance-status {% if attendance.check_out_time %}已簽退{% else %}未簽退{% endif %}">
+                                {% if attendance.check_out_time %}已簽退{% else %}已簽到{% endif %}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="attendance-time">
+                        <strong>簽到時間:</strong> {{ attendance.check_in_time }}<br>
+                        <strong>簽退時間:</strong> {% if attendance.check_out_time %}{{ attendance.check_out_time }}{% else %}<span style="color: var(--text-secondary);">未簽退</span>{% endif %}
+                    </div>
+                    <div class="action-buttons">
+                        {% if not attendance.check_out_time %}
+                        <form method="post" action="/admin/attendances/{{ attendance.id }}/checkout" style="display: inline;">
+                            <button type="submit" class="btn-checkout">簽退</button>
+                        </form>
+                        {% else %}
+                        <span style="color: var(--text-secondary); padding: 6px 12px;">已完成簽退</span>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+            <div class="empty-state">
+                <div class="empty-state-icon">👥</div>
+                <p>目前沒有簽到紀錄。</p>
+            </div>
+            {% endif %}
+        </section>
+    </div>
+</body>
+</html>
