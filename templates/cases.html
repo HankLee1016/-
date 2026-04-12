@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>個案管理</title>
+    <link rel="stylesheet" href="/static/css/index.css">
+    <style>
+        .case-status {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 16px;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+        .case-status.進行中 {
+            background-color: #e3f2fd;
+            color: #1565c0;
+        }
+        .case-status.已結案 {
+            background-color: #f3e5f5;
+            color: #6a1b9a;
+        }
+        .case-status.待處理 {
+            background-color: #fff3e0;
+            color: #e65100;
+        }
+        .case-actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .case-actions .button {
+            padding: 6px 12px;
+            font-size: 0.9rem;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-secondary);
+        }
+        .empty-state-icon {
+            font-size: 3rem;
+            margin-bottom: 16px;
+        }
+    </style>
+</head>
+<body>
+    <div class="page-bg"></div>
+    <div class="container">
+        <header class="hero-card">
+            <div class="hero-copy">
+                <span class="eyebrow">個案管理</span>
+                <h1>管理所有個案</h1>
+                <p>在這裡您可以查看、創建、編輯和刪除所有個案資訊。</p>
+            </div>
+            <div class="hero-actions">
+                <a class="button" href="/admin/cases/create">+ 新增個案</a>
+                <a class="button" href="/admin">返回管理首頁</a>
+                <a class="button" href="/logout">登出</a>
+            </div>
+        </header>
+
+        <section class="card">
+            <div class="card-title">
+                <h2>個案列表</h2>
+                <span>共 {{ cases|length }} 個個案</span>
+            </div>
+            
+            {% if cases %}
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>個案名稱</th>
+                            <th>成員名稱</th>
+                            <th>問題描述</th>
+                            <th>狀態</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for case in cases %}
+                        <tr>
+                            <td>{{ case.case_name }}</td>
+                            <td>{{ case.member_name }}</td>
+                            <td>{{ case.issue_description[:50] }}{% if case.issue_description|length > 50 %}...{% endif %}</td>
+                            <td>
+                                <span class="case-status {{ case.status }}">{{ case.status }}</span>
+                            </td>
+                            <td>
+                                <div class="case-actions">
+                                    <a class="button" href="/admin/cases/{{ case.id }}/edit">編輯</a>
+                                    <form method="post" action="/admin/cases/{{ case.id }}/delete" style="display:inline;">
+                                        <button type="submit" class="button" onclick="return confirm('確認刪除此個案嗎？');">刪除</button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="empty-state">
+                <div class="empty-state-icon">📋</div>
+                <p>還沒有任何個案。<a href="/admin/cases/create">立即創建第一個個案</a></p>
+            </div>
+            {% endif %}
+        </section>
+    </div>
+</body>
+</html>
