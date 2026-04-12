@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>志工排班管理</title>
+    <link rel="stylesheet" href="/static/css/index.css">
+    <style>
+        .shift-status {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 16px;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+        .shift-status.招募中 {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .shift-status.已滿員 {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        .shift-card {
+            background: var(--surface-soft);
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            border-left: 4px solid var(--primary);
+        }
+        .shift-card h3 {
+            margin: 0 0 8px 0;
+            color: var(--text-primary);
+        }
+        .shift-meta {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
+            line-height: 1.6;
+        }
+        .shift-volunteers {
+            background-color: var(--surface);
+            padding: 12px;
+            border-radius: 6px;
+            margin-top: 12px;
+        }
+        .shift-volunteers .volunteer-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .shift-volunteers .volunteer-list li {
+            padding: 4px 0;
+            color: var(--text-primary);
+        }
+        .action-buttons {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+        }
+        .action-buttons form {
+            display: inline;
+        }
+        .action-buttons button,
+        .action-buttons a {
+            padding: 6px 12px;
+            text-decoration: none;
+            font-size: 0.9rem;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        .btn-edit {
+            background-color: var(--primary);
+            color: white;
+        }
+        .btn-edit:hover {
+            background-color: var(--primary-dark);
+        }
+        .btn-delete {
+            background-color: #dc3545;
+            color: white;
+        }
+        .btn-delete:hover {
+            background-color: #c82333;
+        }
+        .add-volunteer-form {
+            background-color: var(--surface-soft);
+            padding: 12px;
+            border-radius: 6px;
+            margin-top: 12px;
+            display: flex;
+            gap: 8px;
+            align-items: flex-end;
+        }
+        .add-volunteer-form input {
+            flex: 1;
+            padding: 8px;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+        }
+        .add-volunteer-form button {
+            padding: 8px 16px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .add-volunteer-form button:hover {
+            background-color: #218838;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-secondary);
+        }
+        .empty-state-icon {
+            font-size: 3rem;
+            margin-bottom: 16px;
+        }
+    </style>
+</head>
+<body>
+    <div class="page-bg"></div>
+    <div class="container">
+        <header class="hero-card">
+            <div class="hero-copy">
+                <span class="eyebrow">活動管理</span>
+                <h1>志工排班 - {{ activity.activity_name }}</h1>
+                <p>管理活動志工排班和人員分配。</p>
+            </div>
+            <div class="hero-actions">
+                <a class="button" href="/admin/activities/{{ activity.id }}/volunteer-shifts/create">+ 新增排班</a>
+                <a class="button" href="/admin/activities">返回活動列表</a>
+                <a class="button" href="/logout">登出</a>
+            </div>
+        </header>
+
+        <section class="card">
+            <div class="card-title">
+                <h2>排班清單</h2>
+                <span>共 {{ shifts|length }} 班次</span>
+            </div>
+
+            {% if shifts %}
+                {% for shift in shifts %}
+                <div class="shift-card">
+                    <h3>{{ shift.shift_name }}</h3>
+                    <div class="shift-meta">
+                        <strong>時間:</strong> {{ shift.start_time }} - {{ shift.end_time }}<br>
+                        <strong>需求人數:</strong> {{ shift.required_count }} 人<br>
+                        <strong>目前人數:</strong> {{ shift.volunteers|length }} / {{ shift.required_count }}<br>
+                        <strong>狀態:</strong> <span class="shift-status {% if shift.status == '招募中' %}招募中{% else %}已滿員{% endif %}">{{ shift.status }}</span>
+                    </div>
+                    <div class="shift-volunteers">
+                        <strong>志工名單:</strong>
+                        {% if shift.volunteers %}
+                        <ul class="volunteer-list">
+                            {% for volunteer in shift.volunteers %}
+                            <li>✓ {{ volunteer }}</li>
+                            {% endfor %}
+                        </ul>
+                        {% else %}
+                        <span style="color: var(--text-secondary);">尚無志工報名</span>
+                        {% endif %}
+                    </div>
+                    {% if shift.status == '招募中' %}
+                    <div class="add-volunteer-form">
+                        <form method="post" action="/admin/volunteer-shifts/{{ shift.id }}/add-volunteer" style="display: flex; gap: 8px; width: 100%;">
+                            <input type="text" name="username" required placeholder="輸入志工名稱" style="flex: 1; padding: 8px; border: 1px solid var(--border); border-radius: 4px;">
+                            <button type="submit" style="background-color: #28a745; color: white; padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer;">添加</button>
+                        </form>
+                    </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            {% else %}
+            <div class="empty-state">
+                <div class="empty-state-icon">👥</div>
+                <p>目前沒有排班。点擊上方「新增排班」來創建新班次。</p>
+            </div>
+            {% endif %}
+        </section>
+    </div>
+</body>
+</html>
