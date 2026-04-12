@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>新增內容</title>
+    <link rel="stylesheet" href="/static/css/index.css">
+    <style>
+        .form-group {
+            margin-bottom: 24px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+        input[type="text"],
+        input[type="url"],
+        textarea,
+        select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-family: 'Noto Sans TC', 'Segoe UI', Arial, sans-serif;
+            font-size: 1rem;
+            color: var(--text-primary);
+            background-color: var(--surface);
+            transition: border-color 0.2s;
+        }
+        input[type="text"]:focus,
+        input[type="url"]:focus,
+        textarea:focus,
+        select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(47, 128, 237, 0.1);
+        }
+        textarea {
+            resize: vertical;
+            min-height: 200px;
+        }
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+        }
+        @media (max-width: 640px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+        }
+        .form-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-start;
+        }
+        .form-actions button,
+        .form-actions a {
+            padding: 10px 20px;
+            text-decoration: none;
+            cursor: pointer;
+            border: none;
+            border-radius: 8px;
+        }
+        .error-message {
+            background-color: #ffebee;
+            color: #c62828;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="page-bg"></div>
+    <div class="container">
+        <header class="hero-card">
+            <div class="hero-copy">
+                <span class="eyebrow">內容管理</span>
+                <h1>新增內容</h1>
+                <p>填寫以下資訊來發佈新內容。</p>
+            </div>
+            <div class="hero-actions">
+                <a class="button" href="/admin/contents">返回內容列表</a>
+                <a class="button" href="/logout">登出</a>
+            </div>
+        </header>
+
+        <section class="card">
+            <div class="card-title">
+                <h2>內容資訊表單</h2>
+            </div>
+
+            {% if error %}
+            <div class="error-message">{{ error }}</div>
+            {% endif %}
+
+            <form method="post" action="/admin/contents/create">
+                <div class="form-group">
+                    <label for="title">標題 <span style="color: red;">*</span></label>
+                    <input type="text" id="title" name="title" required placeholder="輸入內容標題">
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="category">分類</label>
+                        <select id="category" name="category">
+                            <option value="其他">其他</option>
+                            <option value="新聞">新聞</option>
+                            <option value="通知">通知</option>
+                            <option value="活動">活動</option>
+                            <option value="文章">文章</option>
+                            <option value="指南">指南</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="status">狀態</label>
+                        <select id="status" name="status">
+                            <option value="已發佈" selected>已發佈</option>
+                            <option value="草稿">草稿</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="content">內容 <span style="color: red;">*</span></label>
+                    <textarea id="content" name="content" required placeholder="輸入內容..."></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="image_url">圖片 URL（選填）</label>
+                    <input type="url" id="image_url" name="image_url" placeholder="https://example.com/image.jpg">
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" style="background-color: var(--primary); color: white;">保存內容</button>
+                    <a href="/admin/contents" style="background-color: var(--text-secondary); color: white; text-align: center;">取消</a>
+                </div>
+            </form>
+        </section>
+    </div>
+</body>
+</html>
