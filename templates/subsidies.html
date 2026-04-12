@@ -7,74 +7,102 @@
     <header class="hero-card">
         <div class="hero-copy">
             <span class="eyebrow">補助諮詢</span>
-            <h1>公家機關補助查詢</h1>
-            <p>此頁面列出常見公家機關補助公告，可透過分類與關鍵字檢索。</p>
+            <h1>💰 公家機關補助查詢</h1>
+            <p>此頁面列出常見公家機關補助公告，可透過分類與關鍵字檢索，找到適合您的補助方案。</p>
         </div>
         <div class="hero-actions">
             <a class="button" href="/user">返回使用者首頁</a>
-            <a class="button" href="/logout">登出</a>
+            <a class="button button-secondary" href="/logout">登出</a>
         </div>
     </header>
 
+    <!-- 統計資訊 -->
+    {% set total_subsidies = subsidies|length %}
+    {% set categories_set = subsidies|map(attribute='category')|unique|list %}
+    <div class="stats-grid">
+        <div class="stat-box">
+            <h3>總補助數</h3>
+            <div class="value">{{ total_subsidies }}</div>
+        </div>
+        <div class="stat-box">
+            <h3>補助分類</h3>
+            <div class="value">{{ categories_set|length }}</div>
+        </div>
+        <div class="stat-box">
+            <h3>參與機構</h3>
+            <div class="value">{{ subsidies|map(attribute='agency')|unique|list|length }}</div>
+        </div>
+    </div>
+
     <section class="card filters">
         <div class="card-title">
-            <h2>查詢條件</h2>
-            <span>依補助分類或關鍵字篩選資料。</span>
+            <h2 class="section-title">🔍 查詢條件</h2>
+            <p class="text-muted">依補助分類或關鍵字篩選資料</p>
         </div>
         <form class="filter-grid" method="get" action="/subsidies">
             <label>
-                類別
+                <span class="label-text">📂 類別</span>
                 <select name="category">
-                    <option value="">全部</option>
+                    <option value="">全部分類</option>
                     {% for cat in categories %}
                         <option value="{{ cat }}" {% if selected_category == cat %}selected{% endif %}>{{ cat }}</option>
                     {% endfor %}
                 </select>
             </label>
             <label>
-                關鍵字
+                <span class="label-text">🔎 關鍵字</span>
                 <input type="text" name="q" value="{{ keyword }}" placeholder="輸入補助名稱、機關、內容">
             </label>
-            <button type="submit">查詢</button>
+            <button type="submit" class="button">🔍 查詢</button>
         </form>
     </section>
 
     <section class="card table-card">
         <div class="card-title">
-            <h2>補助列表</h2>
-            <span>點選補助名稱查看詳細資訊與企劃書快速生成。</span>
+            <h2 class="section-title">📋 補助列表</h2>
+            <p class="text-muted">點選補助名稱查看詳細資訊與企劃書快速生成</p>
         </div>
-        <div class="table-wrapper">
-            <table>
-                <thead>
-                    <tr>
-                        <th>補助名稱</th>
-                        <th>機關</th>
-                        <th>類別</th>
-                        <th>截止日</th>
-                        <th>金額</th>
-                        <th>操作</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% if subsidies %}
+        
+        {% if subsidies %}
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width: 30%;">補助名稱</th>
+                            <th style="width: 20%;">機關</th>
+                            <th style="width: 15%;">類別</th>
+                            <th style="width: 15%;">截止日</th>
+                            <th style="width: 12%;">金額</th>
+                            <th style="width: 8%; text-align: center;">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
                         {% for subsidy in subsidies %}
                             <tr>
-                                <td><a href="/subsidies/{{ subsidy.id }}">{{ subsidy.title }}</a></td>
+                                <td>
+                                    <a href="/subsidies/{{ subsidy.id }}" class="subsidy-link">
+                                        <strong>{{ subsidy.title[:50] }}{% if subsidy.title|length > 50 %}...{% endif %}</strong>
+                                    </a>
+                                </td>
                                 <td>{{ subsidy.agency }}</td>
-                                <td>{{ subsidy.category }}</td>
+                                <td>
+                                    <span class="badge badge-info">{{ subsidy.category }}</span>
+                                </td>
                                 <td>{{ subsidy.deadline }}</td>
                                 <td>{{ subsidy.amount_range }}</td>
-                                <td><a class="button" href="/subsidies/{{ subsidy.id }}">查看</a></td>
+                                <td style="text-align: center;">
+                                    <a class="button btn-small" href="/subsidies/{{ subsidy.id }}" title="查看詳細">📄 查看</a>
+                                </td>
                             </tr>
                         {% endfor %}
-                    {% else %}
-                        <tr>
-                            <td colspan="6">目前沒有符合條件的補助資料。</td>
-                        </tr>
-                    {% endif %}
-                </tbody>
-            </table>
-        </div>
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="empty-state">
+                <p class="text-muted">目前沒有符合條件的補助資料</p>
+                <a href="/subsidies" class="button mt-3" style="margin-top: 1rem;">重置篩選條件</a>
+            </div>
+        {% endif %}
     </section>
 {% endblock %}
