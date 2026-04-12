@@ -1,0 +1,18 @@
+{
+  "activities": [
+    {
+      "id": "1d2dca38-945a-4ba1-b741-0643b9dba9eb",
+      "username": "admin",
+      "activity_name": "g",
+      "description": "ggggggg",
+      "category": "講座",
+      "start_date": "2026-04-12",
+      "end_date": "2026-04-14",
+      "location": "ggg",
+      "max_capacity": 200,
+      "registration_deadline": "2026-04-14",
+      "status": "進行中",
+      "created_at": "fb755e21"
+    }
+  ]
+}

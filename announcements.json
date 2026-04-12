@@ -1,0 +1,12 @@
+{
+  "announcements": [
+    {
+      "id": "d7929b2d-104a-41b9-a93c-58b306802bb7",
+      "title": "4/12伺服器維修",
+      "content": "維修",
+      "priority": "重要",
+      "status": "已發佈",
+      "created_at": "06cb2177"
+    }
+  ]
+}
