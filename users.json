@@ -68,6 +68,19 @@
         "contact_person": "",
         "address": ""
       }
+    },
+    {
+      "username": "122",
+      "password": "1be00341082e25c4e251ca6713e767f7131a2823b0052caf9c9b006ec512f6cb",
+      "role": "admin",
+      "org_profile": {
+        "org_name": "",
+        "org_id": "",
+        "member_count": "",
+        "volunteer_count": "",
+        "contact_person": "",
+        "address": ""
+      }
     }
   ]
 }
