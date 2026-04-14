@@ -1,0 +1,40 @@
+{
+  "subsidies": [
+    {
+      "id": 1,
+      "title": "社會福利機構經費補助",
+      "category": "社會福利",
+      "agency": "衛生福利部",
+      "subsidy_number": "社服補助-2026-001",
+      "deadline": "2026-06-30",
+      "amount_range": "最高 200 萬元",
+      "eligibility": "設立登記之社會福利團體，具備服務弱勢族群計畫。",
+      "description": "支持社會福利機構擴展長期照顧、社區關懷與高齡服務方案。",
+      "source_url": "https://www.mohw.gov.tw/cp-1234-56789.html"
+    },
+    {
+      "id": 2,
+      "title": "社區照顧服務補助",
+      "category": "長照與社區",
+      "agency": "地方政府社會局",
+      "subsidy_number": "長照補助-2026-082",
+      "deadline": "2026-07-15",
+      "amount_range": "每案最高 120 萬元",
+      "eligibility": "服務範圍含高齡、身障及弱勢家庭，具備社區整合能力。",
+      "description": "補助社區照顧據點及個案管理方案，提升在地服務可及性。",
+      "source_url": "https://society.example.gov.tw/subsidy/community-care"
+    },
+    {
+      "id": 3,
+      "title": "弱勢家庭支持計畫補助",
+      "category": "家庭與兒少",
+      "agency": "內政部",
+      "subsidy_number": "家庭補助-2026-019",
+      "deadline": "2026-08-10",
+      "amount_range": "補助金額依案別評估",
+      "eligibility": "針對低收入、單親與經濟弱勢家庭，提供 stabilize 支援方案。",
+      "description": "推動整合型家庭服務，包含生活扶助、教育陪伴與心理支持。",
+      "source_url": "https://www.moi.gov.tw/subsidy/family-support"
+    }
+  ]
+}
