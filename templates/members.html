@@ -7,54 +7,102 @@
     <header class="hero-card">
         <div class="hero-copy">
             <span class="eyebrow">成員管理</span>
-            <h1>管理者：{{ username or '管理者' }}</h1>
-            <p>在這裡您可以查看所有註冊帳號，並進行成員管理操作。</p>
+            <h1>🧑‍💼 管理者：{{ username or '管理者' }}</h1>
+            <p>在這裡您可以查看所有註冊帳號，進行成員管理操作，並有效管理平台使用者。</p>
         </div>
         <div class="hero-actions">
             <a class="button" href="/admin">返回管理首頁</a>
-            <a class="button" href="/logout">登出</a>
+            <a class="button button-secondary" href="/logout">登出</a>
         </div>
     </header>
 
+    <!-- 統計資訊 -->
+    {% set admin_count = users|selectattr('role', 'equalto', 'admin')|list|length %}
+    {% set user_count = users|selectattr('role', 'equalto', 'user')|list|length %}
+    <div class="stats-grid">
+        <div class="stat-box">
+            <h3>總成員數</h3>
+            <div class="value">{{ users|length }}</div>
+        </div>
+        <div class="stat-box">
+            <h3>管理員</h3>
+            <div class="value">{{ admin_count }}</div>
+        </div>
+        <div class="stat-box">
+            <h3>一般使用者</h3>
+            <div class="value">{{ user_count }}</div>
+        </div>
+    </div>
+
     <section class="card">
         {% if error %}
-            <div class="message error">{{ error }}</div>
+            <div class="message error">
+                <strong>❌ 錯誤</strong> — {{ error }}
+            </div>
         {% endif %}
         <div class="card-title">
-            <h2>註冊成員列表</h2>
-            <span>點選操作按鈕即可編輯或刪除成員。</span>
+            <h2 class="section-title">📋 註冊成員列表</h2>
+            <p class="text-muted">點選操作按鈕即可編輯或刪除成員。</p>
         </div>
-        <div class="table-wrapper">
-            <table>
-                <thead>
-                    <tr>
-                        <th>帳號</th>
-                        <th>身分</th>
-                        <th>操作</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for member in users %}
+        
+        {% if users %}
+            <div class="table-wrapper">
+                <table>
+                    <thead>
                         <tr>
-                            <td>{{ member.username }}</td>
-                            <td>{{ member.role }}</td>
-                            <td>
-                                {% if member.username != username %}
-                                    <form method="post" action="/admin/members/delete/{{ member.username }}" style="display:inline;">
-                                        <button type="submit" class="button">刪除</button>
-                                    </form>
-                                    <form method="post" action="/admin/members/role/{{ member.username }}" style="display:inline; margin-left: 8px;">
-                                        <input type="hidden" name="new_role" value="{{ 'user' if member.role == 'admin' else 'admin' }}">
-                                        <button type="submit" class="button">轉為 {{ '使用者' if member.role == 'admin' else '管理者' }}</button>
-                                    </form>
-                                {% else %}
-                                    <span>目前登入</span>
-                                {% endif %}
-                            </td>
+                            <th>#</th>
+                            <th>帳號</th>
+                            <th>身分</th>
+                            <th style="text-align: center;">操作</th>
                         </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
+                    </thead>
+                    <tbody>
+                        {% for member in users %}
+                            <tr>
+                                <td class="text-muted">{{ loop.index }}</td>
+                                <td>
+                                    <span class="font-semibold">{{ member.username }}</span>
+                                    {% if member.username == username %}
+                                        <span class="badge badge-info" style="margin-left: 0.5rem;">目前登入</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if member.role == 'admin' %}
+                                        <span class="badge badge-danger">👨‍💼 管理員</span>
+                                    {% else %}
+                                        <span class="badge badge-success">👤 使用者</span>
+                                    {% endif %}
+                                </td>
+                                <td style="text-align: center;">
+                                    {% if member.username != username %}
+                                        <div style="display: flex; gap: 0.5rem; justify-content: center;">
+                                            <form method="post" action="/admin/members/role/{{ member.username }}" style="display:inline;">
+                                                <input type="hidden" name="new_role" value="{{ 'user' if member.role == 'admin' else 'admin' }}">
+                                                <button type="submit" class="button btn-small" title="轉換身分">
+                                                    {% if member.role == 'admin' %}
+                                                        ⬇️ 降級
+                                                    {% else %}
+                                                        ⬆️ 升級
+                                                    {% endif %}
+                                                </button>
+                                            </form>
+                                            <form method="post" action="/admin/members/delete/{{ member.username }}" style="display:inline;" onsubmit="return confirm('確定要刪除此成員嗎？');">
+                                                <button type="submit" class="button button-danger btn-small">🗑️ 刪除</button>
+                                            </form>
+                                        </div>
+                                    {% else %}
+                                        <span class="text-muted text-sm">目前登入中</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="empty-state">
+                <p class="text-muted">暫無成員資料</p>
+            </div>
+        {% endif %}
     </section>
 {% endblock %}

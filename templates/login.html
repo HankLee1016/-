@@ -1,29 +1,41 @@
-{% extends 'base.html' %}
+{% extends 'auth-base.html' %}
 
 {% block title %}登入 — 社福資源平台{% endblock %}
 
 {% block content %}
+    <div class="page-bg"></div>
     <header class="hero-card">
         <div class="hero-copy">
-            <span class="eyebrow">登入</span>
-            <h1>帳號登入</h1>
-            <p>請輸入帳號與密碼。</p>
+            <span class="eyebrow">使用者登入</span>
+            <h1>🔓 返回您的帳號</h1>
+            <p>輸入帳號和密碼即可登入，繼續您的社福企劃工作。</p>
         </div>
     </header>
 
-    <section class="card">
+    <section class="card" style="max-width: 500px; margin: 0 auto;">
         {% if error %}
-            <div class="message error">{{ error }}</div>
+            <div class="message error">❌ {{ error }}</div>
         {% endif %}
+        
+        <div class="card-title" style="border-bottom: 2px solid var(--border); padding-bottom: 1rem; margin-bottom: 1.5rem;">
+            <h2 class="section-title" style="margin: 0 0 0.5rem 0;">登入至您的帳號</h2>
+        </div>
+
         <form class="auth-form" method="post" action="/login">
-            <label>帳號
-                <input type="text" name="username" placeholder="請輸入帳號" required>
+            <label>
+                <span class="label-text font-semibold">👤 帳號</span>
+                <input type="text" name="username" placeholder="輸入您的帳號" required autofocus>
             </label>
-            <label>密碼
-                <input type="password" name="password" placeholder="請輸入密碼" required>
+            <label>
+                <span class="label-text font-semibold">🔐 密碼</span>
+                <input type="password" name="password" placeholder="輸入您的密碼" required>
             </label>
-            <button type="submit">登入</button>
+            <button type="submit" class="button" style="width: 100%; margin-top: 1rem;">🚀 登入帳號</button>
         </form>
-        <p>還沒有帳號？<a href="/register">點此註冊</a></p>
+
+        <div style="text-align: center; margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--border);">
+            <p style="color: var(--text-secondary); margin: 0 0 0.5rem 0;">還沒有帳號？</p>
+            <a href="/register" class="button button-secondary" style="width: 100%;">📝 立即註冊</a>
+        </div>
     </section>
 {% endblock %}
