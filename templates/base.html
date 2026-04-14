@@ -1,39 +1,73 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{% block title %}社福資源平台{% endblock %}</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
-  {% block head_extra %}{% endblock %}
-  <style>
-    /* small helper for container spacing */
-    .main-container{width: min(1180px, calc(100% - 32px)); margin: 0 auto; padding-top: 24px;}
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}社福資源平台{% endblock %}</title>
+
+    <!-- CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+
+    {% block head_extra %}{% endblock %}
+
+    <style>
+        .main-container {
+            width: min(1180px, calc(100% - 32px));
+            margin: 0 auto;
+            padding-top: 24px;
+        }
+    </style>
 </head>
+
 <body class="app-base">
-  <div class="page-bg"></div>
-  <header style="background:transparent;padding:12px 24px;display:flex;align-items:center;justify-content:space-between;">
-    <a href="/user" style="text-decoration:none;color:var(--text-primary);font-weight:700;">🌱 社福 AI 平台</a>
-    <nav style="display:flex;gap:12px;align-items:center;">
-      {% if session.get('username') %}
-        <a class="button" href="/user">使用者專區</a>
-        <a class="button" href="/logout">登出</a>
-      {% else %}
-        <a class="button" href="/login">登入</a>
-        <a class="button" href="/register">註冊</a>
-      {% endif %}
+    <div class="page-bg"></div>
+
+    <!-- Navbar -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="/" class="nav-brand">🌱 社福資源平台</a>
+
+            <div class="nav-links">
+                {% if session.get('username') %}
+                    <span class="nav-user">{{ session.get('username') }}</span>
+
+                    {% if session.get('role') == 'admin' %}
+                        <a href="/admin">管理後台</a>
+                        <a href="/admin/members">成員管理</a>
+                        <a href="/admin/activities">活動管理</a>
+                        <a href="/admin/services">服務管理</a>
+                        <a href="/admin/contents">內容管理</a>
+                        <a href="/admin/announcements">公告管理</a>
+                        <a href="/donations">捐款資料</a>
+                    {% else %}
+                        <a href="/user">個案企劃</a>
+                        <a href="/subsidies">補助資源</a>
+                        <a href="/user/profile">編輯資料</a>
+                        <a href="/user/assistant">AI助理</a>
+                    {% endif %}
+
+                    <a href="/logout">登出</a>
+                {% else %}
+                    <a href="/login">登入</a>
+                    <a href="/register">註冊</a>
+                {% endif %}
+            </div>
+        </div>
     </nav>
-  </header>
 
-  <main class="main-container">
-    {% block content %}{% endblock %}
-  </main>
+    <!-- Main -->
+    <main class="main-container">
+        {% block content %}{% endblock %}
+    </main>
 
-  <footer style="text-align:center;padding:28px 0;color:var(--text-secondary);font-size:14px;">
-    © {{ (2026) }} 社福資源平台
-  </footer>
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-content">
+            <p>&copy; 2026 社福資源平台</p>
+        </div>
+    </footer>
 
-  {% block scripts %}{% endblock %}
+    {% block scripts %}{% endblock %}
 </body>
 </html>

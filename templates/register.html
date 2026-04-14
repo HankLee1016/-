@@ -1,41 +1,65 @@
-{% extends 'base.html' %}
+{% extends 'auth-base.html' %}
 
 {% block title %}註冊 — 社福資源平台{% endblock %}
 
 {% block content %}
+    <div class="page-bg"></div>
     <header class="hero-card">
         <div class="hero-copy">
-            <span class="eyebrow">註冊</span>
-            <h1>建立新帳號</h1>
-            <p>一般使用者可直接註冊，管理者註冊需要代碼。</p>
+            <span class="eyebrow">新用戶註冊</span>
+            <h1>📝 建立您的帳號</h1>
+            <p>初次使用？快速註冊開始享受我們的平台功能，助力社福工作。</p>
         </div>
     </header>
 
-    <section class="card">
+    <section class="card" style="max-width: 500px; margin: 0 auto;">
         {% if error %}
-            <div class="message error">{{ error }}</div>
+            <div class="message error">❌ {{ error }}</div>
         {% endif %}
+
+        <div class="card-title" style="border-bottom: 2px solid var(--border); padding-bottom: 1rem; margin-bottom: 1.5rem;">
+            <h2 class="section-title" style="margin: 0 0 0.5rem 0;">建立新帳號</h2>
+        </div>
+
         <form class="auth-form" method="post" action="/register">
-            <label>帳號
-                <input type="text" name="username" placeholder="請輸入帳號" required>
+            <label>
+                <span class="label-text font-semibold">👤 帳號</span>
+                <input type="text" name="username" placeholder="輸入唯一的帳號名稱" required>
+                <small style="color: var(--text-secondary); margin-top: 0.25rem; display: block;">帳號只能包含字母、數字和下劃線</small>
             </label>
-            <label>密碼
-                <input type="password" name="password" placeholder="請輸入密碼" required>
+
+            <label>
+                <span class="label-text font-semibold">🔐 密碼</span>
+                <input type="password" name="password" placeholder="建議設定複雜密碼以保護帳戶安全" required>
+                <small style="color: var(--text-secondary); margin-top: 0.25rem; display: block;">至少 6 個字符</small>
             </label>
-            <label>確認密碼
-                <input type="password" name="confirm_password" placeholder="再次輸入密碼" required>
+
+            <label>
+                <span class="label-text font-semibold">✓ 確認密碼</span>
+                <input type="password" name="confirm_password" placeholder="再次輸入密碼確認" required>
             </label>
-            <label>身分
-                <select name="role">
-                    <option value="user">一般使用者</option>
+
+            <label>
+                <span class="label-text font-semibold">👤 身分選擇</span>
+                <select name="role" required>
+                    <option value="user">一般使用者（社福團體）</option>
                     <option value="admin">管理者</option>
                 </select>
+                <small style="color: var(--text-secondary); margin-top: 0.25rem; display: block;">選擇您在系統中的角色</small>
             </label>
-            <label>管理者註冊代碼
-                <input type="text" name="admin_code" placeholder="僅管理者填寫">
+
+            <label>
+                <span class="label-text font-semibold">🔑 管理者註冊代碼</span>
+                <input type="text" name="admin_code" placeholder="僅當您選擇「管理者」身分時需要填寫">
+                <small style="color: var(--text-secondary); margin-top: 0.25rem; display: block;">如果您沒有代碼，請聯絡系統管理員</small>
             </label>
-            <button type="submit">註冊</button>
+
+            <button type="submit" class="button" style="width: 100%; margin-top: 1rem;">🚀 完成註冊</button>
         </form>
-        <p>已經有帳號？<a href="/login">點此登入</a></p>
+
+        <div style="text-align: center; margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--border);">
+            <p style="color: var(--text-secondary); margin: 0 0 0.5rem 0;">已經有帳號？</p>
+            <a href="/login" class="button button-secondary" style="width: 100%;">🔓 點此登入</a>
+        </div>
     </section>
 {% endblock %}

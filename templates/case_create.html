@@ -1,128 +1,61 @@
-<!DOCTYPE html>
-<html lang="zh-TW">
-<head>
-    <meta charset="UTF-8">
-    <title>新增個案</title>
-    <link rel="stylesheet" href="/static/css/index.css">
-    <style>
-        .form-group {
-            margin-bottom: 24px;
-        }
-        label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 500;
-            color: var(--text-primary);
-        }
-        input[type="text"],
-        textarea,
-        select {
-            width: 100%;
-            padding: 12px;
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            font-family: 'Noto Sans TC', 'Segoe UI', Arial, sans-serif;
-            font-size: 1rem;
-            color: var(--text-primary);
-            background-color: var(--surface);
-            transition: border-color 0.2s;
-        }
-        input[type="text"]:focus,
-        textarea:focus,
-        select:focus {
-            outline: none;
-            border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(47, 128, 237, 0.1);
-        }
-        textarea {
-            resize: vertical;
-            min-height: 120px;
-        }
-        .form-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 24px;
-        }
-        @media (max-width: 640px) {
-            .form-row {
-                grid-template-columns: 1fr;
-            }
-        }
-        .form-actions {
-            display: flex;
-            gap: 12px;
-            justify-content: flex-start;
-        }
-        .form-actions .button {
-            padding: 10px 20px;
-            text-decoration: none;
-            cursor: pointer;
-        }
-        .error-message {
-            background-color: #ffebee;
-            color: #c62828;
-            padding: 12px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-        }
-    </style>
-</head>
-<body>
+{% extends 'base.html' %}
+
+{% block title %}新增個案 — 社福資源平台{% endblock %}
+
+{% block content %}
     <div class="page-bg"></div>
-    <div class="container">
-        <header class="hero-card">
-            <div class="hero-copy">
-                <span class="eyebrow">個案管理</span>
-                <h1>新增個案</h1>
-                <p>填寫以下資訊來創建一個新的個案。</p>
+    <header class="hero-card">
+        <div class="hero-copy">
+            <span class="eyebrow">個案管理</span>
+            <h1>➕ 新增個案</h1>
+            <p>填寫以下資訊來創建一個新的個案，系統將協助追蹤服務進度。</p>
+        </div>
+        <div class="hero-actions">
+            <a class="button button-secondary" href="/admin/cases">返回個案列表</a>
+            <a class="button button-secondary" href="/logout">登出</a>
+        </div>
+    </header>
+
+    <section class="card">
+        <div class="card-title">
+            <h2 class="section-title">📋 個案基本資訊</h2>
+            <p class="text-muted">填寫個案詳細資料</p>
+        </div>
+
+        {% if error %}
+            <div class="message error">❌ {{ error }}</div>
+        {% endif %}
+
+        <form method="post" action="/admin/cases/create">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+                <label>
+                    <span class="label-text font-semibold">📝 個案名稱 <span style="color: #ef4444;">*</span></span>
+                    <input type="text" name="case_name" required placeholder="輸入個案名稱">
+                </label>
+                <label>
+                    <span class="label-text font-semibold">👤 成員名稱 <span style="color: #ef4444;">*</span></span>
+                    <input type="text" name="member_name" required placeholder="輸入成員名稱">
+                </label>
             </div>
-            <div class="hero-actions">
-                <a class="button" href="/admin/cases">返回個案列表</a>
-                <a class="button" href="/logout">登出</a>
+
+            <label style="margin-top: 1.5rem;">
+                <span class="label-text font-semibold">📄 問題描述</span>
+                <textarea name="issue_description" placeholder="詳細描述此個案的主要問題和背景..."></textarea>
+            </label>
+
+            <label style="margin-top: 1.5rem;">
+                <span class="label-text font-semibold">🏷️ 狀態</span>
+                <select name="status">
+                    <option value="待處理">⏳ 待處理</option>
+                    <option value="進行中" selected>🔵 進行中</option>
+                    <option value="已結案">✅ 已結案</option>
+                </select>
+            </label>
+
+            <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
+                <button type="submit" class="button">💾 保存個案</button>
+                <a href="/admin/cases" class="button button-secondary">❌ 取消</a>
             </div>
-        </header>
-
-        <section class="card">
-            <div class="card-title">
-                <h2>個案資訊表單</h2>
-            </div>
-
-            {% if error %}
-            <div class="error-message">{{ error }}</div>
-            {% endif %}
-
-            <form method="post" action="/admin/cases/create">
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="case_name">個案名稱 <span style="color: red;">*</span></label>
-                        <input type="text" id="case_name" name="case_name" required placeholder="輸入個案名稱">
-                    </div>
-                    <div class="form-group">
-                        <label for="member_name">成員名稱 <span style="color: red;">*</span></label>
-                        <input type="text" id="member_name" name="member_name" required placeholder="輸入成員名稱">
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label for="issue_description">問題描述</label>
-                    <textarea id="issue_description" name="issue_description" placeholder="詳細描述此個案的主要問題和背景..."></textarea>
-                </div>
-
-                <div class="form-group">
-                    <label for="status">狀態</label>
-                    <select id="status" name="status">
-                        <option value="待處理">待處理</option>
-                        <option value="進行中" selected>進行中</option>
-                        <option value="已結案">已結案</option>
-                    </select>
-                </div>
-
-                <div class="form-actions">
-                    <button type="submit" class="button" style="background-color: var(--primary); color: white; border: none; cursor: pointer;">保存個案</button>
-                    <a class="button" href="/admin/cases" style="background-color: var(--text-secondary); color: white; text-align: center;">取消</a>
-                </div>
-            </form>
-        </section>
-    </div>
-</body>
-</html>
+        </form>
+    </section>
+{% endblock %}
