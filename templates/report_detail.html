@@ -1,0 +1,222 @@
+{% extends 'base.html' %}
+
+{% block title %}報告詳情 - 系統{% endblock %}
+
+{% block content %}
+<div class="main-container">
+    <div class="page-header">
+        <h1>{{ report.report_name or '報告' }}</h1>
+        <div class="page-actions">
+            <a href="/analytics/reports" class="btn btn-secondary">返回列表</a>
+            {% if report.file_path %}
+            <a href="/analytics/reports/{{ report.id }}/download" class="btn btn-primary">下載</a>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- 報告信息 -->
+    <div class="card">
+        <div class="report-info">
+            <div class="info-group">
+                <label>報告類型</label>
+                <input type="text" class="form-control" value="{{ report.report_type or '統計' }}" readonly>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <div class="info-group">
+                    <label>開始日期</label>
+                    <input type="text" class="form-control" value="{{ report.start_date or '不適用' }}" readonly>
+                </div>
+
+                <div class="info-group">
+                    <label>結束日期</label>
+                    <input type="text" class="form-control" value="{{ report.end_date or '不適用' }}" readonly>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <div class="info-group">
+                    <label>生成者</label>
+                    <input type="text" class="form-control" value="{{ report.generated_by or '未知' }}" readonly>
+                </div>
+
+                <div class="info-group">
+                    <label>生成日期</label>
+                    <input type="text" class="form-control" value="{{ report.created_at or '未知' }}" readonly>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 報告數據 -->
+    <div class="card" style="margin-top: 2rem;">
+        <h2>報告數據</h2>
+        <div id="reportDataTable" style="margin-top: 1rem;">
+            <div style="text-align: center; padding: 2rem; color: var(--text-secondary);">
+                載入中...
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    padding: 0 1rem;
+}
+
+.page-header h1 {
+    margin: 0;
+}
+
+.page-actions {
+    display: flex;
+    gap: 1rem;
+}
+
+.btn {
+    padding: 0.6rem 1.2rem;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.2s;
+    text-decoration: none;
+}
+
+.btn-primary {
+    background: var(--primary);
+    color: white;
+}
+
+.btn-primary:hover {
+    opacity: 0.9;
+    transform: translateY(-1px);
+}
+
+.btn-secondary {
+    background: transparent;
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+}
+
+.btn-secondary:hover {
+    background: var(--surface-base);
+    border-color: var(--primary);
+    color: var(--primary);
+}
+
+.card {
+    background: var(--surface-soft);
+    border-radius: 12px;
+    padding: 1.5rem;
+    border: 1px solid var(--border-color);
+}
+
+.card h2 {
+    margin: 0 0 1rem 0;
+    color: var(--text-primary);
+    font-size: 1.2rem;
+}
+
+.report-info {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.info-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.info-group label {
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+    color: var(--text-primary);
+    font-size: 0.95rem;
+}
+
+.form-control {
+    padding: 0.6rem 0.8rem;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background: var(--surface-base);
+    color: var(--text-primary);
+    font-size: 0.95rem;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1rem;
+}
+
+th {
+    background: var(--surface-base);
+    padding: 0.8rem;
+    text-align: left;
+    font-weight: 600;
+    color: var(--text-primary);
+    border-bottom: 2px solid var(--border-color);
+}
+
+td {
+    padding: 0.8rem;
+    border-bottom: 1px solid var(--border-color);
+    color: var(--text-secondary);
+}
+
+tr:hover {
+    background: var(--surface-base);
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const reportData = {{ report.report_data | tojson if report.report_data else 'null' }};
+    
+    if (!reportData) {
+        document.getElementById('reportDataTable').innerHTML = 
+            '<div style="text-align: center; padding: 2rem; color: var(--text-secondary);">暫無數據</div>';
+        return;
+    }
+    
+    // 如果是數組，顯示為表格
+    if (Array.isArray(reportData) && reportData.length > 0) {
+        const headers = Object.keys(reportData[0]);
+        
+        let html = '<table><thead><tr>';
+        headers.forEach(header => {
+            html += `<th>${header}</th>`;
+        });
+        html += '</tr></thead><tbody>';
+        
+        reportData.forEach(row => {
+            html += '<tr>';
+            headers.forEach(header => {
+                const value = row[header] || '-';
+                html += `<td>${value}</td>`;
+            });
+            html += '</tr>';
+        });
+        
+        html += '</tbody></table>';
+        document.getElementById('reportDataTable').innerHTML = html;
+    } else {
+        // 如果是對象，顯示為key-value
+        let html = '<div style="padding: 1rem;">';
+        Object.entries(reportData).forEach(([key, value]) => {
+            html += `<div style="margin-bottom: 1rem;">
+                <strong>${key}:</strong> ${JSON.stringify(value)}
+            </div>`;
+        });
+        html += '</div>';
+        document.getElementById('reportDataTable').innerHTML = html;
+    }
+});
+</script>
+{% endblock %}
