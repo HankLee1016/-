@@ -23,19 +23,19 @@
 <div class="stats-grid">
     <div class="stat-box">
         <h3>活動總數</h3>
-        <div class="value">12</div>
+        <div class="value">{{ activities_count }}</div>
     </div>
     <div class="stat-box">
         <h3>註冊成員</h3>
-        <div class="value">48</div>
+        <div class="value">{{ members_count }}</div>
     </div>
     <div class="stat-box">
         <h3>待處理個案</h3>
-        <div class="value">5</div>
+        <div class="value">{{ pending_cases_count }}</div>
     </div>
     <div class="stat-box">
         <h3>系統公告</h3>
-        <div class="value">8</div>
+        <div class="value">{{ announcements_count }}</div>
     </div>
 </div>
 
@@ -92,6 +92,36 @@
             <h3>📊 志願者管理</h3>
             <p>管理志願者排班、時數記錄及評估。</p>
             <a class="button" href="/admin/volunteer">進入志願者管理</a>
+        </div>
+
+        <div class="feature-card">
+            <h3>📈 分析儀表板</h3>
+            <p>查看系統統計數據、生成報告和分析。</p>
+            <a class="button" href="/analytics/dashboard">進入分析</a>
+        </div>
+
+        <div class="feature-card">
+            <h3>🔔 通知中心</h3>
+            <p>管理系統通知和提醒，保持信息同步。</p>
+            <a class="button" href="/notifications">進入通知</a>
+        </div>
+
+        <div class="feature-card">
+            <h3>🔍 進階搜尋</h3>
+            <p>搜尋個案和活動，使用篩選器快速查找。</p>
+            <a class="button" href="/search/cases">搜尋個案</a>
+        </div>
+
+        <div class="feature-card">
+            <h3>💾 備份管理</h3>
+            <p>建立資料備份、還原和管理備份記錄。</p>
+            <a class="button" href="/admin/backups">進入備份管理</a>
+        </div>
+
+        <div class="feature-card">
+            <h3>🔐 權限管理</h3>
+            <p>設置用戶權限、控制系統訪問權限。</p>
+            <a class="button" href="/admin/permissions">進入權限管理</a>
         </div>
     </div>
 </section>
