@@ -1,0 +1,264 @@
+{% extends 'base.html' %}
+
+{% block title %}分析儀表板 - 系統{% endblock %}
+
+{% block content %}
+<div class="main-container">
+    <div class="page-header">
+        <h1>分析儀表板</h1>
+        <div class="page-actions">
+            <a href="{{ url_for('features.reports_list') }}" class="btn btn-secondary">查看報告</a>
+            <button onclick="generateNewReport()" class="btn btn-primary">生成報告</button>
+        </div>
+    </div>
+
+    <!-- 快速統計 -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-icon" style="background-color: #4CAF50;">📊</div>
+            <div class="stat-content">
+                <div class="stat-value">{{ stats.activities_count }}</div>
+                <div class="stat-label">活動</div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon" style="background-color: #2196F3;">👥</div>
+            <div class="stat-content">
+                <div class="stat-value">{{ stats.members_count }}</div>
+                <div class="stat-label">成員</div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon" style="background-color: #FF9800;">⚠️</div>
+            <div class="stat-content">
+                <div class="stat-value">{{ stats.pending_cases_count }}</div>
+                <div class="stat-label">待處理個案</div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon" style="background-color: #9C27B0;">📢</div>
+            <div class="stat-content">
+                <div class="stat-value">{{ stats.announcements_count }}</div>
+                <div class="stat-label">公告</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 數據概覽 -->
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin: 2rem 0;">
+        <div class="card">
+            <h2>活動類型分佈</h2>
+            <div id="activityChart" style="min-height: 300px; display: flex; align-items: center; justify-content: center; color: var(--text-secondary);">
+                載入中...
+            </div>
+        </div>
+        <div class="card">
+            <h2>個案狀態分佈</h2>
+            <div id="caseChart" style="min-height: 300px; display: flex; align-items: center; justify-content: center; color: var(--text-secondary);">
+                載入中...
+            </div>
+        </div>
+    </div>
+
+    <!-- 最近活動 -->
+    <div class="card" style="margin-top: 2rem;">
+        <h2>最近報告</h2>
+        <div id="recentReports" style="margin-top: 1rem;">
+            <div style="text-align: center; padding: 2rem; color: var(--text-secondary);">
+                載入中...
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    padding: 0 1rem;
+}
+
+.page-actions {
+    display: flex;
+    gap: 1rem;
+}
+
+.page-header h1 {
+    margin: 0;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.stat-card {
+    background: var(--surface-soft);
+    border-radius: 12px;
+    padding: 1.5rem;
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    border: 1px solid var(--border-color);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.stat-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+}
+
+.stat-value {
+    font-size: 1.8rem;
+    font-weight: bold;
+    color: var(--text-primary);
+}
+
+.stat-label {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    margin-top: 0.25rem;
+}
+
+.card {
+    background: var(--surface-soft);
+    border-radius: 12px;
+    padding: 1.5rem;
+    border: 1px solid var(--border-color);
+}
+
+.card h2 {
+    margin: 0 0 1rem 0;
+    font-size: 1.3rem;
+    color: var(--text-primary);
+}
+</style>
+
+<script>
+async function loadAnalytics() {
+    try {
+        const response = await fetch('/api/stats/summary');
+        const data = await response.json();
+        
+        // 更新圖表
+        displayActivityChart(data.activity_distribution || {});
+        displayCaseChart(data.case_distribution || {});
+        displayRecentReports(data.recent_reports || []);
+    } catch (error) {
+        console.error('載入分析數據失敗:', error);
+        document.getElementById('activityChart').innerHTML = '<p style="color: var(--error-color);">載入失敗</p>';
+    }
+}
+
+function displayActivityChart(distribution) {
+    const chart = document.getElementById('activityChart');
+    if (!distribution || Object.keys(distribution).length === 0) {
+        chart.innerHTML = '<p style="color: var(--text-secondary);">暫無數據</p>';
+        return;
+    }
+    
+    const items = Object.entries(distribution)
+        .map(([type, count]) => `<div style="padding: 0.5rem 0;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 0.3rem;">
+                <span>${type}</span>
+                <strong>${count}</strong>
+            </div>
+            <div style="background: var(--border-color); height: 8px; border-radius: 4px; overflow: hidden;">
+                <div style="background: linear-gradient(90deg, #4CAF50, #8BC34A); height: 100%; width: ${Math.min(count * 10, 100)}%;"></div>
+            </div>
+        </div>`)
+        .join('');
+    
+    chart.innerHTML = items;
+}
+
+function displayCaseChart(distribution) {
+    const chart = document.getElementById('caseChart');
+    if (!distribution || Object.keys(distribution).length === 0) {
+        chart.innerHTML = '<p style="color: var(--text-secondary);">暫無數據</p>';
+        return;
+    }
+    
+    const statusColors = {
+        '待處理': '#FF9800',
+        '進行中': '#2196F3',
+        '已完成': '#4CAF50',
+        '已關閉': '#9E9E9E'
+    };
+    
+    const items = Object.entries(distribution)
+        .map(([status, count]) => {
+            const color = statusColors[status] || '#757575';
+            return `<div style="padding: 0.5rem 0;">
+                <div style="display: flex; align-items: center; margin-bottom: 0.3rem;">
+                    <span style="width: 12px; height: 12px; background: ${color}; border-radius: 3px; margin-right: 0.5rem;"></span>
+                    <span>${status}</span>
+                    <strong style="margin-left: auto;">${count}</strong>
+                </div>
+            </div>`;
+        })
+        .join('');
+    
+    chart.innerHTML = items;
+}
+
+function displayRecentReports(reports) {
+    const container = document.getElementById('recentReports');
+    if (!reports || reports.length === 0) {
+        container.innerHTML = '<p style="text-align: center; padding: 2rem; color: var(--text-secondary);">暫無報告</p>';
+        return;
+    }
+    
+    const items = reports.slice(0, 5).map(report => `
+        <div style="padding: 1rem; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <div style="font-weight: 500; color: var(--text-primary);">${report.title || '報告'}</div>
+                <div style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 0.25rem;">
+                    ${new Date(report.created_at).toLocaleDateString('zh-HK', {year: 'numeric', month: '2-digit', day: '2-digit'})}
+                </div>
+            </div>
+            <a href="${report.id}" class="btn btn-sm btn-secondary">查看</a>
+        </div>
+    `).join('');
+    
+    container.innerHTML = items || '<p style="text-align: center; padding: 2rem; color: var(--text-secondary);">暫無報告</p>';
+}
+
+function generateNewReport() {
+    const title = prompt('請輸入報告標題:');
+    if (!title) return;
+    
+    fetch('/api/stats/generate-report', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({title})
+    }).then(r => r.json())
+      .then(data => {
+          if (data.success) {
+              alert('報告已生成');
+              loadAnalytics();
+          } else {
+              alert('生成失敗: ' + (data.error || '未知錯誤'));
+          }
+      })
+      .catch(e => alert('錯誤: ' + e.message));
+}
+
+// 頁面載入時
+document.addEventListener('DOMContentLoaded', loadAnalytics);
+</script>
+{% endblock %}
