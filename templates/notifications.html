@@ -1,0 +1,281 @@
+{% extends 'base.html' %}
+
+{% block title %}通知 - 系統{% endblock %}
+
+{% block content %}
+<div class="main-container">
+    <div class="page-header">
+        <h1>通知</h1>
+        <button onclick="markAllAsRead()" class="btn btn-secondary" id="markAllBtn">標記全部為已讀</button>
+    </div>
+
+    <!-- 通知篩選 -->
+    <div class="card" style="margin-bottom: 2rem;">
+        <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+            <button class="filter-btn active" onclick="filterNotifications('all')">全部</button>
+            <button class="filter-btn" onclick="filterNotifications('unread')">未讀</button>
+            <button class="filter-btn" onclick="filterNotifications('read')">已讀</button>
+        </div>
+    </div>
+
+    <!-- 通知列表 -->
+    <div id="notificationsList" class="notifications-list">
+        <div style="text-align: center; padding: 3rem 1rem; color: var(--text-secondary);">
+            載入中...
+        </div>
+    </div>
+</div>
+
+<style>
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    padding: 0 1rem;
+}
+
+.page-header h1 {
+    margin: 0;
+}
+
+.card {
+    background: var(--surface-soft);
+    border-radius: 12px;
+    padding: 1.5rem;
+    border: 1px solid var(--border-color);
+}
+
+.filter-btn {
+    padding: 0.6rem 1.2rem;
+    border: 1px solid var(--border-color);
+    background: transparent;
+    border-radius: 6px;
+    cursor: pointer;
+    color: var(--text-secondary);
+    transition: all 0.2s;
+}
+
+.filter-btn:hover {
+    border-color: var(--primary);
+    color: var(--primary);
+}
+
+.filter-btn.active {
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
+}
+
+.notifications-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.notification-item {
+    background: var(--surface-soft);
+    border-radius: 12px;
+    padding: 1.5rem;
+    border-left: 4px solid var(--border-color);
+    transition: all 0.2s;
+}
+
+.notification-item:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.notification-item.unread {
+    border-left-color: var(--primary);
+    background: rgba(var(--primary-rgb), 0.05);
+}
+
+.notification-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 0.5rem;
+}
+
+.notification-title {
+    font-weight: 600;
+    color: var(--text-primary);
+    font-size: 1rem;
+}
+
+.notification-time {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+.notification-message {
+    color: var(--text-secondary);
+    margin: 0.5rem 0;
+    line-height: 1.5;
+}
+
+.notification-actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 1rem;
+}
+
+.notification-actions button {
+    padding: 0.4rem 0.8rem;
+    border: 1px solid var(--border-color);
+    background: transparent;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    transition: all 0.2s;
+}
+
+.notification-actions button:hover {
+    background: var(--surface-base);
+    border-color: var(--primary);
+    color: var(--primary);
+}
+
+.unread-badge {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    background: var(--primary);
+    border-radius: 50%;
+    margin-left: 0.5rem;
+}
+</style>
+
+<script>
+let allNotifications = [];
+let currentFilter = 'all';
+
+async function loadNotifications() {
+    try {
+        const response = await fetch('/api/notifications');
+        const data = await response.json();
+        
+        allNotifications = data.notifications || [];
+        displayNotifications();
+    } catch (error) {
+        console.error('載入通知失敗:', error);
+        document.getElementById('notificationsList').innerHTML = 
+            '<div style="text-align: center; padding: 2rem; color: var(--error-color);">載入失敗</div>';
+    }
+}
+
+function displayNotifications() {
+    const container = document.getElementById('notificationsList');
+    
+    let filtered = allNotifications;
+    if (currentFilter === 'unread') {
+        filtered = allNotifications.filter(n => !n.is_read);
+    } else if (currentFilter === 'read') {
+        filtered = allNotifications.filter(n => n.is_read);
+    }
+    
+    if (filtered.length === 0) {
+        container.innerHTML = '<div style="text-align: center; padding: 3rem 1rem; color: var(--text-secondary);">暫無通知</div>';
+        updateMarkAllBtn();
+        return;
+    }
+    
+    const html = filtered.map(notification => `
+        <div class="notification-item ${notification.is_read ? '' : 'unread'}" id="notif-${notification.id}">
+            <div class="notification-header">
+                <div style="display: flex; align-items: center;">
+                    <div class="notification-title">${notification.title || '通知'}</div>
+                    ${!notification.is_read ? '<span class="unread-badge"></span>' : ''}
+                </div>
+                <div class="notification-time">${formatTime(notification.created_at)}</div>
+            </div>
+            <div class="notification-message">${notification.message || ''}</div>
+            <div class="notification-actions">
+                ${!notification.is_read ? `<button onclick="markAsRead('${notification.id}')">標記為已讀</button>` : ''}
+                <button onclick="deleteNotification('${notification.id}')">刪除</button>
+            </div>
+        </div>
+    `).join('');
+    
+    container.innerHTML = html;
+    updateMarkAllBtn();
+}
+
+function filterNotifications(filter) {
+    currentFilter = filter;
+    document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+    event.target.classList.add('active');
+    displayNotifications();
+}
+
+async function markAsRead(notificationId) {
+    try {
+        const response = await fetch(`/api/notifications/${notificationId}/read`, { method: 'POST' });
+        if (response.ok) {
+            const notification = allNotifications.find(n => n.id == notificationId);
+            if (notification) {
+                notification.is_read = true;
+                displayNotifications();
+            }
+        }
+    } catch (error) {
+        console.error('標記失敗:', error);
+    }
+}
+
+async function markAllAsRead() {
+    const unread = allNotifications.filter(n => !n.is_read);
+    if (unread.length === 0) {
+        alert('沒有未讀通知');
+        return;
+    }
+    
+    if (!confirm(`確認標記 ${unread.length} 個未讀通知為已讀嗎？`)) return;
+    
+    for (const notif of unread) {
+        await markAsRead(notif.id);
+    }
+}
+
+async function deleteNotification(notificationId) {
+    if (!confirm('確認刪除此通知嗎？')) return;
+    
+    try {
+        const response = await fetch(`/api/notifications/${notificationId}`, { method: 'DELETE' });
+        if (response.ok) {
+            allNotifications = allNotifications.filter(n => n.id != notificationId);
+            displayNotifications();
+        }
+    } catch (error) {
+        console.error('刪除失敗:', error);
+    }
+}
+
+function updateMarkAllBtn() {
+    const unread = allNotifications.filter(n => !n.is_read);
+    const btn = document.getElementById('markAllBtn');
+    btn.disabled = unread.length === 0;
+    btn.textContent = unread.length === 0 ? '全部已讀' : `標記全部為已讀 (${unread.length})`;
+}
+
+function formatTime(dateString) {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diff = now - date;
+    
+    const minutes = Math.floor(diff / 60000);
+    const hours = Math.floor(diff / 3600000);
+    const days = Math.floor(diff / 86400000);
+    
+    if (minutes < 1) return '剛剛';
+    if (minutes < 60) return `${minutes} 分鐘前`;
+    if (hours < 24) return `${hours} 小時前`;
+    if (days < 7) return `${days} 天前`;
+    
+    return date.toLocaleDateString('zh-HK', {year: 'numeric', month: '2-digit', day: '2-digit'});
+}
+
+document.addEventListener('DOMContentLoaded', loadNotifications);
+</script>
+{% endblock %}
