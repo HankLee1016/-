@@ -8,16 +8,14 @@
     <!-- CSS -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/pages.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin-forms.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/status-badges.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin-pages.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/features-dashboard.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/features-workflow.css') }}"
 
     {% block head_extra %}{% endblock %}
-
-    <style>
-        .main-container {
-            width: min(1180px, calc(100% - 32px));
-            margin: 0 auto;
-            padding-top: 24px;
-        }
-    </style>
 </head>
 
 <body class="app-base">
