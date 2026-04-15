@@ -1,0 +1,330 @@
+/* Admin Pages - Card and List Styles */
+
+/* Shift Card Styles */
+.shift-card {
+    background: var(--surface-soft);
+    padding: 16px;
+    border-radius: 8px;
+    margin-bottom: 16px;
+    border-left: 4px solid var(--primary);
+}
+
+.shift-card h3 {
+    margin: 0 0 8px 0;
+    color: var(--text-primary);
+}
+
+.shift-meta {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    margin-bottom: 12px;
+    line-height: 1.6;
+}
+
+.shift-volunteers {
+    background-color: var(--surface);
+    padding: 12px;
+    border-radius: 6px;
+    margin-top: 12px;
+}
+
+.shift-volunteers .volunteer-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.shift-volunteers .volunteer-list li {
+    padding: 4px 0;
+    color: var(--text-primary);
+}
+
+/* Attendance Card Styles */
+.attendance-card {
+    background: var(--surface-soft);
+    padding: 16px;
+    border-radius: 8px;
+    margin-bottom: 16px;
+    border-left: 4px solid var(--primary);
+}
+
+.attendance-card h3 {
+    margin: 0 0 8px 0;
+    color: var(--text-primary);
+}
+
+.attendance-meta {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    margin-bottom: 12px;
+    line-height: 1.6;
+}
+
+.attendance-time {
+    background-color: var(--surface);
+    padding: 12px;
+    border-radius: 6px;
+    margin-top: 12px;
+    font-family: 'Courier New', monospace;
+}
+
+/* Registration Card Styles */
+.registration-card {
+    background: var(--surface-soft);
+    padding: 16px;
+    border-radius: 8px;
+    margin-bottom: 16px;
+    border-left: 4px solid var(--primary);
+}
+
+.registration-card h3 {
+    margin: 0 0 8px 0;
+    color: var(--text-primary);
+}
+
+.registration-meta {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    margin-bottom: 12px;
+}
+
+/* Announcement Card Styles */
+.announcement-card {
+    background: var(--surface-soft);
+    padding: 16px;
+    border-radius: 8px;
+    margin-bottom: 16px;
+    border-left: 4px solid var(--accent);
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 16px;
+    align-items: start;
+}
+
+.announcement-card h3 {
+    margin: 0 0 8px 0;
+    color: var(--text-primary);
+}
+
+.announcement-content {
+    color: var(--text-primary);
+    margin-bottom: 12px;
+    line-height: 1.5;
+}
+
+@media (max-width: 768px) {
+    .announcement-card {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Content Card Styles */
+.content-card {
+    background: var(--surface-soft);
+    padding: 16px;
+    border-radius: 8px;
+    margin-bottom: 16px;
+    border-left: 4px solid var(--primary);
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 16px;
+    align-items: start;
+}
+
+.content-card h3 {
+    margin: 0 0 8px 0;
+    color: var(--text-primary);
+}
+
+.content-meta {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    margin-bottom: 12px;
+}
+
+.content-description {
+    color: var(--text-primary);
+    margin-bottom: 12px;
+    line-height: 1.5;
+}
+
+@media (max-width: 768px) {
+    .content-card {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Empty State Styles */
+.empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--text-secondary);
+}
+
+.empty-state-icon {
+    font-size: 3rem;
+    margin-bottom: 16px;
+}
+
+/* Action Button Styles */
+.action-buttons {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+    flex-wrap: wrap;
+}
+
+.action-buttons form {
+    display: inline;
+}
+
+.action-buttons button,
+.action-buttons a {
+    padding: 6px 12px;
+    text-decoration: none;
+    font-size: 0.9rem;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+/* Button Style Variants */
+.btn-edit {
+    background-color: var(--primary);
+    color: white;
+}
+
+.btn-edit:hover {
+    background-color: var(--primary-dark);
+}
+
+.btn-delete {
+    background-color: #dc3545;
+    color: white;
+}
+
+.btn-delete:hover {
+    background-color: #c82333;
+}
+
+.btn-approve {
+    background-color: #28a745;
+    color: white;
+}
+
+.btn-approve:hover {
+    background-color: #218838;
+}
+
+.btn-reject {
+    background-color: #dc3545;
+    color: white;
+}
+
+.btn-reject:hover {
+    background-color: #c82333;
+}
+
+.btn-checkout {
+    background-color: #17a2b8;
+    color: white;
+}
+
+.btn-checkout:hover {
+    background-color: #138496;
+}
+
+/* Checkin Form Styles */
+.checkin-form {
+    background-color: var(--surface-soft);
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 24px;
+}
+
+.checkin-form .form-row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 12px;
+    align-items: flex-end;
+}
+
+.checkin-form input {
+    padding: 10px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 1rem;
+}
+
+.checkin-form button {
+    padding: 10px 20px;
+    background-color: var(--primary);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.checkin-form-row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 12px;
+    align-items: flex-end;
+}
+
+/* Add Volunteer Form Styles */
+.add-volunteer-form {
+    background-color: var(--surface-soft);
+    padding: 12px;
+    border-radius: 6px;
+    margin-top: 12px;
+    display: flex;
+    gap: 8px;
+    align-items: flex-end;
+}
+
+.add-volunteer-form input {
+    flex: 1;
+    padding: 8px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+}
+
+.add-volunteer-form button {
+    padding: 8px 16px;
+    background-color: #28a745;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.add-volunteer-form button:hover {
+    background-color: #218838;
+}
+
+/* Announcement Actions Styles */
+.announcement-actions,
+.content-actions,
+.registration-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.announcement-actions .button,
+.content-actions .button,
+.registration-actions .button {
+    padding: 6px 12px;
+    font-size: 0.9rem;
+}
+
+.registration-actions button,
+.registration-actions a {
+    padding: 6px 12px;
+    text-decoration: none;
+    font-size: 0.9rem;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+}

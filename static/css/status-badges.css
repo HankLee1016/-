@@ -1,0 +1,131 @@
+/* Status Badge Styles */
+
+/* Shift Status Badges */
+.shift-status {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 16px;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.shift-status.招募中 {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.shift-status.已滿員 {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+/* Attendance Status Badges */
+.attendance-status {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 16px;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.attendance-status.已簽到 {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.attendance-status.已簽退 {
+    background-color: #d1ecf1;
+    color: #0c5460;
+}
+
+.attendance-status.未簽退 {
+    background-color: #fff3cd;
+    color: #856404;
+}
+
+/* Registration Status Badges */
+.registration-status {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 16px;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.registration-status.待審核 {
+    background-color: #fff3cd;
+    color: #856404;
+}
+
+.registration-status.已通過 {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.registration-status.已拒絕 {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+/* Announcement Status Badges */
+.announcement-status {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 16px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    margin-left: 8px;
+}
+
+.announcement-status.已發佈 {
+    background-color: #c8e6c9;
+    color: #1b5e20;
+}
+
+.announcement-status.草稿 {
+    background-color: #f3e5f5;
+    color: #6a1b9a;
+}
+
+/* Announcement Priority Badges */
+.announcement-priority {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 16px;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.announcement-priority.普通 {
+    background-color: #e3f2fd;
+    color: #1565c0;
+}
+
+.announcement-priority.重要 {
+    background-color: #fff3e0;
+    color: #e65100;
+}
+
+.announcement-priority.緊急 {
+    background-color: #ffebee;
+    color: #c62828;
+}
+
+/* Content Status Badges */
+.content-status {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 16px;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.content-status.已發佈 {
+    background-color: #c8e6c9;
+    color: #1b5e20;
+}
+
+.content-status.草稿 {
+    background-color: #fff3e0;
+    color: #e65100;
+}
