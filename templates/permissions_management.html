@@ -1,0 +1,360 @@
+{% extends 'base.html' %}
+
+{% block title %}權限管理 - 系統{% endblock %}
+
+{% block content %}
+<div class="main-container">
+    <div class="page-header">
+        <h1>權限管理</h1>
+    </div>
+
+    <!-- 權限概覽 -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-label">總用戶數</div>
+            <div class="stat-value" id="totalUsers">-</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">管理員</div>
+            <div class="stat-value" id="adminCount">-</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">普通用戶</div>
+            <div class="stat-value" id="userCount">-</div>
+        </div>
+    </div>
+
+    <!-- 用戶列表 -->
+    <div class="card">
+        <h2>用戶權限設定</h2>
+        <div id="usersList" style="margin-top: 1rem;">
+            <div style="text-align: center; padding: 2rem; color: var(--text-secondary);">
+                載入中...
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    padding: 0 1rem;
+}
+
+.page-header h1 {
+    margin: 0;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.stat-card {
+    background: var(--surface-soft);
+    border-radius: 12px;
+    padding: 1.5rem;
+    border: 1px solid var(--border-color);
+    text-align: center;
+}
+
+.stat-label {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.5rem;
+}
+
+.stat-value {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.card {
+    background: var(--surface-soft);
+    border-radius: 12px;
+    padding: 1.5rem;
+    border: 1px solid var(--border-color);
+}
+
+.card h2 {
+    margin: 0 0 1rem 0;
+    color: var(--text-primary);
+}
+
+.user-item {
+    padding: 1.5rem;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    transition: all 0.2s;
+}
+
+.user-item:hover {
+    background: var(--surface-base);
+    border-color: var(--primary);
+}
+
+.user-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1rem;
+}
+
+.user-info {
+    flex-grow: 1;
+}
+
+.user-name {
+    font-weight: 600;
+    color: var(--text-primary);
+    font-size: 1.05rem;
+    margin-bottom: 0.25rem;
+}
+
+.user-email {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+}
+
+.user-role-badge {
+    display: inline-block;
+    padding: 0.3rem 0.8rem;
+    background: var(--primary);
+    color: white;
+    border-radius: 12px;
+    font-weight: 500;
+    font-size: 0.85rem;
+}
+
+.permissions-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin: 1rem 0;
+}
+
+.permission-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem;
+    background: var(--surface-soft);
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+}
+
+.permission-checkbox {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--primary);
+    cursor: pointer;
+}
+
+.permission-label {
+    cursor: pointer;
+    flex-grow: 1;
+    color: var(--text-primary);
+    font-size: 0.95rem;
+}
+
+.user-actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 1rem;
+}
+
+.btn {
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.2s;
+    font-size: 0.9rem;
+}
+
+.btn-primary {
+    background: var(--primary);
+    color: white;
+}
+
+.btn-primary:hover {
+    opacity: 0.9;
+    transform: translateY(-1px);
+}
+
+.btn-secondary {
+    background: transparent;
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+}
+
+.btn-secondary:hover {
+    background: var(--surface-base);
+    border-color: var(--primary);
+    color: var(--primary);
+}
+
+.no-users {
+    text-align: center;
+    padding: 2rem;
+    color: var(--text-secondary);
+}
+
+.permissions-section {
+    margin-top: 1rem;
+}
+
+.permissions-title {
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 0.75rem;
+    font-size: 0.95rem;
+}
+</style>
+
+<script>
+async function loadPermissions() {
+    try {
+        const response = await fetch('/admin/permissions/list');
+        const data = await response.json();
+        
+        displayUsers(data.users || []);
+        updateStats(data.users || []);
+    } catch (error) {
+        console.error('載入權限列表失敗:', error);
+        document.getElementById('usersList').innerHTML = 
+            '<div class="no-users" style="color: var(--error-color);">載入失敗</div>';
+    }
+}
+
+function updateStats(users) {
+    document.getElementById('totalUsers').textContent = users.length;
+    const admins = users.filter(u => u.role === 'admin').length;
+    const regularUsers = users.filter(u => u.role !== 'admin').length;
+    document.getElementById('adminCount').textContent = admins;
+    document.getElementById('userCount').textContent = regularUsers;
+}
+
+function displayUsers(users) {
+    const container = document.getElementById('usersList');
+    
+    if (users.length === 0) {
+        container.innerHTML = '<div class="no-users">未找到用戶</div>';
+        return;
+    }
+
+    const html = users.map(user => `
+        <div class="user-item" id="user-${user.id}">
+            <div class="user-header">
+                <div class="user-info">
+                    <div class="user-name">${user.username || '用戶'}</div>
+                    <div class="user-email">${user.email || '未設定郵箱'}</div>
+                </div>
+                <span class="user-role-badge">${formatRole(user.role)}</span>
+            </div>
+
+            <div class="permissions-section">
+                <div class="permissions-title">分配的權限</div>
+                <div class="permissions-grid">
+                    <label class="permission-item">
+                        <input type="checkbox" class="permission-checkbox" 
+                            ${hasPermission(user.permissions, 'view_activities') ? 'checked' : ''} 
+                            onchange="updatePermission('${user.id}', 'view_activities', this.checked)">
+                        <span class="permission-label">查看活動</span>
+                    </label>
+                    <label class="permission-item">
+                        <input type="checkbox" class="permission-checkbox" 
+                            ${hasPermission(user.permissions, 'edit_activities') ? 'checked' : ''} 
+                            onchange="updatePermission('${user.id}', 'edit_activities', this.checked)">
+                        <span class="permission-label">編輯活動</span>
+                    </label>
+                    <label class="permission-item">
+                        <input type="checkbox" class="permission-checkbox" 
+                            ${hasPermission(user.permissions, 'view_cases') ? 'checked' : ''} 
+                            onchange="updatePermission('${user.id}', 'view_cases', this.checked)">
+                        <span class="permission-label">查看個案</span>
+                    </label>
+                    <label class="permission-item">
+                        <input type="checkbox" class="permission-checkbox" 
+                            ${hasPermission(user.permissions, 'edit_cases') ? 'checked' : ''} 
+                            onchange="updatePermission('${user.id}', 'edit_cases', this.checked)">
+                        <span class="permission-label">編輯個案</span>
+                    </label>
+                    <label class="permission-item">
+                        <input type="checkbox" class="permission-checkbox" 
+                            ${hasPermission(user.permissions, 'view_users') ? 'checked' : ''} 
+                            onchange="updatePermission('${user.id}', 'view_users', this.checked)">
+                        <span class="permission-label">查看用戶</span>
+                    </label>
+                    <label class="permission-item">
+                        <input type="checkbox" class="permission-checkbox" 
+                            ${hasPermission(user.permissions, 'manage_permissions') ? 'checked' : ''} 
+                            onchange="updatePermission('${user.id}', 'manage_permissions', this.checked)">
+                        <span class="permission-label">管理權限</span>
+                    </label>
+                    <label class="permission-item">
+                        <input type="checkbox" class="permission-checkbox" 
+                            ${hasPermission(user.permissions, 'view_backups') ? 'checked' : ''} 
+                            onchange="updatePermission('${user.id}', 'view_backups', this.checked)">
+                        <span class="permission-label">查看備份</span>
+                    </label>
+                    <label class="permission-item">
+                        <input type="checkbox" class="permission-checkbox" 
+                            ${hasPermission(user.permissions, 'manage_backups') ? 'checked' : ''} 
+                            onchange="updatePermission('${user.id}', 'manage_backups', this.checked)">
+                        <span class="permission-label">管理備份</span>
+                    </label>
+                </div>
+            </div>
+        </div>
+    `).join('');
+
+    container.innerHTML = html;
+}
+
+function hasPermission(permissions, permissionName) {
+    if (!permissions || !Array.isArray(permissions)) return false;
+    return permissions.includes(permissionName);
+}
+
+async function updatePermission(userId, permissionName, granted) {
+    try {
+        const response = await fetch(`/api/permissions/${userId}`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                permission: permissionName,
+                granted: granted
+            })
+        });
+
+        if (!response.ok) {
+            alert('更新失敗');
+            loadPermissions();
+        }
+    } catch (error) {
+        console.error('更新權限失敗:', error);
+        alert('更新失敗: ' + error.message);
+    }
+}
+
+function formatRole(role) {
+    const roleMap = {
+        'admin': '管理員',
+        'staff': '職員',
+        'user': '普通用戶'
+    };
+    return roleMap[role] || role;
+}
+
+document.addEventListener('DOMContentLoaded', loadPermissions);
+</script>
+{% endblock %}
