@@ -43,19 +43,11 @@
         
         {% if activities %}
             {% for activity in activities %}
-            <div style="
-                background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
-                padding: 1.5rem;
-                border-radius: 12px;
-                border: 2px solid var(--border);
-                margin-bottom: 1.5rem;
-                border-left: 4px solid var(--primary);
-                transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            " class="activity-card">
-                <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem;">
-                    <div style="flex: 1; min-width: 300px;">
-                        <h3 style="margin: 0 0 0.75rem 0; color: var(--primary); font-size: 1.25rem;">{{ activity.activity_name }}</h3>
-                        <div style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 1rem; display: grid; gap: 0.5rem;">
+            <div class="activity-card">
+                <div class="activity-container">
+                    <div class="activity-content">
+                        <h3>{{ activity.activity_name }}</h3>
+                        <div class="activity-meta">
                             <div>
                                 <span class="font-semibold">📁 分類：</span> {{ activity.category }}
                             </div>
@@ -71,7 +63,7 @@
                             {% endif %}
                         </div>
                         {% if activity.description %}
-                        <div style="color: var(--text-primary); margin-bottom: 1rem; line-height: 1.6;">{{ activity.description }}</div>
+                        <div class="activity-description">{{ activity.description }}</div>
                         {% endif %}
                         <div>
                             {% if activity.status == '進行中' %}
@@ -83,7 +75,7 @@
                             {% endif %}
                         </div>
                     </div>
-                    <div style="display: grid; gap: 0.5rem; min-width: 150px;">
+                    <div class="activity-buttons">
                         <a class="button btn-small" href="/admin/activities/{{ activity.id }}/edit" title="編輯活動">✏️ 編輯</a>
                         <a class="button btn-small" href="/admin/activities/{{ activity.id }}/registrations" title="查看報名">👥 報名</a>
                         <a class="button btn-small" href="/admin/activities/{{ activity.id }}/attendance" title="簽到">✅ 簽到</a>

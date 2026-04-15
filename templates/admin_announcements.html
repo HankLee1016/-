@@ -4,86 +4,10 @@
     <meta charset="UTF-8">
     <title>公告管理</title>
     <link rel="stylesheet" href="/static/css/index.css">
-    <style>
-        .announcement-priority {
-            display: inline-block;
-            padding: 4px 12px;
-            border-radius: 16px;
-            font-size: 0.9rem;
-            font-weight: 500;
-        }
-        .announcement-priority.普通 {
-            background-color: #e3f2fd;
-            color: #1565c0;
-        }
-        .announcement-priority.重要 {
-            background-color: #fff3e0;
-            color: #e65100;
-        }
-        .announcement-priority.緊急 {
-            background-color: #ffebee;
-            color: #c62828;
-        }
-        .announcement-status {
-            display: inline-block;
-            padding: 4px 12px;
-            border-radius: 16px;
-            font-size: 0.9rem;
-            font-weight: 500;
-            margin-left: 8px;
-        }
-        .announcement-status.已發佈 {
-            background-color: #c8e6c9;
-            color: #1b5e20;
-        }
-        .announcement-status.草稿 {
-            background-color: #f3e5f5;
-            color: #6a1b9a;
-        }
-        .announcement-actions {
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-        }
-        .announcement-actions .button {
-            padding: 6px 12px;
-            font-size: 0.9rem;
-        }
-        .empty-state {
-            text-align: center;
-            padding: 40px 20px;
-            color: var(--text-secondary);
-        }
-        .empty-state-icon {
-            font-size: 3rem;
-            margin-bottom: 16px;
-        }
-        .announcement-card {
-            background: var(--surface-soft);
-            padding: 16px;
-            border-radius: 8px;
-            margin-bottom: 16px;
-            border-left: 4px solid var(--accent);
-            display: grid;
-            grid-template-columns: 1fr auto;
-            gap: 16px;
-            align-items: start;
-        }
-        .announcement-card h3 {
-            margin: 0 0 8px 0;
-            color: var(--text-primary);
-        }
-        .announcement-content {
-            color: var(--text-primary);
-            margin-bottom: 12px;
-            line-height: 1.5;
-        }
-        @media (max-width: 768px) {
-            .announcement-card {
-                grid-template-columns: 1fr;
-            }
-        }
-    </style>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="/static/css/admin-forms.css">
+    <link rel="stylesheet" href="/static/css/status-badges.css">
+    <link rel="stylesheet" href="/static/css/admin-pages.css">
 </head>
 <body>
     <div class="page-bg"></div>
