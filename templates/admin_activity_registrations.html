@@ -4,87 +4,10 @@
     <meta charset="UTF-8">
     <title>活動報名管理</title>
     <link rel="stylesheet" href="/static/css/index.css">
-    <style>
-        .registration-status {
-            display: inline-block;
-            padding: 4px 12px;
-            border-radius: 16px;
-            font-size: 0.9rem;
-            font-weight: 500;
-        }
-        .registration-status.待審核 {
-            background-color: #fff3cd;
-            color: #856404;
-        }
-        .registration-status.已通過 {
-            background-color: #d4edda;
-            color: #155724;
-        }
-        .registration-status.已拒絕 {
-            background-color: #f8d7da;
-            color: #721c24;
-        }
-        .registration-actions {
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-        }
-        .registration-actions button,
-        .registration-actions a {
-            padding: 6px 12px;
-            text-decoration: none;
-            font-size: 0.9rem;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-        }
-        .btn-approve {
-            background-color: #28a745;
-            color: white;
-        }
-        .btn-approve:hover {
-            background-color: #218838;
-        }
-        .btn-reject {
-            background-color: #dc3545;
-            color: white;
-        }
-        .btn-reject:hover {
-            background-color: #c82333;
-        }
-        .btn-delete {
-            background-color: #6c757d;
-            color: white;
-        }
-        .btn-delete:hover {
-            background-color: #5a6268;
-        }
-        .registration-card {
-            background: var(--surface-soft);
-            padding: 16px;
-            border-radius: 8px;
-            margin-bottom: 16px;
-            border-left: 4px solid var(--primary);
-        }
-        .registration-card h3 {
-            margin: 0 0 8px 0;
-            color: var(--text-primary);
-        }
-        .registration-meta {
-            font-size: 0.9rem;
-            color: var(--text-secondary);
-            margin-bottom: 12px;
-        }
-        .empty-state {
-            text-align: center;
-            padding: 40px 20px;
-            color: var(--text-secondary);
-        }
-        .empty-state-icon {
-            font-size: 3rem;
-            margin-bottom: 16px;
-        }
-    </style>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="/static/css/admin-forms.css">
+    <link rel="stylesheet" href="/static/css/status-badges.css">
+    <link rel="stylesheet" href="/static/css/admin-pages.css">
 </head>
 <body>
     <div class="page-bg"></div>
