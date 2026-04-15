@@ -15,9 +15,17 @@ except ImportError:
 
 from psycopg2 import OperationalError
 from db_config import get_db_connection
+from features import (
+    StatsReportManager, NotificationManager, SearchFilterManager,
+    FileManager, WorkflowManager, BackupManager, PermissionManager
+)
 
 app = Flask(__name__, template_folder="templates")
 app.secret_key = os.getenv("SECRET_KEY", "dev_secret_key")
+
+# 導入功能路由
+from routes_features import bp as features_bp
+app.register_blueprint(features_bp)
 
 # ==========================================
 # 檔案路徑與全域設定 (融合雙方設定)
@@ -920,7 +928,32 @@ def subsidy_detail(subsidy_id):
 @app.route("/admin")
 def admin_dashboard():
     if session.get("role") != "admin": return redirect(url_for("home"))
-    return render_template("admin.html", username=session.get("username"))
+    
+    # 計算統計數據
+    # 活動總數
+    activities = load_activities()
+    activities_count = len(activities) if activities else 0
+    
+    # 註冊成員（non-admin）
+    users = load_users()
+    members_count = sum(1 for user in users if user.get("role") != "admin")
+    
+    # 待處理個案
+    cases = load_cases()
+    pending_cases_count = sum(1 for case in cases if case.get("status") == "待處理")
+    
+    # 系統公告
+    announcements = load_announcements()
+    announcements_count = len(announcements) if announcements else 0
+    
+    return render_template(
+        "admin.html",
+        username=session.get("username"),
+        activities_count=activities_count,
+        members_count=members_count,
+        pending_cases_count=pending_cases_count,
+        announcements_count=announcements_count
+    )
 
 @app.route("/admin/members")
 def admin_members():
