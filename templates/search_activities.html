@@ -1,0 +1,314 @@
+{% extends 'base.html' %}
+
+{% block title %}搜尋活動 - 系統{% endblock %}
+
+{% block content %}
+<div class="main-container">
+    <div class="page-header">
+        <h1>搜尋活動</h1>
+    </div>
+
+    <!-- 搜尋表單 -->
+    <div class="card search-card">
+        <div class="form-group">
+            <label>搜尋關鍵詞</label>
+            <input type="text" id="searchQuery" placeholder="輸入活動名稱或描述..." class="form-control">
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+            <div class="form-group">
+                <label>分類</label>
+                <select id="categoryFilter" class="form-control">
+                    <option value="">全部分類</option>
+                    <option value="教育">教育</option>
+                    <option value="健康">健康</option>
+                    <option value="社區">社區</option>
+                    <option value="環保">環保</option>
+                    <option value="文化">文化</option>
+                    <option value="其他">其他</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>狀態</label>
+                <select id="statusFilter" class="form-control">
+                    <option value="">全部狀態</option>
+                    <option value="計劃中">計劃中</option>
+                    <option value="進行中">進行中</option>
+                    <option value="已完成">已完成</option>
+                </select>
+            </div>
+        </div>
+
+        <div style="display: flex; gap: 1rem; margin-top: 1rem;">
+            <button onclick="searchActivities()" class="btn btn-primary">搜尋</button>
+            <button onclick="resetFilters()" class="btn btn-secondary">重設</button>
+        </div>
+    </div>
+
+    <!-- 搜尋結果 -->
+    <div id="searchResults" style="margin-top: 2rem;">
+        <div style="text-align: center; padding: 2rem; color: var(--text-secondary);">
+            輸入搜尋條件後點擊搜尋
+        </div>
+    </div>
+</div>
+
+<style>
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    padding: 0 1rem;
+}
+
+.page-header h1 {
+    margin: 0;
+}
+
+.card {
+    background: var(--surface-soft);
+    border-radius: 12px;
+    padding: 1.5rem;
+    border: 1px solid var(--border-color);
+}
+
+.form-control {
+    width: 100%;
+    padding: 0.6rem 0.8rem;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    font-size: 0.95rem;
+    background: var(--surface-base);
+    color: var(--text-primary);
+    transition: border-color 0.2s;
+}
+
+.form-control:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.1);
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.form-group label {
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+    color: var(--text-primary);
+    font-size: 0.95rem;
+}
+
+.btn {
+    padding: 0.7rem 1.4rem;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.2s;
+}
+
+.btn-primary {
+    background: var(--primary);
+    color: white;
+}
+
+.btn-primary:hover {
+    opacity: 0.9;
+    transform: translateY(-1px);
+}
+
+.btn-secondary {
+    background: transparent;
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+}
+
+.btn-secondary:hover {
+    background: var(--surface-base);
+    border-color: var(--primary);
+    color: var(--primary);
+}
+
+.activity-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1.5rem;
+    margin-top: 1rem;
+}
+
+.activity-card {
+    background: var(--surface-soft);
+    border-radius: 12px;
+    padding: 1.5rem;
+    border: 1px solid var(--border-color);
+    transition: all 0.2s;
+    display: flex;
+    flex-direction: column;
+}
+
+.activity-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.activity-category {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    background: var(--primary);
+    color: white;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    width: fit-content;
+}
+
+.activity-title {
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+    font-size: 1.1rem;
+}
+
+.activity-desc {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    margin-bottom: 1rem;
+    flex-grow: 1;
+    line-height: 1.5;
+}
+
+.activity-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    margin-bottom: 1rem;
+}
+
+.status-badge {
+    padding: 0.25rem 0.75rem;
+    border-radius: 12px;
+    font-weight: 500;
+}
+
+.status-計劃中 { background: #D1ECF1; color: #0C5460; }
+.status-進行中 { background: #FFF3CD; color: #866A00; }
+.status-已完成 { background: #D4EDDA; color: #155724; }
+
+.activity-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.activity-actions a, .activity-actions button {
+    flex: 1;
+    padding: 0.5rem;
+    border: 1px solid var(--border-color);
+    background: transparent;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    color: var(--primary);
+    text-decoration: none;
+    text-align: center;
+    transition: all 0.2s;
+}
+
+.activity-actions a:hover, .activity-actions button:hover {
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
+}
+
+.results-count {
+    padding: 1rem;
+    background: var(--surface-soft);
+    border-radius: 6px;
+    margin-bottom: 1rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.no-results {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: var(--text-secondary);
+}
+</style>
+
+<script>
+async function searchActivities() {
+    const query = document.getElementById('searchQuery').value;
+    const category = document.getElementById('categoryFilter').value;
+    const status = document.getElementById('statusFilter').value;
+
+    if (!query) {
+        alert('請輸入搜尋關鍵詞');
+        return;
+    }
+
+    try {
+        const params = new URLSearchParams({
+            query,
+            ...(category && {category}),
+            ...(status && {status})
+        });
+
+        const response = await fetch(`/api/search/activities?${params}`);
+        const data = await response.json();
+        
+        displayResults(data.results || []);
+    } catch (error) {
+        console.error('搜尋失敗:', error);
+        document.getElementById('searchResults').innerHTML = 
+            '<div class="no-results" style="color: var(--error-color);">搜尋失敗，請稍後重試</div>';
+    }
+}
+
+function displayResults(results) {
+    const container = document.getElementById('searchResults');
+    
+    if (results.length === 0) {
+        container.innerHTML = '<div class="no-results">未找到符合條件的活動</div>';
+        return;
+    }
+
+    const html = `
+        <div class="results-count">找到 <strong>${results.length}</strong> 個符合條件的活動</div>
+        <div class="activity-grid">
+            ${results.map(activity => `
+                <div class="activity-card">
+                    <span class="activity-category">${activity.category || '未分類'}</span>
+                    <div class="activity-title">${activity.name || '活動'}</div>
+                    <div class="activity-desc">${(activity.description || '暫無描述').substring(0, 100)}...</div>
+                    <div class="activity-meta">
+                        <span>參與者: ${activity.participant_count || 0}</span>
+                        <span class="status-badge status-${activity.status}">${activity.status || '未知'}</span>
+                    </div>
+                    <div class="activity-actions">
+                        <a href="/activities/${activity.id}">查看詳情</a>
+                    </div>
+                </div>
+            `).join('')}
+        </div>
+    `;
+    
+    container.innerHTML = html;
+}
+
+function resetFilters() {
+    document.getElementById('searchQuery').value = '';
+    document.getElementById('categoryFilter').value = '';
+    document.getElementById('statusFilter').value = '';
+    document.getElementById('searchResults').innerHTML = 
+        '<div style="text-align: center; padding: 2rem; color: var(--text-secondary);">輸入搜尋條件後點擊搜尋</div>';
+}
+</script>
+{% endblock %}
