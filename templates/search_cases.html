@@ -1,0 +1,302 @@
+{% extends 'base.html' %}
+
+{% block title %}搜尋個案 - 系統{% endblock %}
+
+{% block content %}
+<div class="main-container">
+    <div class="page-header">
+        <h1>搜尋個案</h1>
+    </div>
+
+    <!-- 搜尋表單 -->
+    <div class="card search-card">
+        <div class="form-group">
+            <label>搜尋關鍵詞</label>
+            <input type="text" id="searchQuery" placeholder="輸入個案標題或描述..." class="form-control">
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem;">
+            <div class="form-group">
+                <label>狀態</label>
+                <select id="statusFilter" class="form-control">
+                    <option value="">全部狀態</option>
+                    <option value="待處理">待處理</option>
+                    <option value="進行中">進行中</option>
+                    <option value="已完成">已完成</option>
+                    <option value="已關閉">已關閉</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>優先級</label>
+                <select id="priorityFilter" class="form-control">
+                    <option value="">全部優先級</option>
+                    <option value="低">低</option>
+                    <option value="中">中</option>
+                    <option value="高">高</option>
+                    <option value="緊急">緊急</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>指派給</label>
+                <input type="text" id="assignedToFilter" placeholder="職員名稱" class="form-control">
+            </div>
+        </div>
+
+        <div style="display: flex; gap: 1rem; margin-top: 1rem;">
+            <button onclick="searchCases()" class="btn btn-primary">搜尋</button>
+            <button onclick="resetFilters()" class="btn btn-secondary">重設</button>
+        </div>
+    </div>
+
+    <!-- 搜尋結果 -->
+    <div id="searchResults" style="margin-top: 2rem;">
+        <div style="text-align: center; padding: 2rem; color: var(--text-secondary);">
+            輸入搜尋條件後點擊搜尋
+        </div>
+    </div>
+</div>
+
+<style>
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    padding: 0 1rem;
+}
+
+.page-header h1 {
+    margin: 0;
+}
+
+.card {
+    background: var(--surface-soft);
+    border-radius: 12px;
+    padding: 1.5rem;
+    border: 1px solid var(--border-color);
+}
+
+.form-control {
+    width: 100%;
+    padding: 0.6rem 0.8rem;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    font-size: 0.95rem;
+    background: var(--surface-base);
+    color: var(--text-primary);
+    transition: border-color 0.2s;
+}
+
+.form-control:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.1);
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.form-group label {
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+    color: var(--text-primary);
+    font-size: 0.95rem;
+}
+
+.btn {
+    padding: 0.7rem 1.4rem;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.2s;
+}
+
+.btn-primary {
+    background: var(--primary);
+    color: white;
+}
+
+.btn-primary:hover {
+    opacity: 0.9;
+    transform: translateY(-1px);
+}
+
+.btn-secondary {
+    background: transparent;
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+}
+
+.btn-secondary:hover {
+    background: var(--surface-base);
+    border-color: var(--primary);
+    color: var(--primary);
+}
+
+.case-result {
+    background: var(--surface-soft);
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    border-left: 4px solid var(--border-color);
+    transition: all 0.2s;
+}
+
+.case-result:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    border-left-color: var(--primary);
+}
+
+.case-title {
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+    font-size: 1.05rem;
+}
+
+.case-meta {
+    display: flex;
+    gap: 1rem;
+    margin: 0.5rem 0;
+    font-size: 0.9rem;
+    flex-wrap: wrap;
+}
+
+.case-badge {
+    padding: 0.25rem 0.75rem;
+    border-radius: 12px;
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.status-待處理 { background: #FFF3CD; color: #866A00; }
+.status-進行中 { background: #D1ECF1; color: #0C5460; }
+.status-已完成 { background: #D4EDDA; color: #155724; }
+.status-已關閉 { background: #E2E3E5; color: #383D41; }
+
+.priority-低 { background: #D4EDDA; color: #155724; }
+.priority-中 { background: #FFF3CD; color: #866A00; }
+.priority-高 { background: #F8D7DA; color: #721C24; }
+.priority-緊急 { background: #F5C6CB; color: #721C24; font-weight: 600; }
+
+.case-description {
+    color: var(--text-secondary);
+    margin: 1rem 0;
+    line-height: 1.5;
+}
+
+.case-actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 1rem;
+}
+
+.case-actions a, .case-actions button {
+    padding: 0.5rem 1rem;
+    border: 1px solid var(--border-color);
+    background: transparent;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    color: var(--primary);
+    text-decoration: none;
+    transition: all 0.2s;
+}
+
+.case-actions a:hover, .case-actions button:hover {
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
+}
+
+.results-count {
+    padding: 1rem;
+    background: var(--surface-soft);
+    border-radius: 6px;
+    margin-bottom: 1rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.no-results {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: var(--text-secondary);
+}
+</style>
+
+<script>
+async function searchCases() {
+    const query = document.getElementById('searchQuery').value;
+    const status = document.getElementById('statusFilter').value;
+    const priority = document.getElementById('priorityFilter').value;
+    const assigned_to = document.getElementById('assignedToFilter').value;
+
+    if (!query) {
+        alert('請輸入搜尋關鍵詞');
+        return;
+    }
+
+    try {
+        const params = new URLSearchParams({
+            query,
+            ...(status && {status}),
+            ...(priority && {priority}),
+            ...(assigned_to && {assigned_to})
+        });
+
+        const response = await fetch(`/api/search/cases?${params}`);
+        const data = await response.json();
+        
+        displayResults(data.results || []);
+    } catch (error) {
+        console.error('搜尋失敗:', error);
+        document.getElementById('searchResults').innerHTML = 
+            '<div class="no-results" style="color: var(--error-color);">搜尋失敗，請稍後重試</div>';
+    }
+}
+
+function displayResults(results) {
+    const container = document.getElementById('searchResults');
+    
+    if (results.length === 0) {
+        container.innerHTML = '<div class="no-results">未找到符合條件的個案</div>';
+        return;
+    }
+
+    const html = `
+        <div class="results-count">找到 <strong>${results.length}</strong> 個符合條件的個案</div>
+        ${results.map(caseItem => `
+            <div class="case-result">
+                <div class="case-title">${caseItem.title || '個案'}</div>
+                <div class="case-meta">
+                    <span class="case-badge status-${caseItem.status}">${caseItem.status || '未知'}</span>
+                    <span class="case-badge priority-${caseItem.priority}">${caseItem.priority || '未設定'}</span>
+                    ${caseItem.assigned_to ? `<span style="color: var(--text-secondary);">指派給: ${caseItem.assigned_to}</span>` : ''}
+                </div>
+                <div class="case-description">${caseItem.description || '暫無描述'}</div>
+                <div class="case-actions">
+                    <a href="/cases/${caseItem.id}/workflow">查看詳情</a>
+                </div>
+            </div>
+        `).join('')}
+    `;
+    
+    container.innerHTML = html;
+}
+
+function resetFilters() {
+    document.getElementById('searchQuery').value = '';
+    document.getElementById('statusFilter').value = '';
+    document.getElementById('priorityFilter').value = '';
+    document.getElementById('assignedToFilter').value = '';
+    document.getElementById('searchResults').innerHTML = 
+        '<div style="text-align: center; padding: 2rem; color: var(--text-secondary);">輸入搜尋條件後點擊搜尋</div>';
+}
+</script>
+{% endblock %}
