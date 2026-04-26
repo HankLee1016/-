@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>新增志工</title>
+    <link rel="stylesheet" href="/static/css/index.css">
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="/static/css/admin-forms.css">
+</head>
+<body>
+    <div class="page-bg"></div>
+    <div class="container">
+        <header class="hero-card">
+            <div class="hero-copy">
+                <span class="eyebrow">志工管理</span>
+                <h1>新增志工</h1>
+                <p>添加新的志願者到系統中</p>
+            </div>
+        </header>
+
+        <section class="card" style="max-width: 600px; margin: 0 auto;">
+            {% if error %}
+                <div class="alert alert-error">{{ error }}</div>
+            {% endif %}
+
+            <form method="POST" class="form-group">
+                <div style="margin-bottom: 1.5rem;">
+                    <label for="name" class="form-label">姓名 *</label>
+                    <input type="text" id="name" name="name" class="form-input" required>
+                </div>
+
+                <div style="margin-bottom: 1.5rem;">
+                    <label for="phone" class="form-label">聯絡電話</label>
+                    <input type="tel" id="phone" name="phone" class="form-input">
+                </div>
+
+                <div style="margin-bottom: 1.5rem;">
+                    <label for="email" class="form-label">電子郵件</label>
+                    <input type="email" id="email" name="email" class="form-input">
+                </div>
+
+                <div style="margin-bottom: 1.5rem;">
+                    <label for="address" class="form-label">住址</label>
+                    <input type="text" id="address" name="address" class="form-input">
+                </div>
+
+                <div style="margin-bottom: 1.5rem;">
+                    <label for="skills" class="form-label">專長技能</label>
+                    <textarea id="skills" name="skills" class="form-input" rows="3" placeholder="例如：社區清掃、兒童照顧、老年關懷等"></textarea>
+                </div>
+
+                <div style="margin-bottom: 1.5rem;">
+                    <label for="status" class="form-label">狀態</label>
+                    <select id="status" name="status" class="form-input">
+                        <option value="活躍" selected>活躍</option>
+                        <option value="暫停">暫停</option>
+                        <option value="待審核">待審核</option>
+                    </select>
+                </div>
+
+                <div style="margin-bottom: 1.5rem;">
+                    <label for="joined_date" class="form-label">加入日期</label>
+                    <input type="date" id="joined_date" name="joined_date" class="form-input">
+                </div>
+
+                <div style="display: flex; gap: 1rem;">
+                    <button type="submit" class="button" style="flex: 1;">新增志工</button>
+                    <a href="/admin/volunteers" class="button" style="flex: 1; text-align: center; text-decoration: none;">取消</a>
+                </div>
+            </form>
+        </section>
+
+        <style>
+            .alert {
+                padding: 1rem;
+                border-radius: 6px;
+                margin-bottom: 1.5rem;
+            }
+
+            .alert-error {
+                background: #FFEBEE;
+                color: #C62828;
+                border-left: 4px solid #C62828;
+            }
+
+            .form-group {
+                display: flex;
+                flex-direction: column;
+            }
+
+            .form-label {
+                display: block;
+                font-weight: 600;
+                margin-bottom: 0.5rem;
+                color: var(--text-primary);
+            }
+
+            .form-input {
+                padding: 0.75rem;
+                border: 2px solid var(--border);
+                border-radius: 6px;
+                font-family: inherit;
+                font-size: 1rem;
+                background: white;
+            }
+
+            .form-input:focus {
+                outline: none;
+                border-color: var(--primary);
+                box-shadow: 0 0 0 3px rgba(63, 81, 181, 0.1);
+            }
+
+            .button {
+                padding: 0.75rem 1.5rem;
+                background: var(--primary);
+                color: white;
+                border: none;
+                border-radius: 6px;
+                cursor: pointer;
+                font-weight: 600;
+                font-size: 1rem;
+            }
+
+            .button:hover {
+                opacity: 0.9;
+            }
+        </style>
+    </div>
+</body>
+</html>

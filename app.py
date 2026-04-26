@@ -40,6 +40,7 @@ ANNOUNCEMENTS_FILE = Path(app.root_path) / "announcements.json"
 REGISTRATIONS_FILE = Path(app.root_path) / "registrations.json"
 ATTENDANCES_FILE = Path(app.root_path) / "attendances.json"
 VOLUNTEER_SHIFTS_FILE = Path(app.root_path) / "volunteer_shifts.json"
+VOLUNTEERS_FILE = Path(app.root_path) / "volunteers.json"
 
 UPLOAD_FOLDER = Path(app.root_path) / "uploads"
 UPLOAD_FOLDER.mkdir(parents=True, exist_ok=True)
@@ -335,6 +336,42 @@ def add_volunteer_to_shift(shift_id, username):
 
 def get_activity_volunteer_shifts(activity_id):
     return [s for s in load_volunteer_shifts() if s["activity_id"] == activity_id]
+
+def add_volunteer_id_to_shift(shift_id, volunteer_id):
+    """Add volunteer by ID to a shift"""
+    shifts = load_volunteer_shifts()
+    for shift in shifts:
+        if shift["id"] == shift_id:
+            if "volunteer_ids" not in shift: shift["volunteer_ids"] = []
+            if volunteer_id not in shift["volunteer_ids"]:
+                shift["volunteer_ids"].append(volunteer_id)
+                if len(shift["volunteer_ids"]) >= shift["required_count"]: shift["status"] = "已滿員"
+            break
+    save_volunteer_shifts(shifts)
+
+def remove_volunteer_from_shift(shift_id, volunteer_id):
+    """Remove volunteer by ID from a shift"""
+    shifts = load_volunteer_shifts()
+    for shift in shifts:
+        if shift["id"] == shift_id:
+            if "volunteer_ids" in shift and volunteer_id in shift["volunteer_ids"]:
+                shift["volunteer_ids"].remove(volunteer_id)
+                if len(shift.get("volunteer_ids", [])) < shift["required_count"]: shift["status"] = "招募中"
+            break
+    save_volunteer_shifts(shifts)
+
+def get_volunteer_shifts(volunteer_id):
+    """Get all shifts assigned to a volunteer"""
+    shifts = load_volunteer_shifts()
+    result = []
+    for shift in shifts:
+        if volunteer_id in shift.get("volunteer_ids", []):
+            # Get related activity info
+            activity = get_activity(shift["activity_id"])
+            shift_with_activity = shift.copy()
+            shift_with_activity["activity"] = activity
+            result.append(shift_with_activity)
+    return result
 
 # --- Services ---
 def load_services(username=None):
@@ -1321,6 +1358,125 @@ def get_donations():
         return jsonify({"error": "資料庫連線失敗，請檢查 PostgreSQL 是否已啟動並確認連線設定。", "detail": str(err)}), 500
     except Exception as err:
         return jsonify({"error": "發生未知錯誤。", "detail": str(err)}), 500
+
+# --- Volunteers ---
+def load_volunteers():
+    if not VOLUNTEERS_FILE.exists(): return []
+    try:
+        with VOLUNTEERS_FILE.open("r", encoding="utf-8") as f: return json.load(f).get("volunteers", [])
+    except json.JSONDecodeError: return []
+
+def save_volunteers(volunteers):
+    with VOLUNTEERS_FILE.open("w", encoding="utf-8") as f:
+        json.dump({"volunteers": volunteers}, f, ensure_ascii=False, indent=2)
+
+def create_volunteer(name, phone="", email="", address="", skills="", status="活躍", joined_date=""):
+    volunteers = load_volunteers()
+    if not joined_date: joined_date = str(datetime.date.today())
+    new_volunteer = {
+        "id": str(uuid.uuid4()), "name": name, "phone": phone, "email": email,
+        "address": address, "skills": skills, "status": status, "service_hours": 0,
+        "joined_date": joined_date, "created_at": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    }
+    volunteers.append(new_volunteer)
+    save_volunteers(volunteers)
+    return new_volunteer
+
+def get_volunteer(volunteer_id):
+    for volunteer in load_volunteers():
+        if volunteer["id"] == volunteer_id: return volunteer
+    return None
+
+def update_volunteer(volunteer_id, name=None, phone=None, email=None, address=None, skills=None, status=None, service_hours=None, joined_date=None):
+    volunteers = load_volunteers()
+    for volunteer in volunteers:
+        if volunteer["id"] == volunteer_id:
+            if name is not None: volunteer["name"] = name
+            if phone is not None: volunteer["phone"] = phone
+            if email is not None: volunteer["email"] = email
+            if address is not None: volunteer["address"] = address
+            if skills is not None: volunteer["skills"] = skills
+            if status is not None: volunteer["status"] = status
+            if service_hours is not None: volunteer["service_hours"] = int(service_hours) if service_hours else 0
+            if joined_date is not None: volunteer["joined_date"] = joined_date
+            break
+    save_volunteers(volunteers)
+
+def delete_volunteer(volunteer_id):
+    volunteers = [volunteer for volunteer in load_volunteers() if volunteer["id"] != volunteer_id]
+    save_volunteers(volunteers)
+
+# --- Admin: Volunteers ---
+@app.route("/admin/volunteers")
+def admin_volunteers():
+    if session.get("role") != "admin": return redirect(url_for("home"))
+    volunteers = load_volunteers()
+    return render_template("admin_volunteers.html", volunteers=volunteers, username=session.get("username"))
+
+@app.route("/admin/volunteers/create", methods=["GET", "POST"])
+def admin_create_volunteer():
+    if session.get("role") != "admin": return redirect(url_for("home"))
+    error = None
+    if request.method == "POST":
+        name = request.form.get("name", "").strip()
+        phone = request.form.get("phone", "").strip()
+        email = request.form.get("email", "").strip()
+        address = request.form.get("address", "").strip()
+        skills = request.form.get("skills", "").strip()
+        status = request.form.get("status", "活躍")
+        joined_date = request.form.get("joined_date", "")
+        if not name: error = "請輸入志願者姓名。"
+        else:
+            create_volunteer(name, phone, email, address, skills, status, joined_date)
+            return redirect(url_for("admin_volunteers"))
+    return render_template("admin_volunteer_create.html", username=session.get("username"), error=error)
+
+@app.route("/admin/volunteers/<volunteer_id>/edit", methods=["GET", "POST"])
+def admin_edit_volunteer(volunteer_id):
+    if session.get("role") != "admin": return redirect(url_for("home"))
+    volunteer = get_volunteer(volunteer_id)
+    if not volunteer: return redirect(url_for("admin_volunteers"))
+    error = None
+    if request.method == "POST":
+        name = request.form.get("name", "").strip()
+        phone = request.form.get("phone", "").strip()
+        email = request.form.get("email", "").strip()
+        address = request.form.get("address", "").strip()
+        skills = request.form.get("skills", "").strip()
+        status = request.form.get("status", "活躍")
+        service_hours = request.form.get("service_hours", "0")
+        joined_date = request.form.get("joined_date", "")
+        if not name: error = "請輸入志願者姓名。"
+        else:
+            update_volunteer(volunteer_id, name, phone, email, address, skills, status, service_hours, joined_date)
+            return redirect(url_for("admin_volunteers"))
+    # Get volunteer's assigned shifts and all available activities for shift selection
+    volunteer_shifts = get_volunteer_shifts(volunteer_id)
+    activities = load_activities()
+    all_shifts = load_volunteer_shifts()
+    return render_template("admin_volunteer_edit.html", volunteer=volunteer, volunteer_shifts=volunteer_shifts, activities=activities, all_shifts=all_shifts, username=session.get("username"), error=error)
+
+@app.route("/admin/volunteers/<volunteer_id>/delete", methods=["POST"])
+def admin_delete_volunteer(volunteer_id):
+    if session.get("role") != "admin": return redirect(url_for("home"))
+    delete_volunteer(volunteer_id)
+    return redirect(url_for("admin_volunteers"))
+
+@app.route("/admin/volunteers/<volunteer_id>/assign-shift", methods=["POST"])
+def admin_assign_volunteer_shift(volunteer_id):
+    if session.get("role") != "admin": return redirect(url_for("home"))
+    volunteer = get_volunteer(volunteer_id)
+    if not volunteer: return redirect(url_for("admin_volunteers"))
+    shift_id = request.form.get("shift_id", "").strip()
+    if shift_id:
+        add_volunteer_id_to_shift(shift_id, volunteer_id)
+    return redirect(url_for("admin_edit_volunteer", volunteer_id=volunteer_id))
+
+@app.route("/admin/volunteers/<volunteer_id>/remove-shift/<shift_id>", methods=["POST"])
+def admin_remove_volunteer_shift(volunteer_id, shift_id):
+    if session.get("role") != "admin": return redirect(url_for("home"))
+    remove_volunteer_from_shift(shift_id, volunteer_id)
+    return redirect(url_for("admin_edit_volunteer", volunteer_id=volunteer_id))
 
 if __name__ == "__main__":
     app.run(debug=True)
