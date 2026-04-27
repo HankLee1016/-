@@ -164,6 +164,54 @@ def api_search_activities():
     return jsonify({'results': [dict(r) for r in results] if results else []}), 200
 
 
+@bp.route('/search/volunteers')
+def search_volunteers():
+    """搜尋志工"""
+    if session.get('role') != 'admin':
+        return redirect(url_for('home'))
+    
+    query = request.args.get('q', '')
+    status = request.args.get('status')
+    
+    results = SearchFilterManager.search_volunteers(query, status)
+    return render_template('search_volunteers.html', results=results, query=query)
+
+
+@bp.route('/api/search/volunteers')
+def api_search_volunteers():
+    """API: 搜尋志工"""
+    query = request.args.get('q', '')
+    status = request.args.get('status')
+    
+    results = SearchFilterManager.search_volunteers(query, status)
+    return jsonify({'results': results}), 200
+
+
+@bp.route('/search/volunteer-shifts')
+def search_volunteer_shifts():
+    """搜尋志工排班"""
+    if session.get('role') != 'admin':
+        return redirect(url_for('home'))
+    
+    query = request.args.get('q', '')
+    activity_id = request.args.get('activity_id')
+    status = request.args.get('status')
+    
+    results = SearchFilterManager.search_volunteer_shifts(query, activity_id, status)
+    return render_template('search_volunteer_shifts.html', results=results, query=query)
+
+
+@bp.route('/api/search/volunteer-shifts')
+def api_search_volunteer_shifts():
+    """API: 搜尋志工排班"""
+    query = request.args.get('q', '')
+    activity_id = request.args.get('activity_id')
+    status = request.args.get('status')
+    
+    results = SearchFilterManager.search_volunteer_shifts(query, activity_id, status)
+    return jsonify({'results': results}), 200
+
+
 # ==========================================
 # 4. 檔案管理系統
 # ==========================================

@@ -20,10 +20,23 @@
             </div>
             <div class="hero-actions">
                 <a class="button" href="/admin/activities/{{ activity.id }}/volunteer-shifts/create">+ 新增排班</a>
+                <a class="button" href="/search/volunteer-shifts">🔍 搜尋排班</a>
                 <a class="button" href="/admin/activities">返回活動列表</a>
                 <a class="button" href="/logout">登出</a>
             </div>
         </header>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="card" style="margin-bottom: 1.5rem;">
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ 'error' if category == 'error' else 'success' }}" style="padding: 1rem; border-radius: 4px; {% if category == 'error' %}background: #fee; color: #c00;{% else %}background: #efe; color: #060;{% endif %}">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
 
         <section class="card">
             <div class="card-title">
@@ -56,7 +69,14 @@
                     {% if shift.status == '招募中' %}
                     <div class="add-volunteer-form">
                         <form method="post" action="/admin/volunteer-shifts/{{ shift.id }}/add-volunteer" style="display: flex; gap: 8px; width: 100%;">
-                            <input type="text" name="username" required placeholder="輸入志工名稱" style="flex: 1; padding: 8px; border: 1px solid var(--border); border-radius: 4px;">
+                            <select name="username" required style="flex: 1; padding: 8px; border: 1px solid var(--border); border-radius: 4px;">
+                                <option value="">-- 選擇志工 --</option>
+                                {% for v in volunteers %}
+                                    {% if v.status == '活躍' and v.name not in shift.volunteers %}
+                                    <option value="{{ v.name }}">{{ v.name }}</option>
+                                    {% endif %}
+                                {% endfor %}
+                            </select>
                             <button type="submit" style="background-color: #28a745; color: white; padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer;">添加</button>
                         </form>
                     </div>

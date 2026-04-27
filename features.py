@@ -274,6 +274,74 @@ class SearchFilterManager:
             print(f"搜尋失敗: {e}")
             return []
 
+    @staticmethod
+    def search_volunteers(query, status=None):
+        """搜尋志工"""
+        try:
+            import json
+            from pathlib import Path
+            
+            volunteers_file = Path(__file__).parent / "volunteers.json"
+            if not volunteers_file.exists():
+                return []
+            
+            with open(volunteers_file, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                volunteers = data.get("volunteers", [])
+            
+            # 篩選
+            results = volunteers
+            if query:
+                query = query.lower()
+                results = [v for v in results if 
+                    query in v.get("name", "").lower() or
+                    query in v.get("phone", "").lower() or
+                    query in v.get("email", "").lower() or
+                    query in v.get("skills", "").lower()]
+            
+            if status:
+                results = [v for v in results if v.get("status") == status]
+            
+            return results
+        except Exception as e:
+            print(f"搜尋失敗: {e}")
+            return []
+
+    @staticmethod
+    def search_volunteer_shifts(query, activity_id=None, status=None):
+        """搜尋志工排班"""
+        try:
+            import json
+            from pathlib import Path
+            
+            shifts_file = Path(__file__).parent / "volunteer_shifts.json"
+            if not shifts_file.exists():
+                return []
+            
+            with open(shifts_file, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                shifts = data.get("volunteer_shifts", [])
+            
+            # 篩選
+            results = shifts
+            
+            if activity_id:
+                results = [s for s in results if s.get("activity_id") == activity_id]
+            
+            if status:
+                results = [s for s in results if s.get("status") == status]
+            
+            if query:
+                query = query.lower()
+                results = [s for s in results if 
+                    query in s.get("shift_name", "").lower() or
+                    any(query in v.lower() for v in s.get("volunteers", []))]
+            
+            return results
+        except Exception as e:
+            print(f"搜尋失敗: {e}")
+            return []
+
 
 class FileManager:
     """檔案管理系統"""

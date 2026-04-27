@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>搜尋志工排班</title>
+    <link rel="stylesheet" href="/static/css/index.css">
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="/static/css/admin-forms.css">
+    <link rel="stylesheet" href="/static/css/status-badges.css">
+    <link rel="stylesheet" href="/static/css/admin-pages.css">
+</head>
+<body>
+    <div class="page-bg"></div>
+    <div class="container">
+        <header class="hero-card">
+            <div class="hero-copy">
+                <span class="eyebrow">搜尋功能</span>
+                <h1>搜尋志工排班</h1>
+                <p>從排班資料中搜尋班次或志工人員。</p>
+            </div>
+            <div class="hero-actions">
+                <a class="button" href="/admin">返回後台</a>
+            </div>
+        </header>
+
+        <!-- 搜尋表單 -->
+        <section class="card">
+            <form method="get" action="/search/volunteer-shifts" style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: flex-end;">
+                <div style="flex: 2; min-width: 200px;">
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: bold;">關鍵字搜尋</label>
+                    <input type="text" name="q" class="form-input" placeholder="輸入班次名稱或志工姓名" value="{{ query or '' }}">
+                </div>
+                <div style="flex: 1; min-width: 150px;">
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: bold;">狀態篩選</label>
+                    <select name="status" class="form-input">
+                        <option value="">全部狀態</option>
+                        <option value="招募中" {% if request.args.get('status') == '招募中' %}selected{% endif %}>招募中</option>
+                        <option value="已滿員" {% if request.args.get('status') == '已滿員' %}selected{% endif %}>已滿員</option>
+                    </select>
+                </div>
+                <div style="flex: 0;">
+                    <button type="submit" class="button">搜尋</button>
+                </div>
+            </form>
+        </section>
+
+        <!-- 搜尋結果 -->
+        <section class="card">
+            <div class="card-title">
+                <h2>搜尋結果</h2>
+                <span>共 {{ results|length }} 個班次</span>
+            </div>
+
+            {% if results %}
+                {% for shift in results %}
+                <div class="shift-card">
+                    <h3>{{ shift.shift_name }}</h3>
+                    <div class="shift-meta">
+                        <strong>時間:</strong> {{ shift.start_time }} - {{ shift.end_time }}<br>
+                        <strong>需求人數:</strong> {{ shift.required_count }} 人<br>
+                        <strong>目前人數:</strong> {{ shift.volunteers|length }} / {{ shift.required_count }}<br>
+                        <strong>狀態:</strong> <span class="shift-status {% if shift.status == '招募中' %}招募中{% else %}已滿員{% endif %}">{{ shift.status }}</span>
+                    </div>
+                    <div class="shift-volunteers">
+                        <strong>志工名單:</strong>
+                        {% if shift.volunteers %}
+                        <ul class="volunteer-list">
+                            {% for volunteer in shift.volunteers %}
+                            <li>✓ {{ volunteer }}</li>
+                            {% endfor %}
+                        </ul>
+                        {% else %}
+                        <span style="color: var(--text-secondary);">尚無志工報名</span>
+                        {% endif %}
+                    </div>
+                    <div style="margin-top: 1rem;">
+                        <a href="/admin/activities/{{ shift.activity_id }}/volunteer-shifts" class="btn-small">查看詳情</a>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="empty-state">
+                    <div class="empty-state-icon">🔍</div>
+                    <p>{% if query %}沒有找到符合「{{ query }}」的排班{% else %}請輸入搜尋關鍵字{% endif %}</p>
+                </div>
+            {% endif %}
+        </section>
+    </div>
+</body>
+</html>
