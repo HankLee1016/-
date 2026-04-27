@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>搜尋志工</title>
+    <link rel="stylesheet" href="/static/css/index.css">
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="/static/css/admin-forms.css">
+    <link rel="stylesheet" href="/static/css/status-badges.css">
+    <link rel="stylesheet" href="/static/css/admin-pages.css">
+</head>
+<body>
+    <div class="page-bg"></div>
+    <div class="container">
+        <header class="hero-card">
+            <div class="hero-copy">
+                <span class="eyebrow">搜尋功能</span>
+                <h1>搜尋志工</h1>
+                <p>從志工資料庫中搜尋符合條件的人員。</p>
+            </div>
+            <div class="hero-actions">
+                <a class="button" href="/admin/volunteers">返回志工列表</a>
+                <a class="button" href="/admin">返回後台</a>
+            </div>
+        </header>
+
+        <!-- 搜尋表單 -->
+        <section class="card">
+            <form method="get" action="/search/volunteers" style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: flex-end;">
+                <div style="flex: 2; min-width: 200px;">
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: bold;">關鍵字搜尋</label>
+                    <input type="text" name="q" class="form-input" placeholder="輸入姓名、電話、Email 或技能" value="{{ query or '' }}">
+                </div>
+                <div style="flex: 1; min-width: 150px;">
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: bold;">狀態篩選</label>
+                    <select name="status" class="form-input">
+                        <option value="">全部狀態</option>
+                        <option value="活躍" {% if request.args.get('status') == '活躍' %}selected{% endif %}>活躍</option>
+                        <option value="暫停" {% if request.args.get('status') == '暫停' %}selected{% endif %}>暫停</option>
+                        <option value="待審核" {% if request.args.get('status') == '待審核' %}selected{% endif %}>待審核</option>
+                    </select>
+                </div>
+                <div style="flex: 0;">
+                    <button type="submit" class="button">搜尋</button>
+                </div>
+            </form>
+        </section>
+
+        <!-- 搜尋結果 -->
+        <section class="card">
+            <div class="card-title">
+                <h2>搜尋結果</h2>
+                <span>共 {{ results|length }} 位志工</span>
+            </div>
+
+            {% if results %}
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>姓名</th>
+                            <th>聯絡電話</th>
+                            <th>電子郵件</th>
+                            <th>技能</th>
+                            <th>狀態</th>
+                            <th>服務時數</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for volunteer in results %}
+                        <tr>
+                            <td><strong>{{ volunteer.name }}</strong></td>
+                            <td>{{ volunteer.phone or '-' }}</td>
+                            <td>{{ volunteer.email or '-' }}</td>
+                            <td>{{ volunteer.skills or '-' }}</td>
+                            <td>
+                                <span class="status-badge {% if volunteer.status == '活躍' %}status-active{% elif volunteer.status == '暫停' %}status-inactive{% else %}status-pending{% endif %}">
+                                    {{ volunteer.status }}
+                                </span>
+                            </td>
+                            <td>{{ volunteer.service_hours or 0 }} 小時</td>
+                            <td class="action-buttons">
+                                <a href="/admin/volunteers/{{ volunteer.id }}/edit" class="btn-small">編輯</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <div class="empty-state">
+                    <div class="empty-state-icon">🔍</div>
+                    <p>{% if query %}沒有找到符合「{{ query }}」的志工{% else %}請輸入搜尋關鍵字{% endif %}</p>
+                </div>
+            {% endif %}
+        </section>
+    </div>
+</body>
+</html>

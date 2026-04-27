@@ -325,14 +325,25 @@ def create_volunteer_shift(activity_id, shift_name, start_time, end_time, requir
     return new_shift
 
 def add_volunteer_to_shift(shift_id, username):
+    """Add volunteer to shift - validates volunteer exists in volunteers list"""
+    # Load volunteers list
+    volunteers = load_volunteers()
+    volunteer_names = [v.get("name", "") for v in volunteers]
+    
+    # Validate volunteer exists
+    if username not in volunteer_names:
+        return False
+    
     shifts = load_volunteer_shifts()
     for shift in shifts:
         if shift["id"] == shift_id:
-            if username not in shift["volunteers"]:
+            if username not in shift.get("volunteers", []):
+                if "volunteers" not in shift: shift["volunteers"] = []
                 shift["volunteers"].append(username)
                 if len(shift["volunteers"]) >= shift["required_count"]: shift["status"] = "已滿員"
             break
     save_volunteer_shifts(shifts)
+    return True
 
 def get_activity_volunteer_shifts(activity_id):
     return [s for s in load_volunteer_shifts() if s["activity_id"] == activity_id]
@@ -1167,7 +1178,7 @@ def admin_volunteer_shifts(activity_id):
     if session.get("role") != "admin": return redirect(url_for("home"))
     activity = get_activity(activity_id)
     if not activity: return redirect(url_for("admin_activities"))
-    return render_template("admin_volunteer_shifts.html", activity=activity, shifts=get_activity_volunteer_shifts(activity_id), username=session.get("username"))
+    return render_template("admin_volunteer_shifts.html", activity=activity, shifts=get_activity_volunteer_shifts(activity_id), volunteers=load_volunteers(), username=session.get("username"))
 
 @app.route("/admin/activities/<activity_id>/volunteer-shifts/create", methods=["GET", "POST"])
 def admin_create_volunteer_shift(activity_id):
@@ -1190,7 +1201,11 @@ def admin_create_volunteer_shift(activity_id):
 def admin_add_volunteer_to_shift(shift_id):
     if session.get("role") != "admin": return redirect(url_for("home"))
     username = request.form.get("username", "").strip()
-    if username: add_volunteer_to_shift(shift_id, username)
+    if username:
+        success = add_volunteer_to_shift(shift_id, username)
+        if not success:
+            # Get the referrer URL and add error message
+            flash("錯誤：該人員不在志工名單中，無法排班。", "error")
     return redirect(request.referrer or url_for("admin_activities"))
 
 # --- Admin: Services ---
