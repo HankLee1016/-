@@ -13,6 +13,7 @@
         <div class="hero-actions">
             <a class="button" href="/subsidies">💰 補助查詢</a>
             <a class="button" href="/user/assistant">🤖 AI企劃助理</a>
+            <a class="button" href="/user/applications">📄 我的申請</a>
             <a class="button button-secondary" href="/user/profile">👤 我的資料</a>
             <a class="button button-secondary" href="/logout">🚪 登出</a>
         </div>
@@ -30,6 +31,10 @@
         <div class="stat-box">
             <h3>企劃書草稿</h3>
             <div class="value">{{ drafted_proposals | default('—') }}</div>
+        </div>
+        <div class="stat-box">
+            <h3>已提交申請</h3>
+            <div class="value">{{ submitted_applications | default('—') }}</div>
         </div>
     </div>
 
@@ -145,6 +150,17 @@
             <div style="display:flex; gap:12px; align-items:center; margin-bottom:12px; flex-wrap:wrap;">
                 <a class="button" href="/user/proposal/download">下載企劃（TXT）</a>
                 <a class="button" href="/user/assistant/import_proposal?subsidy_summary={{ subsidy_summary | urlencode }}">用對話優化企劃（載入初步企劃）</a>
+                <form method="post" action="/user/application/submit" style="display:inline-block; margin:0;">
+                    <input type="hidden" name="case_title" value="{{ case_title | default('') }}">
+                    <input type="hidden" name="background" value="{{ background | default('') }}">
+                    <input type="hidden" name="issues" value="{{ issues | default('') }}">
+                    <input type="hidden" name="goals" value="{{ goals | default('') }}">
+                    <input type="hidden" name="subsidy_summary" value="{{ subsidy_summary | default('') }}">
+                    <input type="hidden" name="success_pdf" value="{{ uploaded_success_pdf | default('') }}">
+                    <input type="hidden" name="subsidy_pdf" value="{{ uploaded_subsidy_pdf | default('') }}">
+                    <textarea name="proposal" hidden>{{ proposal }}</textarea>
+                    <button type="submit" class="button button-secondary">提交補助申請</button>
+                </form>
             </div>
             <pre>{{ proposal }}</pre>
         </section>

@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+
+{% block title %}我的申請 — 社福資源平台{% endblock %}
+
+{% block content %}
+    <div class="page-bg"></div>
+    <header class="hero-card">
+        <div class="hero-copy">
+            <span class="eyebrow">我的補助申請</span>
+            <h1>📄 {{ username or '使用者' }} 的申請紀錄</h1>
+            <p>查看目前申請進度與管理者審核結果。</p>
+        </div>
+        <div class="hero-actions">
+            <a class="button" href="/user">回到使用者專區</a>
+            <a class="button button-secondary" href="/user/assistant">AI企劃助理</a>
+        </div>
+    </header>
+
+    <section class="card">
+        <div class="card-title">
+            <h2 class="section-title">📋 申請紀錄</h2>
+            <p class="text-muted">依照時間排序，最新申請會顯示在最前面</p>
+        </div>
+
+        {% if applications %}
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>申請時間</th>
+                            <th>案名</th>
+                            <th>狀態</th>
+                            <th>管理者備註</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for app in applications %}
+                        <tr>
+                            <td>{{ app.created_at[:19].replace('T', ' ') }}</td>
+                            <td>{{ app.case_title }}</td>
+                            <td>
+                                {% if app.status == 'pending' %}待審核{% elif app.status == 'approved' %}已批准{% elif app.status == 'rejected' %}已拒絕{% else %}{{ app.status }}{% endif %}
+                            </td>
+                            <td>{{ app.admin_note or '無' }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="message info">目前尚無任何補助申請，請先產生企劃書並提交申請。</div>
+        {% endif %}
+    </section>
+{% endblock %}

@@ -1,0 +1,78 @@
+{% extends 'base.html' %}
+
+{% block title %}申請審核 — 管理後台{% endblock %}
+
+{% block content %}
+    <div class="page-bg"></div>
+    <header class="hero-card">
+        <div class="hero-copy">
+            <span class="eyebrow">管理者審核</span>
+            <h1>📝 補助申請審核</h1>
+            <p>查看所有使用者申請並執行批准或拒絕。</p>
+        </div>
+        <div class="hero-actions">
+            <a class="button" href="/admin">回到管理後台</a>
+            <a class="button button-secondary" href="/admin/members">成員管理</a>
+        </div>
+    </header>
+
+    <section class="card">
+        <div class="card-title">
+            <h2 class="section-title">審核列表</h2>
+            <p class="text-muted">顯示所有補助申請的最新狀態</p>
+        </div>
+
+        {% if applications %}
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>申請時間</th>
+                            <th>使用者</th>
+                            <th>案名</th>
+                            <th>狀態</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for app in applications %}
+                        <tr>
+                            <td>{{ app.created_at[:19].replace('T', ' ') }}</td>
+                            <td>{{ app.username }}</td>
+                            <td>{{ app.case_title }}</td>
+                            <td>
+                                {% if app.status == 'pending' %}待審核{% elif app.status == 'approved' %}已批准{% elif app.status == 'rejected' %}已拒絕{% else %}{{ app.status }}{% endif %}
+                            </td>
+                            <td>
+                                <details style="max-width: 500px;">
+                                    <summary class="button btn-small">查看內容</summary>
+                                    <div style="padding: 1rem; background: #f9fafb; border-radius: 8px; margin-top: 0.75rem;">
+                                        <div><strong>補助摘要：</strong>{{ app.subsidy_summary or '—' }}</div>
+                                        <div><strong>背景：</strong> {{ app.background }}</div>
+                                        <div><strong>主要問題：</strong> {{ app.issues or '無' }}</div>
+                                        <div><strong>目標：</strong> {{ app.goals or '無' }}</div>
+                                        <div><strong>企劃書內容：</strong><pre style="white-space: pre-wrap;">{{ app.proposal }}</pre></div>
+                                        <div><strong>管理者備註：</strong> {{ app.admin_note or '無' }}</div>
+                                    </div>
+                                </details>
+                                {% if app.status == 'pending' %}
+                                <form method="post" action="/admin/applications/{{ app.id }}/approve" style="display:inline-block; margin-top:0.5rem;">
+                                    <input type="hidden" name="admin_note" value="已核准此申請。">
+                                    <button type="submit" class="button btn-small">批准</button>
+                                </form>
+                                <form method="post" action="/admin/applications/{{ app.id }}/reject" style="display:inline-block; margin-top:0.5rem; margin-left:0.5rem;">
+                                    <input type="hidden" name="admin_note" value="此申請未通過審核。">
+                                    <button type="submit" class="button btn-small button-secondary">拒絕</button>
+                                </form>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="message info">目前尚無任何補助申請。</div>
+        {% endif %}
+    </section>
+{% endblock %}

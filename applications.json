@@ -1,0 +1,20 @@
+{
+  "applications": [
+    {
+      "id": "022b7c43-bab1-4df6-b0c3-feec927337c9",
+      "username": "88",
+      "case_title": "111",
+      "background": "弱勢",
+      "issues": "學費負擔不起",
+      "goals": "希望獲得補助",
+      "proposal": "我是 企劃師小智，以 ChatAssist GPT 作為智慧大腦，正在分析您的個案。\r\n\r\nAI 代理人分析結果如下：\r\n\r\n已依照正式企劃書格式潤飾內容，保持清晰且可執行。\r\n\r\n案名：111。\r\n\r\n本段內容指出：弱勢。\r\n\r\n本段內容指出：學費負擔不起。\r\n\r\n目標與成效描述了：希望獲得補助。\r\n\r\n可透過階段性目標設定，逐步將需求轉化為可執行方案。\r\n\r\n針對上述議題，建議以具體措施回應，避免方案過於籠統。\r\n\r\n本案目標建議優先關注：希望獲得補助。，並以可衡量成果檢視進度。\r\n\r\n本回覆已由 AI 代理人進行獨立推理，並根據本次個案內容動態生成。\r\n\r\nAI 模型：ChatAssist GPT / 引擎：GPT-Assist-2.0\r\n\r\n回覆識別碼：341bf4f5",
+      "subsidy_summary": "",
+      "success_pdf": "None",
+      "subsidy_pdf": "None",
+      "status": "approved",
+      "admin_note": "已核准此申請。",
+      "created_at": "2026-05-10T12:35:50.346484",
+      "updated_at": "2026-05-10T12:37:45.108743"
+    }
+  ]
+}
