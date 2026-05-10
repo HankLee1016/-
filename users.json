@@ -13,7 +13,15 @@
     {
       "username": "88",
       "password": "8b940be7fb78aaa6b6567dd7a3987996947460df1c668e698eb92ca77e425349",
-      "role": "user"
+      "role": "user",
+      "org_profile": {
+        "org_name": "4",
+        "org_id": "44",
+        "member_count": "443",
+        "volunteer_count": "4444",
+        "contact_person": "555",
+        "address": "9999999"
+      }
     },
     {
       "username": "11",

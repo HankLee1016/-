@@ -41,6 +41,7 @@ REGISTRATIONS_FILE = Path(app.root_path) / "registrations.json"
 ATTENDANCES_FILE = Path(app.root_path) / "attendances.json"
 VOLUNTEER_SHIFTS_FILE = Path(app.root_path) / "volunteer_shifts.json"
 VOLUNTEERS_FILE = Path(app.root_path) / "volunteers.json"
+APPLICATIONS_FILE = Path(app.root_path) / "applications.json"
 
 UPLOAD_FOLDER = Path(app.root_path) / "uploads"
 UPLOAD_FOLDER.mkdir(parents=True, exist_ok=True)
@@ -154,6 +155,67 @@ def load_cases():
 def save_cases(cases):
     with CASES_FILE.open("w", encoding="utf-8") as f:
         json.dump({"cases": cases}, f, ensure_ascii=False, indent=2)
+
+# --- Applications ---
+def load_applications():
+    if not APPLICATIONS_FILE.exists(): return []
+    try:
+        with APPLICATIONS_FILE.open("r", encoding="utf-8") as f:
+            return json.load(f).get("applications", [])
+    except json.JSONDecodeError:
+        return []
+
+
+def save_applications(applications):
+    with APPLICATIONS_FILE.open("w", encoding="utf-8") as f:
+        json.dump({"applications": applications}, f, ensure_ascii=False, indent=2)
+
+
+def create_application(username, case_title, background, issues, goals, proposal, subsidy_summary="", success_pdf=None, subsidy_pdf=None, status="pending"):
+    applications = load_applications()
+    new_app = {
+        "id": str(uuid.uuid4()),
+        "username": username,
+        "case_title": case_title,
+        "background": background,
+        "issues": issues,
+        "goals": goals,
+        "proposal": proposal,
+        "subsidy_summary": subsidy_summary,
+        "success_pdf": success_pdf,
+        "subsidy_pdf": subsidy_pdf,
+        "status": status,
+        "admin_note": "",
+        "created_at": datetime.datetime.utcnow().isoformat(),
+        "updated_at": datetime.datetime.utcnow().isoformat()
+    }
+    applications.insert(0, new_app)
+    save_applications(applications)
+    return new_app
+
+
+def get_application(application_id):
+    for app_item in load_applications():
+        if app_item.get("id") == application_id:
+            return app_item
+    return None
+
+
+def get_user_applications(username):
+    return [app_item for app_item in load_applications() if app_item.get("username") == username]
+
+
+def update_application_status(application_id, status, admin_note=""):
+    applications = load_applications()
+    for app_item in applications:
+        if app_item.get("id") == application_id:
+            app_item["status"] = status
+            app_item["admin_note"] = admin_note
+            app_item["updated_at"] = datetime.datetime.utcnow().isoformat()
+            save_applications(applications)
+            return app_item
+    return None
+
 
 def create_case(case_name, member_name, issue_description, status="進行中"):
     cases = load_cases()
@@ -715,7 +777,7 @@ def user_dashboard():
     return render_template(
         "user.html", username=session.get("username"), ai_agent=agent["name"], ai_agent_note=agent["description"],
         ai_model=AI_MODEL_NAME, ai_engine=AI_MODEL_ENGINE, case_title=case_title, background=background,
-        issues=issues, goals=goals, subsidy_summary=subsidy_summary
+        issues=issues, goals=goals, subsidy_summary=subsidy_summary, submitted_applications=len(get_user_applications(session.get("username")))
     )
 
 @app.route("/user/proposal", methods=["POST"])
@@ -777,8 +839,69 @@ def user_proposal():
         "user.html", username=session.get("username"), case_title=case_title, background=background,
         issues=issues, goals=goals, subsidy_summary=subsidy_summary, uploaded_success_pdf=uploaded_success_pdf,
         uploaded_subsidy_pdf=uploaded_subsidy_pdf, proposal=proposal, ai_agent=ai_agent, ai_agent_note=ai_agent_note,
-        ai_model=AI_MODEL_NAME, ai_engine=AI_MODEL_ENGINE, error=error
+        ai_model=AI_MODEL_NAME, ai_engine=AI_MODEL_ENGINE, error=error, submitted_applications=len(get_user_applications(session.get("username")))
     )
+
+@app.route("/user/application/submit", methods=["POST"])
+def user_application_submit():
+    if session.get("role") != "user":
+        return redirect(url_for("home"))
+
+    case_title = request.form.get("case_title", "").strip()
+    background = request.form.get("background", "").strip()
+    issues = request.form.get("issues", "").strip()
+    goals = request.form.get("goals", "").strip()
+    subsidy_summary = request.form.get("subsidy_summary", "").strip()
+    proposal = request.form.get("proposal", "").strip()
+    success_pdf = request.form.get("success_pdf")
+    subsidy_pdf = request.form.get("subsidy_pdf")
+
+    if not case_title or not proposal:
+        return redirect(url_for("user"))
+
+    create_application(
+        username=session.get("username"),
+        case_title=case_title,
+        background=background,
+        issues=issues,
+        goals=goals,
+        proposal=proposal,
+        subsidy_summary=subsidy_summary,
+        success_pdf=success_pdf,
+        subsidy_pdf=subsidy_pdf
+    )
+
+    return redirect(url_for("user_applications"))
+
+@app.route("/user/applications")
+def user_applications():
+    if not session.get("username"):
+        return redirect(url_for("home"))
+    applications = get_user_applications(session.get("username"))
+    return render_template("user_applications.html", username=session.get("username"), applications=applications)
+
+@app.route("/admin/applications")
+def admin_applications():
+    if session.get("role") != "admin":
+        return redirect(url_for("home"))
+    applications = load_applications()
+    return render_template("admin_applications.html", username=session.get("username"), applications=applications)
+
+@app.route("/admin/applications/<application_id>/approve", methods=["POST"])
+def admin_approve_application(application_id):
+    if session.get("role") != "admin":
+        return redirect(url_for("home"))
+    admin_note = request.form.get("admin_note", "").strip()
+    update_application_status(application_id, "approved", admin_note)
+    return redirect(url_for("admin_applications"))
+
+@app.route("/admin/applications/<application_id>/reject", methods=["POST"])
+def admin_reject_application(application_id):
+    if session.get("role") != "admin":
+        return redirect(url_for("home"))
+    admin_note = request.form.get("admin_note", "").strip()
+    update_application_status(application_id, "rejected", admin_note)
+    return redirect(url_for("admin_applications"))
 
 @app.route("/user/proposal/download")
 def download_proposal():
