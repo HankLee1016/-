@@ -5,7 +5,7 @@ import random
 import uuid
 import datetime
 from pathlib import Path
-from flask import Flask, request, jsonify, render_template, send_from_directory, redirect, url_for, session, Response
+from flask import Flask, request, jsonify, render_template, send_from_directory, redirect, url_for, session, Response, flash
 from werkzeug.utils import secure_filename
 
 try:
@@ -598,9 +598,19 @@ def choose_ai_agent(background, issues):
 def request_openai_proposal(title, background, issues, goals):
     if not openai_client: return None
     prompt = (
-        "你是一個資深社福個案企劃 AI，請根據以下內容生成正式且具可執行性的企劃書建議。"
-        "請不要直接照抄原文，而是以專業語氣重述重點。\n\n"
-        f"案名：{title}\n背景與現況：{background}\n主要問題：{issues}\n目標與成效：{goals}\n"
+        "你是一個資深企劃書撰寫 AI，請根據以下個案資料生成一份中文企劃書草稿。"
+        "請依照正式企劃書架構呈現，並以條列或段落方式列出重點。"
+        "避免使用口語語氣、第一人稱敘述，保留專業、清楚可執行的建議。\n\n"
+        f"案名：{title}\n背景與現況：{background}\n主要問題：{issues}\n目標與成效：{goals}\n\n"
+        "請至少包含以下章節：\n"
+        "1. 壹、宗旨（計畫緣起）\n"
+        "2. 貳、計畫目標\n"
+        "3. 参、計畫執行期程\n"
+        "4. 肆、企劃內容及實行方法\n"
+        "5. 伍、預期成果與效益\n"
+        "6. 陸、可能風險與因應措施\n"
+        "7. 柒、建議經費概算方向\n"
+        "如資料不足，可在對應章節補充建議方向與可行重點。"
     )
     try:
         response = openai_client.chat.completions.create(
@@ -609,6 +619,7 @@ def request_openai_proposal(title, background, issues, goals):
         return response.choices[0].message.content.strip()
     except Exception as err:
         return f"OpenAI 呼叫失敗：{err}"
+
 
 def polish_text(text):
     if not text: return ""
@@ -638,24 +649,47 @@ def generate_case_proposal(title, background, issues, goals, agent_name):
     polished_goals = polish_text(goals)
     case_title = polish_text(title)
 
-    tone_note = "已將原始敘述調整為正式、專業的企劃書語氣，並保留核心意圖。" if is_informal(background + issues + goals) else "已依照正式企劃書格式潤飾內容，保持清晰且可執行。"
-    agent_intro = [f"我是 {agent_name}，以 {AI_MODEL_NAME} 作為智慧大腦，正在分析您的個案。", f"本次由 {agent_name} 啟動 {AI_MODEL_NAME} 模型，從資料中擷取關鍵資訊並提出具體建議。"]
-    analysis_intro = ["以下為本案分析與建議：", "本代理人建議如下：", "AI 代理人分析結果如下："]
-    recommendations = ["建議優先釐清現況與目標之間的落差，並依照資源可行性安排下一步。", "可透過階段性目標設定，逐步將需求轉化為可執行方案。", "在執行期間，持續觀察成效並依反饋調整支援策略。"]
+    sections = []
+    sections.append("壹、宗旨（計畫緣起）\n本案案名為「%s」，主要說明個案背景與現況，並指出本企劃欲解決的核心問題。" % case_title)
+    if polished_background:
+        sections.append("本案背景與現況說明：%s" % polished_background)
+    if polished_issues:
+        sections.append("本案欲解決的主要議題為：%s" % polished_issues)
 
-    result = [
-        random.choice(agent_intro), random.choice(analysis_intro), tone_note, f"案名：{case_title}",
-        summarize_input("背景與現況", polished_background), summarize_input("主要問題", polished_issues),
-        summarize_input("目標與成效", polished_goals), random.choice(recommendations)
+    goals_section = "貳、計劃目標\n"
+    goals_section += "1. 建立明確可衡量之目標，涵蓋短期與長期成效。\n"
+    if polished_goals:
+        goals_section += "2. 目標內容：%s" % polished_goals
+    else:
+        goals_section += "2. 目標內容：尚待補充具體目標與預期成效。"
+    sections.append(goals_section)
+
+    schedule = "参、計畫執行期程\n- 建議將計畫分為籌備、執行與評估三階段，並訂定明確時間點。\n- 若已有補助或成功經驗資料，可用於確認時程與資源配置。"
+    sections.append(schedule)
+
+    content = "肆、企劃內容及實行方法\n- 依據背景與問題分析，提出具體執行方案與方法。\n- 建議包含服務對象、施作方式、資源整合與協調機制。"
+    if polished_issues:
+        content += "\n- 針對主要議題，應提出逐步解決策略，避免方案過於籠統。"
+    sections.append(content)
+
+    outcome = "伍、預期成果與效益\n- 預期本計畫可提升個案自立能力並改善相關生活品質。"
+    if polished_goals:
+        outcome += "\n- 依照目標設定，可採用數量化或可觀察之指標檢視成效。"
+    sections.append(outcome)
+
+    risk = "陸、可能風險與因應措施\n- 針對資源不足、執行進度延遲或需求變動訂定備援方案。\n- 建議定期檢視成效，並依反饋調整執行方式。"
+    sections.append(risk)
+
+    budget = "柒、建議經費概算方向\n- 初步預估應包含人事費、辦理費用、材料耗材與雜支。\n- 若申請政府補助，務必先確認核銷規定與可報支項目。"
+    sections.append(budget)
+
+    footer = [
+        "本回覆已依據企劃書範本格式整理，並保留可執行性與專業建議。",
+        f"AI 模型：{AI_MODEL_NAME} / 引擎：{AI_MODEL_ENGINE}",
+        f"回覆識別碼：{uuid.uuid4().hex[:8]}"
     ]
-    if polished_issues: result.append(f"針對上述議題，建議以具體措施回應，避免方案過於籠統。")
-    if polished_goals: result.append(f"本案目標建議優先關注：{polished_goals}，並以可衡量成果檢視進度。")
-    if any(keyword in polished_background for keyword in ["經濟", "就業", "收入"]): result.append("模型判斷：應加強經濟、就業與資源媒合面向，以提升案主自立能力。")
-    if any(keyword in polished_background for keyword in ["情緒", "壓力", "憂鬱", "焦慮"]): result.append("模型判斷：需同時納入心理支持與情緒陪伴機制，以降低個案風險。")
-    result.append(random.choice(["本回覆已由 AI 代理人進行獨立推理，並根據本次個案內容動態生成。", "本次建議每次皆會稍作變化，以確保回覆不重複且具備新穎視角。", "此回覆已根據案情動態調整語氣與內容，避免重複先前回應。"]))
-    result.append(f"AI 模型：{AI_MODEL_NAME} / 引擎：{AI_MODEL_ENGINE}")
-    result.append(f"回覆識別碼：{uuid.uuid4().hex[:8]}")
-    return "\n\n".join([sentence for sentence in result if sentence])
+
+    return "\n\n".join([section for section in sections if section] + footer)
 
 def build_assistant_messages(user_input, history, subsidy_summary=""):
     messages = [{"role": "system", "content": "你是一個社福企劃對話助理，透過問答引導使用者按步驟整理企劃書內容。請先釐清服務對象、補助目的、組織特色與預期成效，然後再進一步提供可行建議。"}]
