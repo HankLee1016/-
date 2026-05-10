@@ -311,51 +311,6 @@ def create_backup():
     return jsonify({'success': True, 'backup_id': str(backup_id)}) if backup_id else jsonify({'error': '備份失敗'}), 500
 
 
-# ==========================================
-# 7. 用戶權限管理
-# ==========================================
-
-@bp.route('/admin/permissions')
-def permissions_management():
-    """權限管理"""
-    if session.get('role') != 'admin':
-        return redirect(url_for('home'))
-    
-    try:
-        conn = get_db_connection()
-        cursor = conn.cursor(cursor_factory=RealDictCursor)
-        cursor.execute('SELECT * FROM users WHERE role != "admin" ORDER BY username')
-        users = cursor.fetchall()
-        cursor.close()
-        conn.close()
-        
-        return render_template('permissions_management.html', users=users)
-    except Exception as e:
-        return str(e), 500
-
-
-@bp.route('/api/permissions/<user_id>', methods=['GET'])
-def get_user_permissions(user_id):
-    """API: 取得用戶權限"""
-    if session.get('role') != 'admin':
-        return jsonify({'error': '無權限'}), 403
-    
-    permissions = PermissionManager.get_user_permissions(user_id)
-    return jsonify({'permissions': permissions}), 200
-
-
-@bp.route('/api/permissions/<user_id>', methods=['POST'])
-def grant_permission(user_id):
-    """API: 授予權限"""
-    if session.get('role') != 'admin':
-        return jsonify({'error': '無權限'}), 403
-    
-    data = request.get_json()
-    permission = data.get('permission')
-    
-    success = PermissionManager.grant_permission(user_id, permission, session.get('username'))
-    return jsonify({'success': success}), 200 if success else 500
-
 
 # ==========================================
 # 額外數據獲取端點
