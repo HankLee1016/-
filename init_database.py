@@ -197,6 +197,26 @@ def init_database():
             )
         """)
         print("✓ contents 表已建立")
+
+        # 12. 捐款表 (兼容 crawler 與 UI)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS donations (
+                id BIGINT PRIMARY KEY,
+                donor VARCHAR(255),
+                funds_no VARCHAR(100),
+                amount NUMERIC,
+                donation_date DATE,
+                note TEXT,
+                category INTEGER,
+                unit_data_id INTEGER,
+                show_flag INTEGER,
+                last_user INTEGER,
+                last_date TIMESTAMP,
+                build_date TIMESTAMP,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        print("✓ donations 表已建立")
         
         # 12. 系統日誌表
         cursor.execute("""

@@ -9,11 +9,15 @@
 
 ## 資料庫設定（Supabase）
 
-本專案使用 Supabase 的 PostgreSQL 作為資料庫。  
-組員可以使用自己 Supabase 帳號，或依照以下方式建立連線設定：
+本專案使用 Supabase 或任何 PostgreSQL 作為資料庫。  
+組員可以使用自己 Supabase 帳號，也可以使用本機 PostgreSQL。建議先建立 `.env` 檔案，或依照以下方式建立連線設定：
 
-1. 在專案資料夾建立 `config_py.py` 檔案
-2. 範例內容如下（請用自己的 Supabase 專案資訊替換）：
+1. 在專案資料夾建立 `.env` 檔案
+2. 參考 `.env.example` 填入 PostgreSQL 連線資訊
+3. 如果資料庫還沒建立，執行 `python create_database.py`
+4. 執行 `python init_database.py` 建表
+
+如果你的 PostgreSQL 管理資料庫不是 `postgres`，請在 `.env` 中設置 `DB_ADMIN_DB`。
 
 ```python
 import psycopg2

@@ -1520,10 +1520,11 @@ def get_donations():
     try:
         conn = get_db_connection()
         cur = conn.cursor()
-        query = "SELECT donor, date, amount, note FROM donations WHERE EXTRACT(YEAR FROM date) = %s AND EXTRACT(MONTH FROM date) = %s"
+        # 資料表欄位為 donation_date
+        query = "SELECT donor, donation_date, amount, note FROM donations WHERE EXTRACT(YEAR FROM donation_date) = %s AND EXTRACT(MONTH FROM donation_date) = %s"
         cur.execute(query, (year, month))
         rows = cur.fetchall()
-        result = [{"donor": r[0], "date": str(r[1]), "amount": r[2], "note": r[3]} for r in rows]
+        result = [{"donor": r[0], "date": str(r[1]), "amount": float(r[2]) if r[2] is not None else None, "note": r[3]} for r in rows]
         cur.close(); conn.close()
         return jsonify(result)
     except OperationalError as err:
