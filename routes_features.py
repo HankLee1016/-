@@ -61,11 +61,12 @@ def generate_report():
         return jsonify({'error': '無權限'}), 403
     
     data = request.get_json()
-    report_type = data.get('report_type')
+    report_name = data.get('report_name') or data.get('title') or '系統報告'
+    report_type = data.get('report_type') or report_name
     start_date = data.get('start_date')
     end_date = data.get('end_date')
     
-    result = StatsReportManager.generate_report(report_type, start_date, end_date, session.get('username'))
+    result = StatsReportManager.generate_report(report_name, report_type, start_date, end_date, session.get('username'))
     return jsonify({'success': True, 'report_id': str(result['id'])}) if result else jsonify({'error': '生成失敗'}), 500
 
 
@@ -326,12 +327,44 @@ def get_reports_list():
         conn = get_db_connection()
         cursor = conn.cursor(cursor_factory=RealDictCursor)
         cursor.execute('SELECT * FROM reports ORDER BY created_at DESC LIMIT 50')
-        reports = cursor.fetchall()
+        reports = cursor.fetchall() or []
         cursor.close()
         conn.close()
-        return jsonify({'reports': [dict(r) for r in reports] if reports else []}), 200
+
+        normalized_reports = []
+        for report in reports:
+            report = dict(report) if not isinstance(report, dict) else report
+            report_data = report.get('report_data')
+
+            if isinstance(report_data, str):
+                try:
+                    report_data = json.loads(report_data)
+                except Exception:
+                    report_data = report_data
+
+            if isinstance(report_data, list):
+                report['data_count'] = len(report_data)
+            elif isinstance(report_data, dict):
+                report['data_count'] = len(report_data)
+            else:
+                report['data_count'] = 0
+
+            if report.get('created_at'):
+                report['created_at'] = report['created_at'].isoformat()
+
+            normalized_reports.append(report)
+
+        return jsonify({'reports': normalized_reports}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+
+@bp.route('/analytics/reports')
+def analytics_reports_page():
+    """報告列表頁面（兼容 /analytics/reports）"""
+    if session.get('role') != 'admin':
+        return redirect(url_for('home'))
+    return render_template('reports_list.html', reports=[])
 
 
 @bp.route('/analytics/reports/<report_id>')
@@ -349,7 +382,13 @@ def view_report(report_id):
         conn.close()
         
         if report:
-            return render_template('report_detail.html', report=dict(report))
+            report = dict(report)
+            if isinstance(report.get('report_data'), str):
+                try:
+                    report['report_data'] = json.loads(report['report_data'])
+                except Exception:
+                    pass
+            return render_template('report_detail.html', report=report)
         return 'Not Found', 404
     except Exception as e:
         return str(e), 500
@@ -418,11 +457,14 @@ def api_generate_report():
     if session.get('role') != 'admin':
         return jsonify({'error': '無權限'}), 403
     
-    data = request.get_json()
+    data = request.get_json() or {}
     title = data.get('title', '新報告')
+    report_type = data.get('report_type') or title
+    start_date = data.get('start_date')
+    end_date = data.get('end_date')
     
     try:
-        result = StatsReportManager.generate_report(title, None, None, session.get('username'))
+        result = StatsReportManager.generate_report(title, report_type, start_date, end_date, session.get('username'))
         if result:
             return jsonify({'success': True, 'report_id': str(result.get('id'))}), 200
         return jsonify({'error': '生成失敗'}), 500
