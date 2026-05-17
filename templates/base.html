@@ -39,15 +39,18 @@
                         <a href="/admin/announcements">公告管理</a>
                         <a href="/admin/applications">申請審核</a>
                         <a href="/donations">捐款資料</a>
+                        <a href="/donate">我要捐款</a>
                     {% else %}
                         <a href="/user">個案企劃</a>
                         <a href="/subsidies">補助資源</a>
+                        <a href="/donate">我要捐款</a>
                         <a href="/user/profile">編輯資料</a>
                         <a href="/user/assistant">AI助理</a>
                     {% endif %}
 
                     <a href="/logout">登出</a>
                 {% else %}
+                    <a href="/donate">我要捐款</a>
                     <a href="/login">登入</a>
                     <a href="/register">註冊</a>
                 {% endif %}

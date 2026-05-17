@@ -814,6 +814,77 @@ def user_dashboard():
         issues=issues, goals=goals, subsidy_summary=subsidy_summary, submitted_applications=len(get_user_applications(session.get("username")))
     )
 
+@app.route("/donate", methods=["GET", "POST"])
+def donate():
+    error = None
+    success = None
+    donor = session.get("username", "")
+    amount = ""
+    donation_date = ""
+    note = ""
+
+    if request.method == "POST":
+        donor = request.form.get("donor", "").strip()
+        amount = request.form.get("amount", "").strip()
+        donation_date = request.form.get("donation_date", "").strip()
+        note = request.form.get("note", "").strip()
+
+        if not donor or not amount or not donation_date:
+            error = "請填寫捐款人、金額與日期。"
+        else:
+            try:
+                amount_value = float(amount)
+                if amount_value <= 0:
+                    raise ValueError("金額必須大於零。")
+                parsed_date = datetime.datetime.strptime(donation_date, "%Y-%m-%d").date()
+
+                conn = get_db_connection()
+                cur = conn.cursor()
+                cur.execute("SELECT COALESCE(MAX(id), 1000000) + 1 FROM donations")
+                next_id = cur.fetchone()[0]
+                now = datetime.datetime.now()
+                cur.execute(
+                    """
+                    INSERT INTO donations (id, donor, funds_no, amount, donation_date, note, category, unit_data_id, show_flag, last_user, last_date, build_date)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    """,
+                    (
+                        next_id,
+                        donor,
+                        "WEB",
+                        amount_value,
+                        parsed_date,
+                        note,
+                        1,
+                        0,
+                        1,
+                        0,
+                        now,
+                        now
+                    )
+                )
+                conn.commit()
+                cur.close()
+                conn.close()
+
+                success = "感謝您的捐款，已成功記錄。"
+                amount = ""
+                donation_date = ""
+                note = ""
+            except ValueError as err:
+                error = str(err)
+            except OperationalError as err:
+                error = "資料庫連線失敗，請稍後再試。"
+                print("Donation DB error:", err)
+            except Exception as err:
+                error = "儲存捐款時發生錯誤，請稍後再試。"
+                print("Donation save error:", err)
+
+    return render_template(
+        "donate.html", error=error, success=success, donor=donor,
+        amount=amount, donation_date=donation_date, note=note
+    )
+
 @app.route("/user/proposal", methods=["POST"])
 def user_proposal():
     if session.get("role") != "user": return redirect(url_for("home"))

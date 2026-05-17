@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+
+{% block title %}我要捐款 — 社福資源平台{% endblock %}
+
+{% block content %}
+    <div class="page-bg"></div>
+
+    <header class="hero-card">
+        <div class="hero-copy">
+            <span class="eyebrow">捐款支援</span>
+            <h1>💝 您的支持，讓服務更有力量</h1>
+            <p>填寫下方資訊即可完成捐款登記，我們會將資料存入系統，並感謝您的熱心。</p>
+        </div>
+        <div class="hero-actions">
+            <a class="button button-secondary" href="/">回首頁</a>
+        </div>
+    </header>
+
+    <section class="card form-card">
+        <div class="card-title">
+            <h2 class="section-title">捐款表單</h2>
+            <p class="text-muted">請填寫捐款人、金額與捐款用途。</p>
+        </div>
+
+        {% if error %}
+            <div class="alert alert-danger">{{ error }}</div>
+        {% endif %}
+        {% if success %}
+            <div class="alert alert-success">{{ success }}</div>
+        {% endif %}
+
+        <form method="post" class="admin-form">
+            <label>
+                <span class="label-text">捐款人姓名</span>
+                <input type="text" name="donor" value="{{ donor or session.get('username', '') }}" placeholder="請輸入您的姓名" required>
+            </label>
+            <label>
+                <span class="label-text">捐款金額</span>
+                <input type="number" name="amount" min="1" step="1" value="{{ amount or '' }}" placeholder="例如 1000" required>
+            </label>
+            <label>
+                <span class="label-text">捐款日期</span>
+                <input type="date" name="donation_date" value="{{ donation_date or '' }}" required>
+            </label>
+            <label>
+                <span class="label-text">捐款用途／備註</span>
+                <textarea name="note" rows="4" placeholder="例如：急難救助、教育基金、社區服務">{{ note or '' }}</textarea>
+            </label>
+            <button type="submit" class="button">送出捐款</button>
+        </form>
+    </section>
+{% endblock %}

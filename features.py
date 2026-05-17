@@ -62,15 +62,54 @@ class StatsReportManager:
                 FROM registrations
             """)
             registration_stats = cursor.fetchone()
+
+            # 公告統計
+            cursor.execute("SELECT COUNT(*) as total FROM announcements")
+            announcement_stats = cursor.fetchone()
+
+            # 活動類型分佈
+            cursor.execute("SELECT category, COUNT(*) as count FROM activities GROUP BY category ORDER BY count DESC")
+            activity_distribution_rows = cursor.fetchall()
+            activity_distribution = {row['category'] or '未分類': row['count'] for row in activity_distribution_rows}
+
+            # 個案狀態分佈
+            cursor.execute("SELECT status, COUNT(*) as count FROM cases GROUP BY status ORDER BY count DESC")
+            case_distribution_rows = cursor.fetchall()
+            case_distribution = {row['status'] or '未知': row['count'] for row in case_distribution_rows}
+
+            # 捐款統計
+            cursor.execute("SELECT COUNT(*) as total, SUM(amount) as total_amount FROM donations")
+            donation_stats = cursor.fetchone()
+            cursor.execute("SELECT TO_CHAR(donation_date, 'YYYY-MM') as month, COUNT(*) as count FROM donations GROUP BY month ORDER BY month")
+            donation_distribution_rows = cursor.fetchall()
+            donation_distribution = {row['month'] or '未知': row['count'] for row in donation_distribution_rows}
+
+            # 最近報告
+            cursor.execute("SELECT id, report_name, created_at FROM reports ORDER BY created_at DESC LIMIT 5")
+            recent_report_rows = cursor.fetchall()
+            recent_reports = [
+                {
+                    'id': row['id'],
+                    'title': row['report_name'] or '報告',
+                    'created_at': row['created_at'].isoformat() if row['created_at'] else None
+                }
+                for row in recent_report_rows
+            ]
             
             cursor.close()
             conn.close()
             
             return {
-                'activities': activity_stats,
-                'cases': case_stats,
-                'users': user_stats,
-                'registrations': registration_stats,
+                'activities_count': activity_stats['total'] if activity_stats else 0,
+                'members_count': user_stats['total'] if user_stats else 0,
+                'pending_cases_count': case_stats['pending'] if case_stats else 0,
+                'announcements_count': announcement_stats['total'] if announcement_stats else 0,
+                'donations_count': donation_stats['total'] if donation_stats else 0,
+                'donations_total': float(donation_stats['total_amount']) if donation_stats and donation_stats['total_amount'] is not None else 0,
+                'activity_distribution': activity_distribution,
+                'case_distribution': case_distribution,
+                'donation_distribution': donation_distribution,
+                'recent_reports': recent_reports,
                 'timestamp': datetime.datetime.now().isoformat()
             }
         except Exception as e:
