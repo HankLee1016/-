@@ -129,6 +129,14 @@
                 const res = await fetch(url);
                 const data = await res.json();
 
+                // 若伺服器回傳錯誤 JSON，顯示詳細訊息並停止處理
+                if (!res.ok || (data && data.error)) {
+                    const msg = (data && (data.detail || data.error)) || res.statusText || '未知錯誤';
+                    console.error('Donations API error:', data || res.statusText);
+                    alert('讀取資料失敗：' + msg);
+                    return;
+                }
+
                 const table = document.getElementById('donationTable');
                 table.innerHTML = '';
 
@@ -136,7 +144,7 @@
                 let topDonation = 0;
                 let topDonor = '—';
 
-                data.forEach(item => {
+                (data || []).forEach(item => {
                     const row = document.createElement('tr');
                     row.innerHTML = `
                         <td><span class="font-semibold">${item.donor}</span></td>
@@ -155,7 +163,7 @@
                     }
                 });
 
-                const count = data.length;
+                const count = (data || []).length;
                 const average = count ? Math.round(total / count) : 0;
 
                 document.getElementById('count').innerText = count;
@@ -168,8 +176,19 @@
 
             } catch (err) {
                 console.error(err);
-                alert('讀取資料失敗');
+                alert('讀取資料失敗：' + (err && err.message ? err.message : err));
             }
         }
+
+        // 頁面載入時預填當前年月並自動查詢，方便驗證
+        document.addEventListener('DOMContentLoaded', () => {
+            const now = new Date();
+            const y = now.getFullYear();
+            const m = now.getMonth() + 1;
+            document.getElementById('year').value = y;
+            document.getElementById('month').value = m;
+            // 若想自動載入最近有資料的月份，可改為特定值
+            fetchData();
+        });
     </script>
 {% endblock %}
