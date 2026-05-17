@@ -90,5 +90,19 @@
         "address": ""
       }
     }
+    ,
+    {
+      "username": "admin",
+      "password": "04445e6487736590d1ef50186b414e737e0164683cbbec64e00e73c000fd3bef",
+      "role": "admin",
+      "org_profile": {
+        "org_name": "",
+        "org_id": "",
+        "member_count": "",
+        "volunteer_count": "",
+        "contact_person": "",
+        "address": ""
+      }
+    }
   ]
 }
