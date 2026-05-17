@@ -38,14 +38,14 @@
         <div class="stat-card">
             <div class="stat-icon" style="background-color: #9C27B0;">📢</div>
             <div class="stat-content">
-                <div class="stat-value">{{ stats.announcements_count }}</div>
-                <div class="stat-label">公告</div>
+                <div class="stat-value">{{ stats.donations_count }}</div>
+                <div class="stat-label">捐款筆數</div>
             </div>
         </div>
     </div>
 
     <!-- 數據概覽 -->
-    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin: 2rem 0;">
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 2rem; margin: 2rem 0;">
         <div class="card">
             <h2>活動類型分佈</h2>
             <div id="activityChart" style="min-height: 300px; display: flex; align-items: center; justify-content: center; color: var(--text-secondary);">
@@ -55,6 +55,12 @@
         <div class="card">
             <h2>個案狀態分佈</h2>
             <div id="caseChart" style="min-height: 300px; display: flex; align-items: center; justify-content: center; color: var(--text-secondary);">
+                載入中...
+            </div>
+        </div>
+        <div class="card">
+            <h2>捐款月份分佈</h2>
+            <div id="donationChart" style="min-height: 300px; display: flex; align-items: center; justify-content: center; color: var(--text-secondary);">
                 載入中...
             </div>
         </div>
@@ -157,6 +163,7 @@ async function loadAnalytics() {
         // 更新圖表
         displayActivityChart(data.activity_distribution || {});
         displayCaseChart(data.case_distribution || {});
+        displayDonationChart(data.donation_distribution || {});
         displayRecentReports(data.recent_reports || []);
     } catch (error) {
         console.error('載入分析數據失敗:', error);
@@ -213,6 +220,28 @@ function displayCaseChart(distribution) {
         })
         .join('');
     
+    chart.innerHTML = items;
+}
+
+function displayDonationChart(distribution) {
+    const chart = document.getElementById('donationChart');
+    if (!distribution || Object.keys(distribution).length === 0) {
+        chart.innerHTML = '<p style="color: var(--text-secondary);">暫無捐款資料</p>';
+        return;
+    }
+
+    const items = Object.entries(distribution)
+        .map(([month, count]) => `<div style="padding: 0.5rem 0;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 0.3rem;">
+                <span>${month}</span>
+                <strong>${count}</strong>
+            </div>
+            <div style="background: var(--border-color); height: 8px; border-radius: 4px; overflow: hidden;">
+                <div style="background: linear-gradient(90deg, #673AB7, #9C27B0); height: 100%; width: ${Math.min(count * 10, 100)}%;"></div>
+            </div>
+        </div>`)
+        .join('');
+
     chart.innerHTML = items;
 }
 
