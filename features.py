@@ -80,9 +80,10 @@ class StatsReportManager:
             # 捐款統計
             cursor.execute("SELECT COUNT(*) as total, SUM(amount) as total_amount FROM donations")
             donation_stats = cursor.fetchone()
-            cursor.execute("SELECT TO_CHAR(donation_date, 'YYYY-MM') as month, COUNT(*) as count FROM donations GROUP BY month ORDER BY month")
+            cursor.execute("SELECT TO_CHAR(donation_date, 'YYYY-MM') as month, COUNT(*) as count, SUM(amount) as total_amount FROM donations GROUP BY month ORDER BY month")
             donation_distribution_rows = cursor.fetchall()
             donation_distribution = {row['month'] or '未知': row['count'] for row in donation_distribution_rows}
+            donation_amount_trend = {row['month'] or '未知': float(row['total_amount'] or 0) for row in donation_distribution_rows}
 
             # 最近報告
             cursor.execute("SELECT id, report_name, created_at FROM reports ORDER BY created_at DESC LIMIT 5")
@@ -100,15 +101,16 @@ class StatsReportManager:
             conn.close()
             
             return {
-                'activities_count': activity_stats['total'] if activity_stats else 0,
-                'members_count': user_stats['total'] if user_stats else 0,
-                'pending_cases_count': case_stats['pending'] if case_stats else 0,
-                'announcements_count': announcement_stats['total'] if announcement_stats else 0,
-                'donations_count': donation_stats['total'] if donation_stats else 0,
+                'activities_count': int(activity_stats['total'] or 0) if activity_stats else 0,
+                'members_count': int(user_stats['total'] or 0) if user_stats else 0,
+                'pending_cases_count': int(case_stats['pending'] or 0) if case_stats else 0,
+                'announcements_count': int(announcement_stats['total'] or 0) if announcement_stats else 0,
+                'donations_count': int(donation_stats['total'] or 0) if donation_stats else 0,
                 'donations_total': float(donation_stats['total_amount']) if donation_stats and donation_stats['total_amount'] is not None else 0,
                 'activity_distribution': activity_distribution,
                 'case_distribution': case_distribution,
                 'donation_distribution': donation_distribution,
+                'donation_amount_trend': donation_amount_trend,
                 'recent_reports': recent_reports,
                 'timestamp': datetime.datetime.now().isoformat()
             }
@@ -117,28 +119,76 @@ class StatsReportManager:
             return None
     
     @staticmethod
-    def generate_report(report_type, start_date, end_date, user_id):
+    def _parse_report_type(report_type):
+        if not report_type:
+            return 'summary'
+        text = str(report_type).strip().lower()
+        if '活動' in text or 'activity' in text:
+            return 'activities'
+        if '個案' in text or 'case' in text:
+            return 'cases'
+        if '捐款' in text or 'donation' in text:
+            return 'donations'
+        if '成員' in text or '會員' in text or 'user' in text:
+            return 'users'
+        if '報名' in text or 'registration' in text:
+            return 'registrations'
+        if '公告' in text or 'announcement' in text:
+            return 'announcements'
+        if '摘要' in text or '總結' in text or 'summary' in text:
+            return 'summary'
+        return 'summary'
+
+    @staticmethod
+    def _normalize_date_range(start_date, end_date):
+        if start_date:
+            try:
+                start = datetime.datetime.strptime(start_date, '%Y-%m-%d').date()
+            except Exception:
+                start = datetime.date.today() - datetime.timedelta(days=30)
+        else:
+            start = datetime.date.today() - datetime.timedelta(days=30)
+
+        if end_date:
+            try:
+                end = datetime.datetime.strptime(end_date, '%Y-%m-%d').date()
+            except Exception:
+                end = datetime.date.today()
+        else:
+            end = datetime.date.today()
+
+        return start, end
+
+    @staticmethod
+    def generate_report(report_name, report_type, start_date, end_date, user_id):
         """生成報表"""
         try:
             conn = get_db_connection()
             cursor = conn.cursor(cursor_factory=RealDictCursor)
             
+            if not report_name:
+                report_name = '系統報告'
+
+            resolved_type = StatsReportManager._parse_report_type(report_type)
             report_data = {}
             
-            if report_type == 'activities':
+            if resolved_type in ['activities', 'cases', 'donations']:
+                start_date, end_date = StatsReportManager._normalize_date_range(start_date, end_date)
+
+            if resolved_type == 'activities':
                 cursor.execute("""
                     SELECT 
-                        activity_name, status, 
-                        COUNT(DISTINCT username) as participants,
-                        created_at
+                        a.activity_name, a.status, 
+                        COUNT(DISTINCT r.username) AS participants,
+                        a.created_at
                     FROM activities a
                     LEFT JOIN registrations r ON a.id = r.activity_id
                     WHERE a.created_at >= %s AND a.created_at <= %s
-                    GROUP BY a.id, activity_name, status
+                    GROUP BY a.id, a.activity_name, a.status
+                    ORDER BY a.created_at DESC
                 """, (start_date, end_date))
-                report_data = cursor.fetchall()
-            
-            elif report_type == 'cases':
+                report_data = [dict(row) for row in cursor.fetchall()]
+            elif resolved_type == 'cases':
                 cursor.execute("""
                     SELECT 
                         case_name, status, priority, assigned_to,
@@ -147,15 +197,81 @@ class StatsReportManager:
                     WHERE created_at >= %s AND created_at <= %s
                     ORDER BY created_at DESC
                 """, (start_date, end_date))
-                report_data = cursor.fetchall()
-            
-            # 保存報表
+                report_data = [dict(row) for row in cursor.fetchall()]
+            elif resolved_type == 'donations':
+                cursor.execute("""
+                    SELECT 
+                        id, donor, amount, donation_date, note, category, created_at
+                    FROM donations
+                    WHERE donation_date >= %s AND donation_date <= %s
+                    ORDER BY donation_date DESC
+                """, (start_date, end_date))
+                report_data = [dict(row) for row in cursor.fetchall()]
+            elif resolved_type == 'users':
+                cursor.execute("SELECT username, role, created_at FROM users ORDER BY created_at DESC")
+                report_data = [dict(row) for row in cursor.fetchall()]
+            elif resolved_type == 'registrations':
+                cursor.execute("SELECT id, activity_id, username, status, created_at FROM registrations ORDER BY created_at DESC")
+                report_data = [dict(row) for row in cursor.fetchall()]
+            elif resolved_type == 'announcements':
+                cursor.execute("SELECT id, title, status, created_at FROM announcements ORDER BY created_at DESC")
+                report_data = [dict(row) for row in cursor.fetchall()]
+            else:
+                cursor.execute("SELECT COUNT(*) AS total FROM activities")
+                activity_count = cursor.fetchone()['total']
+                cursor.execute("SELECT COUNT(*) AS total FROM cases")
+                case_count = cursor.fetchone()['total']
+                cursor.execute("SELECT COUNT(*) AS total FROM users")
+                user_count = cursor.fetchone()['total']
+                cursor.execute("SELECT COUNT(*) AS total FROM registrations")
+                registration_count = cursor.fetchone()['total']
+                cursor.execute("SELECT COUNT(*) AS total FROM announcements")
+                announcement_count = cursor.fetchone()['total']
+                cursor.execute("SELECT COUNT(*) AS total, SUM(amount) AS total_amount FROM donations")
+                donation_summary = cursor.fetchone()
+                donation_total = float(donation_summary['total_amount'] or 0)
+                donation_count = donation_summary['total']
+
+                cursor.execute("SELECT category, COUNT(*) AS count FROM activities GROUP BY category ORDER BY count DESC")
+                activity_distribution_rows = cursor.fetchall()
+                activity_distribution = [{
+                    'category': row['category'] or '未分類',
+                    'count': row['count']
+                } for row in activity_distribution_rows]
+
+                cursor.execute("SELECT status, COUNT(*) AS count FROM cases GROUP BY status ORDER BY count DESC")
+                case_distribution_rows = cursor.fetchall()
+                case_distribution = [{
+                    'status': row['status'] or '未知',
+                    'count': row['count']
+                } for row in case_distribution_rows]
+
+                report_data = {
+                    'summary': {
+                        'activities_count': activity_count,
+                        'cases_count': case_count,
+                        'members_count': user_count,
+                        'registrations_count': registration_count,
+                        'announcements_count': announcement_count,
+                        'donations_count': donation_count,
+                        'donations_total': donation_total
+                    },
+                    'activity_distribution': activity_distribution,
+                    'case_distribution': case_distribution
+                }
+
             cursor.execute("""
                 INSERT INTO reports (report_name, report_type, report_data, generated_by, start_date, end_date)
                 VALUES (%s, %s, %s, %s, %s, %s)
                 RETURNING id
-            """, (f"{report_type}_report", report_type, json.dumps(report_data, default=str), 
-                  user_id, start_date, end_date))
+            """, (
+                report_name,
+                resolved_type,
+                json.dumps(report_data, default=str),
+                user_id,
+                start_date if isinstance(start_date, datetime.date) else start_date,
+                end_date if isinstance(end_date, datetime.date) else end_date
+            ))
             
             report_id = cursor.fetchone()['id']
             conn.commit()
