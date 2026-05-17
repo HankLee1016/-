@@ -64,6 +64,12 @@
                 載入中...
             </div>
         </div>
+        <div class="card">
+            <h2>捐款金額趨勢</h2>
+            <div id="donationTrend" style="min-height: 300px; display: flex; align-items: center; justify-content: center; color: var(--text-secondary);">
+                載入中...
+            </div>
+        </div>
     </div>
 
     <!-- 最近活動 -->
@@ -164,6 +170,7 @@ async function loadAnalytics() {
         displayActivityChart(data.activity_distribution || {});
         displayCaseChart(data.case_distribution || {});
         displayDonationChart(data.donation_distribution || {});
+        displayDonationTrend(data.donation_amount_trend || {});
         displayRecentReports(data.recent_reports || []);
     } catch (error) {
         console.error('載入分析數據失敗:', error);
@@ -245,6 +252,62 @@ function displayDonationChart(distribution) {
     chart.innerHTML = items;
 }
 
+function displayDonationTrend(trend) {
+    const chart = document.getElementById('donationTrend');
+    if (!trend || Object.keys(trend).length === 0) {
+        chart.innerHTML = '<p style="color: var(--text-secondary);">暫無捐款趨勢</p>';
+        return;
+    }
+
+    const months = Object.keys(trend).sort();
+    const values = months.map(month => trend[month]);
+    const maxValue = Math.max(...values, 1);
+    const svgWidth = 520;
+    const svgHeight = 260;
+    const padding = 48;
+    const chartWidth = svgWidth - padding * 2;
+    const chartHeight = svgHeight - padding * 2;
+
+    const points = values.map((value, index) => {
+        const x = padding + (chartWidth / (months.length - 1 || 1)) * index;
+        const y = padding + chartHeight - (value / maxValue) * chartHeight;
+        return `${x},${y}`;
+    }).join(' ');
+
+    const labels = months.map((month, index) => {
+        const x = padding + (chartWidth / (months.length - 1 || 1)) * index;
+        return `<text x="${x}" y="${svgHeight - 8}" text-anchor="middle" font-size="12" fill="#333">${month}</text>`;
+    }).join('');
+
+    const valueLabels = values.map((value, index) => {
+        const x = padding + (chartWidth / (months.length - 1 || 1)) * index;
+        const y = padding + chartHeight - (value / maxValue) * chartHeight - 10;
+        return `<text x="${x}" y="${Math.max(y, 18)}" text-anchor="middle" font-size="11" fill="#4CAF50">${value.toLocaleString()}</text>`;
+    }).join('');
+
+    const axes = `
+        <line x1="${padding}" y1="${padding}" x2="${padding}" y2="${svgHeight - padding}" stroke="#ccc" />
+        <line x1="${padding}" y1="${svgHeight - padding}" x2="${svgWidth - padding}" y2="${svgHeight - padding}" stroke="#ccc" />
+    `;
+
+    const path = `<polyline fill="none" stroke="#4CAF50" stroke-width="3" points="${points}" />`;
+    const dots = values.map((value, index) => {
+        const x = padding + (chartWidth / (months.length - 1 || 1)) * index;
+        const y = padding + chartHeight - (value / maxValue) * chartHeight;
+        return `<circle cx="${x}" cy="${y}" r="4" fill="#4CAF50" />`;
+    }).join('');
+
+    chart.innerHTML = `
+        <svg width="${svgWidth}" height="${svgHeight}" role="img" aria-label="捐款金額趨勢圖">
+            ${axes}
+            ${path}
+            ${dots}
+            ${labels}
+            ${valueLabels}
+        </svg>
+    `;
+}
+
 function displayRecentReports(reports) {
     const container = document.getElementById('recentReports');
     if (!reports || reports.length === 0) {
@@ -260,7 +323,7 @@ function displayRecentReports(reports) {
                     ${new Date(report.created_at).toLocaleDateString('zh-HK', {year: 'numeric', month: '2-digit', day: '2-digit'})}
                 </div>
             </div>
-            <a href="${report.id}" class="btn btn-sm btn-secondary">查看</a>
+            <a href="/analytics/reports/${report.id}" class="btn btn-sm btn-secondary">查看</a>
         </div>
     `).join('');
     
