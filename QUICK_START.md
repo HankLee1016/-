@@ -9,8 +9,13 @@
 ## 安装和啟動
 
 ### 1️⃣ 初始化資料庫
+1. 若您還沒有 `.env`，請先複製 `.env.example` 並填入 PostgreSQL 連線資訊。
+2. 如果資料庫尚未建立，執行：
 ```bash
-cd c:\Users\88691\-
+python create_database.py
+```
+3. 再執行：
+```bash
 python init_database.py
 ```
 
