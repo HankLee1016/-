@@ -1,0 +1,1012 @@
+{% extends 'base.html' %}
+
+{% block title %}企劃書生成器 — {{ page_title or (subsidy.title if subsidy else '社福企劃生成器') }}{% endblock %}
+
+{% block content %}
+<div class="page-bg"></div>
+
+<header class="hero-card" style="max-width: 1100px; margin-left: auto; margin-right: auto;">
+    <div class="hero-copy">
+        <span class="eyebrow">企劃書生成器</span>
+        <h1>{{ page_title or (subsidy.title if subsidy else '社福企劃生成器') }}</h1>
+        <p>保留乾淨的多步驟流程，並整合原系統的補助與企劃生成體驗。</p>
+    </div>
+    <div class="hero-actions">
+        <a class="button button-secondary" href="/user">返回使用者專區</a>
+        <a class="button button-secondary" href="/subsidies">補助列表</a>
+        <a class="button" href="/user/assistant">AI 助理</a>
+    </div>
+</header>
+
+<section class="proposal-shell">
+    <div class="proposal-app">
+        <div class="proposal-header">
+            <div class="proposal-badge">AI 輔助</div>
+            <div>
+                <h1>{{ page_title or (subsidy.title if subsidy else '社福企劃生成器') }}</h1>
+                <p>回到乾淨版本的操作流程，保留公版上傳、補助選項、甘特圖與企劃書生成。</p>
+            </div>
+        </div>
+
+        <div class="proposal-steps">
+            <div class="proposal-step active" data-step="1"><span>1</span><strong>機構資料</strong></div>
+            <div class="proposal-step" data-step="2"><span>2</span><strong>補助與經費</strong></div>
+            <div class="proposal-step" data-step="3"><span>3</span><strong>計畫內容與時程</strong></div>
+            <div class="proposal-step" data-step="4"><span>4</span><strong>生成企劃書</strong></div>
+        </div>
+
+        <form id="proposalForm" enctype="multipart/form-data">
+            <input type="hidden" id="timeline_json" name="timeline_json">
+            <input type="hidden" id="budget_items_json" name="budget_items_json">
+            <input type="hidden" id="budget_key" name="budget_key" value="">
+            <div class="proposal-panel active" data-panel="1">
+                <div class="section-title">機構基本資料</div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>機構名稱</label>
+                        <input id="org_name" name="org_name" type="text" placeholder="例：○○社會福利基金會">
+                    </div>
+                    <div class="form-group">
+                        <label>機構類型</label>
+                        <select id="org_type" name="org_type">
+                            <option>財團法人基金會</option>
+                            <option>社會福利協會</option>
+                            <option>非營利組織（NPO）</option>
+                            <option>社區發展協會</option>
+                            <option>各級社會工作師公會</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>計畫名稱</label>
+                        <input id="project_name" name="project_name" type="text" placeholder="例：弱勢家庭支持與社區連結計畫">
+                    </div>
+                    <div class="form-group">
+                        <label>服務對象</label>
+                        <input id="target_people" name="target_people" type="text" placeholder="例：低收入戶家庭、兒少、新住民">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>機構簡介 / 公版欄位提示</label>
+                    <textarea id="template_outline" name="template_outline" placeholder="請簡述機構宗旨，或貼上政府公版企劃章節架構。"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label>政府格式企劃書 / 公版上傳</label>
+                    <label class="upload-box">
+                        <input id="template_file" name="template_file" type="file" accept=".html,.htm,.txt,.md,.pdf">
+                        <span id="template_file_name">點擊選擇格式範本或政府公版</span>
+                    </label>
+                </div>
+
+                <div class="button-row">
+                    <button type="button" class="btn-primary" onclick="goStep(2)">下一步</button>
+                </div>
+            </div>
+
+            <div class="proposal-panel" data-panel="2">
+                <div class="section-title">補助資訊與經費規劃</div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>補助來源</label>
+                        <input id="subsidy_source" name="subsidy_source" type="text" placeholder="例：衛生福利部、某基金會、新北市社會局">
+                    </div>
+                    <div class="form-group">
+                        <label>補助大類</label>
+                        <input id="subsidy_category" name="subsidy_category" type="text" placeholder="例：社會救助、社區發展、婦女福利">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>具體補助方案名稱</label>
+                        <input id="subsidy_program" name="subsidy_program" type="text" placeholder="例：弱勢家庭支持方案">
+                    </div>
+                    <div class="form-group">
+                        <label>申請總金額（新台幣）</label>
+                        <input id="budget" name="budget" type="number" min="0" placeholder="例：800000">
+                    </div>
+                </div>
+
+                <div class="reference-card">
+                    <h3>經費項目設定</h3>
+                    <p>請自行新增每個經費項目、金額與說明，生成企劃書時會直接做成預算表。</p>
+                    <div id="budgetItemsEditor"></div>
+                    <button type="button" class="btn-secondary inline-btn" onclick="addBudgetItem()">新增經費項目</button>
+                </div>
+
+                <div class="button-row split">
+                    <button type="button" class="btn-secondary" onclick="goStep(1)">上一步</button>
+                    <button type="button" class="btn-primary" onclick="goStep(3)">下一步</button>
+                </div>
+            </div>
+
+            <div class="proposal-panel" data-panel="3">
+                <div class="section-title">計畫核心內容與專案時程</div>
+
+                <div class="form-group">
+                    <label>計畫背景 / 問題描述</label>
+                    <textarea id="background" name="background" placeholder="描述需求現況、問題、統計數據、服務缺口。"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label>計畫目標</label>
+                    <textarea id="goals" name="goals" placeholder="例如：服務 50 位長者、提升參與率 30%、建立支持網絡。"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label>主要活動 / 執行策略</label>
+                    <textarea id="activities" name="activities" placeholder="例如：訪視、團體活動、課程、資源轉介、社區合作。"></textarea>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>預期效益</label>
+                        <input id="expected_benefit" name="expected_benefit" type="text" placeholder="例：提升服務可近性與持續參與">
+                    </div>
+                    <div class="form-group">
+                        <label>整體重要里程碑</label>
+                        <input id="milestones" name="milestones" type="text" placeholder="例：招募、執行、追蹤、成果發表">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>整體計畫起日</label>
+                        <input id="start_date" name="start_date" type="date">
+                    </div>
+                    <div class="form-group">
+                        <label>整體計畫迄日</label>
+                        <input id="end_date" name="end_date" type="date">
+                    </div>
+                </div>
+
+                <div class="reference-card">
+                    <h3>分項時程設定</h3>
+                    <p>可逐一設定每個專案項目的名稱、開始日期與結束日期，甘特圖會依這些資料生成。</p>
+                    <div id="timelineEditor"></div>
+                    <button type="button" class="btn-secondary inline-btn" onclick="addTimelineItem()">新增時程項目</button>
+                </div>
+
+                <div class="reference-card">
+                    <h3>甘特圖預覽</h3>
+                    <p>下方這張表就是甘特圖：左邊是專案項目，上方是月份，有顏色的格子代表該月份正在執行。</p>
+                    <div id="ganttPreview" class="gantt-preview-empty">請先填寫至少一筆完整的時程項目。</div>
+                </div>
+
+                <div class="button-row split">
+                    <button type="button" class="btn-secondary" onclick="goStep(2)">上一步</button>
+                    <button type="button" class="btn-primary" onclick="goStep(4)">AI 生成企劃書</button>
+                </div>
+            </div>
+
+            <div class="proposal-panel" data-panel="4">
+                <div class="summary-grid">
+                    <div class="summary-card">
+                        <h3>企劃摘要</h3>
+                        <div class="summary-item"><span>機構</span><strong id="review_org">—</strong></div>
+                        <div class="summary-item"><span>計畫名稱</span><strong id="review_project">—</strong></div>
+                        <div class="summary-item"><span>補助方案</span><strong id="review_project_type">—</strong></div>
+                        <div class="summary-item"><span>申請金額</span><strong id="review_budget">—</strong></div>
+                    </div>
+                    <div class="summary-card">
+                        <h3>本次輸出</h3>
+                        <ul>
+                            <li>企劃書正式段落</li>
+                            <li>預算科目參考</li>
+                            <li>執行期程甘特圖</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="generate-box" id="loadingState" hidden>
+                    <div class="loading-bar"></div>
+                    <p>AI 正在整理企劃內容，請稍候…</p>
+                </div>
+
+                <div class="button-row split">
+                    <button type="button" class="btn-secondary" onclick="goStep(3)">返回修改</button>
+                    <button type="button" class="btn-primary" id="generateBtn" onclick="submitApplication()">開始生成</button>
+                </div>
+
+                <div id="resultBlock" class="result-card" hidden>
+                    <div class="result-head">
+                        <div>
+                            <h3>企劃書草稿</h3>
+                            <p>已整合公版參考、補助選項與甘特圖。</p>
+                        </div>
+                        <div class="result-tags">
+                            <span id="resultTemplateName">未使用上傳公版</span>
+                            <span id="resultGanttTag">已含甘特圖</span>
+                        </div>
+                    </div>
+                    <div class="result-actions">
+                        <button type="button" class="btn-secondary" onclick="exportProposalDoc()">匯出 DOC</button>
+                        <button type="button" class="btn-secondary" onclick="exportProposalPdf()">匯出 PDF</button>
+                        <button type="button" class="btn-secondary" onclick="copyResultTable('.gantt-table', '甘特圖')">複製甘特圖</button>
+                        <button type="button" class="btn-secondary" onclick="copyResultTable('.budget-table', '預算表')">複製預算表</button>
+                    </div>
+                    <div id="proposalPreview" class="proposal-preview"></div>
+                </div>
+            </div>
+        </form>
+    </div>
+</section>
+
+<style>
+.proposal-shell {
+    padding: 24px 16px 56px;
+}
+.proposal-app {
+    max-width: 980px;
+    margin: 0 auto;
+    background: #fff;
+    border: 1px solid #e2e8e4;
+    border-radius: 18px;
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(24, 55, 45, 0.06);
+}
+.proposal-header {
+    padding: 24px;
+    border-bottom: 1px solid #edf1ee;
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+}
+.proposal-header h1 {
+    margin: 0 0 6px;
+    font-size: 22px;
+}
+.proposal-header p {
+    margin: 0;
+    color: #66756f;
+    line-height: 1.6;
+}
+.proposal-badge {
+    flex: 0 0 auto;
+    padding: 6px 10px;
+    border-radius: 999px;
+    background: #e8f5f0;
+    color: #0d4f3c;
+    font-size: 12px;
+    font-weight: 700;
+}
+.proposal-steps {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0;
+    padding: 18px 24px;
+    border-bottom: 1px solid #edf1ee;
+}
+.proposal-step {
+    text-align: center;
+    position: relative;
+    color: #8a9490;
+}
+.proposal-step span {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 6px;
+    background: #f1f3f4;
+    border: 1px solid #dee2e6;
+    font-size: 12px;
+    font-weight: 700;
+}
+.proposal-step strong {
+    display: block;
+    font-size: 12px;
+}
+.proposal-step.active {
+    color: #0d4f3c;
+}
+.proposal-step.active span {
+    background: #1a7a5e;
+    border-color: #1a7a5e;
+    color: #fff;
+}
+.proposal-panel {
+    display: none;
+    padding: 24px;
+}
+.proposal-panel.active {
+    display: block;
+}
+.section-title {
+    font-size: 15px;
+    font-weight: 700;
+    margin-bottom: 16px;
+    color: #212529;
+}
+.form-group {
+    margin-bottom: 14px;
+}
+.form-group label {
+    display: block;
+    font-size: 13px;
+    color: #495057;
+    margin-bottom: 6px;
+}
+.form-group input,
+.form-group select,
+.form-group textarea {
+    width: 100%;
+    padding: 10px 12px;
+    font-size: 13px;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    background: #fff;
+}
+.form-group textarea {
+    min-height: 92px;
+    resize: vertical;
+}
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+.upload-box {
+    display: block;
+    border: 1px dashed #c7d4ce;
+    border-radius: 10px;
+    background: #f8fbf9;
+    text-align: center;
+    padding: 16px;
+    cursor: pointer;
+}
+.upload-box input {
+    display: none;
+}
+.reference-card,
+.summary-card,
+.result-card,
+.generate-box {
+    border: 1px solid #e6ece8;
+    border-radius: 12px;
+    background: #fafcfb;
+    padding: 16px;
+}
+.reference-card h3,
+.summary-card h3,
+.result-card h3 {
+    margin: 0 0 8px;
+    font-size: 14px;
+}
+.reference-card p,
+.result-head p {
+    margin: 0;
+    color: #66756f;
+    font-size: 13px;
+}
+.tag-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+}
+.tag-list span,
+.result-tags span {
+    display: inline-flex;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: #e8f5f0;
+    color: #0d4f3c;
+    font-size: 12px;
+}
+.button-row {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 18px;
+}
+.inline-btn {
+    margin-top: 12px;
+}
+.editor-list {
+    display: grid;
+    gap: 10px;
+    margin-top: 12px;
+}
+.editor-item {
+    border: 1px solid #e6ece8;
+    border-radius: 10px;
+    background: #fff;
+    padding: 12px;
+}
+.editor-item-grid {
+    display: grid;
+    grid-template-columns: 1.4fr 0.9fr 0.9fr auto;
+    gap: 10px;
+    align-items: end;
+}
+.editor-item-grid.budget-grid {
+    grid-template-columns: 1.2fr 0.8fr 1.4fr auto;
+}
+.mini-field label {
+    display: block;
+    font-size: 12px;
+    color: #66756f;
+    margin-bottom: 4px;
+}
+.mini-field input {
+    width: 100%;
+    padding: 9px 10px;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+}
+.remove-btn {
+    border: 1px solid #ead6d3;
+    background: #fff6f5;
+    color: #a6493f;
+    border-radius: 8px;
+    padding: 9px 12px;
+    font-size: 12px;
+}
+.button-row.split {
+    justify-content: space-between;
+}
+.btn-primary,
+.btn-secondary {
+    padding: 10px 18px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+}
+.btn-primary {
+    border: none;
+    background: #1a7a5e;
+    color: #fff;
+}
+.btn-secondary {
+    border: 1px solid #dee2e6;
+    background: #fff;
+    color: #343a40;
+}
+.summary-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+.summary-item {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 7px 0;
+    border-bottom: 1px solid #edf1ee;
+    font-size: 13px;
+}
+.summary-item span {
+    color: #66756f;
+}
+.generate-box {
+    margin-top: 16px;
+}
+.loading-bar {
+    height: 4px;
+    background: linear-gradient(90deg, #1a7a5e, #5dcaa5, #1a7a5e);
+    background-size: 200% 100%;
+    border-radius: 999px;
+    animation: loading 1.2s linear infinite;
+    margin-bottom: 10px;
+}
+@keyframes loading {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+.result-card {
+    margin-top: 18px;
+}
+.result-head {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    align-items: flex-start;
+    margin-bottom: 14px;
+}
+.result-tags {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+.result-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 14px;
+}
+.proposal-preview {
+    border: 1px solid #e6ece8;
+    border-radius: 10px;
+    background: #fff;
+    padding: 18px;
+    line-height: 1.8;
+    overflow-x: auto;
+}
+.proposal-preview table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 12px 0;
+}
+.proposal-preview th,
+.proposal-preview td {
+    border: 1px solid #dee2e6;
+    padding: 8px;
+}
+.proposal-preview .budget-total,
+.proposal-preview .gantt-active {
+    background: #e8f5f0;
+}
+.proposal-preview .gantt-empty {
+    background: #fafcfc;
+    text-align: center;
+}
+.proposal-preview .gantt-done {
+    background: #dbeafe;
+    color: #1d4ed8;
+    font-weight: 700;
+    text-align: center;
+}
+.proposal-preview .gantt-planned {
+    background: #fef3c7;
+    color: #b45309;
+    font-weight: 700;
+    text-align: center;
+}
+.proposal-preview .gantt-active {
+    color: #0f6e56;
+    font-weight: 700;
+    text-align: center;
+}
+.proposal-preview .gantt-legend {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 10px;
+}
+.proposal-preview .legend-item {
+    display: inline-flex;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 700;
+}
+.proposal-preview .legend-done {
+    background: #dbeafe;
+    color: #1d4ed8;
+}
+.proposal-preview .legend-active {
+    background: #e8f5f0;
+    color: #0f6e56;
+}
+.proposal-preview .legend-planned {
+    background: #fef3c7;
+    color: #b45309;
+}
+.gantt-preview-empty {
+    margin-top: 12px;
+    border: 1px dashed #cbd8d2;
+    border-radius: 10px;
+    background: #f8fbf9;
+    padding: 16px;
+    color: #66756f;
+    font-size: 13px;
+}
+.gantt-preview-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 12px;
+    font-size: 13px;
+}
+.gantt-preview-table th,
+.gantt-preview-table td {
+    border: 1px solid #dee2e6;
+    padding: 8px;
+    text-align: center;
+}
+.gantt-preview-table th:first-child,
+.gantt-preview-table td:first-child {
+    text-align: left;
+    min-width: 140px;
+}
+.gantt-preview-table .active-cell {
+    background: linear-gradient(135deg, #1a7a5e, #5dcaa5);
+    color: #fff;
+    font-weight: 700;
+}
+.gantt-preview-table .done-cell {
+    background: #dbeafe;
+    color: #1d4ed8;
+    font-weight: 700;
+}
+.gantt-preview-table .planned-cell {
+    background: #fef3c7;
+    color: #b45309;
+    font-weight: 700;
+}
+.gantt-preview-table .empty-cell {
+    background: #fafcfc;
+    color: #b2b9b5;
+}
+.gantt-preview-legend {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 12px;
+}
+.gantt-preview-legend span {
+    display: inline-flex;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 700;
+}
+.gantt-preview-legend .done-cell {
+    background: #dbeafe;
+    color: #1d4ed8;
+}
+.gantt-preview-legend .active-cell {
+    background: #e8f5f0;
+    color: #0f6e56;
+}
+.gantt-preview-legend .planned-cell {
+    background: #fef3c7;
+    color: #b45309;
+}
+@media (max-width: 760px) {
+    .proposal-header,
+    .result-head,
+    .button-row.split,
+    .form-row,
+    .summary-grid,
+    .proposal-steps {
+        grid-template-columns: 1fr;
+        flex-direction: column;
+    }
+}
+</style>
+
+<script>
+const budgetReference = {{ budget_reference | tojson }};
+let currentStep = 1;
+let timelineItems = [];
+let budgetItems = [];
+
+function renderTimelineEditor() {
+    const container = document.getElementById('timelineEditor');
+    container.className = 'editor-list';
+    container.innerHTML = timelineItems.map((item, index) => `
+        <div class="editor-item">
+            <div class="editor-item-grid">
+                <div class="mini-field">
+                    <label>項目名稱</label>
+                    <input type="text" value="${item.title || ''}" oninput="updateTimelineItem(${index}, 'title', this.value)" placeholder="例：前期準備">
+                </div>
+                <div class="mini-field">
+                    <label>開始日期</label>
+                    <input type="date" value="${item.start_date || ''}" oninput="updateTimelineItem(${index}, 'start_date', this.value)">
+                </div>
+                <div class="mini-field">
+                    <label>結束日期</label>
+                    <input type="date" value="${item.end_date || ''}" oninput="updateTimelineItem(${index}, 'end_date', this.value)">
+                </div>
+                <button type="button" class="remove-btn" onclick="removeTimelineItem(${index})">刪除</button>
+            </div>
+        </div>
+    `).join('');
+    document.getElementById('timeline_json').value = JSON.stringify(timelineItems);
+    renderGanttPreview();
+}
+
+function syncTimelineState() {
+    document.getElementById('timeline_json').value = JSON.stringify(timelineItems);
+    renderGanttPreview();
+}
+
+function addTimelineItem() {
+    timelineItems.push({ title: '', start_date: '', end_date: '' });
+    renderTimelineEditor();
+}
+
+function updateTimelineItem(index, key, value) {
+    timelineItems[index][key] = value;
+    syncTimelineState();
+}
+
+function removeTimelineItem(index) {
+    timelineItems.splice(index, 1);
+    renderTimelineEditor();
+}
+
+function renderGanttPreview() {
+    const container = document.getElementById('ganttPreview');
+    const validItems = timelineItems.filter(item => (item.title || '').trim() && item.start_date && item.end_date && item.start_date <= item.end_date);
+
+    if (!validItems.length) {
+        container.className = 'gantt-preview-empty';
+        container.innerHTML = '請先填寫至少一筆完整的時程項目。';
+        return;
+    }
+
+    const dates = validItems.flatMap(item => [new Date(item.start_date), new Date(item.end_date)]);
+    const start = new Date(Math.min(...dates));
+    const end = new Date(Math.max(...dates));
+    const months = [];
+    let cursor = new Date(start.getFullYear(), start.getMonth(), 1);
+    const last = new Date(end.getFullYear(), end.getMonth(), 1);
+
+    while (cursor <= last && months.length < 18) {
+        months.push({ year: cursor.getFullYear(), month: cursor.getMonth() });
+        cursor = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1);
+    }
+
+    const header = months.map(m => `<th>${m.year}/${String(m.month + 1).padStart(2, '0')}</th>`).join('');
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const rows = validItems.map(item => {
+        const cells = months.map(m => {
+            const monthStart = new Date(m.year, m.month, 1);
+            const monthEnd = new Date(m.year, m.month + 1, 0);
+            monthStart.setHours(0, 0, 0, 0);
+            monthEnd.setHours(0, 0, 0, 0);
+            const itemStart = new Date(item.start_date);
+            const itemEnd = new Date(item.end_date);
+            itemStart.setHours(0, 0, 0, 0);
+            itemEnd.setHours(0, 0, 0, 0);
+            const active = !(itemEnd < monthStart || itemStart > monthEnd);
+            if (!active) return `<td class="empty-cell"></td>`;
+            if (monthEnd < today) return `<td class="done-cell">已完成</td>`;
+            if (monthStart > today) return `<td class="planned-cell">未開始</td>`;
+            return `<td class="active-cell">進行中</td>`;
+        }).join('');
+        return `<tr><td>${item.title}</td>${cells}</tr>`;
+    }).join('');
+
+    container.className = '';
+    container.innerHTML = `
+        <div class="gantt-preview-legend">
+            <span class="done-cell">已完成</span>
+            <span class="active-cell">進行中</span>
+            <span class="planned-cell">未開始</span>
+        </div>
+        <table class="gantt-preview-table">
+            <thead>
+                <tr><th>專案項目</th>${header}</tr>
+            </thead>
+            <tbody>
+                ${rows}
+            </tbody>
+        </table>
+    `;
+}
+
+function renderBudgetEditor() {
+    const container = document.getElementById('budgetItemsEditor');
+    container.className = 'editor-list';
+    container.innerHTML = budgetItems.map((item, index) => `
+        <div class="editor-item">
+            <div class="editor-item-grid budget-grid">
+                <div class="mini-field">
+                    <label>經費項目</label>
+                    <input type="text" value="${item.name || ''}" oninput="updateBudgetItem(${index}, 'name', this.value)" placeholder="例：講師費">
+                </div>
+                <div class="mini-field">
+                    <label>金額</label>
+                    <input type="number" value="${item.amount || ''}" oninput="updateBudgetItem(${index}, 'amount', this.value)" placeholder="例：50000">
+                </div>
+                <div class="mini-field">
+                    <label>說明</label>
+                    <input type="text" value="${item.note || ''}" oninput="updateBudgetItem(${index}, 'note', this.value)" placeholder="例：每場 2 小時，共 10 場">
+                </div>
+                <button type="button" class="remove-btn" onclick="removeBudgetItem(${index})">刪除</button>
+            </div>
+        </div>
+    `).join('');
+    syncBudgetState();
+}
+
+function syncBudgetState() {
+    document.getElementById('budget_items_json').value = JSON.stringify(budgetItems);
+    const total = budgetItems.reduce((sum, item) => sum + Number(item.amount || 0), 0);
+    document.getElementById('budget').value = total || '';
+}
+
+function addBudgetItem() {
+    budgetItems.push({ name: '', amount: '', note: '' });
+    renderBudgetEditor();
+}
+
+function updateBudgetItem(index, key, value) {
+    budgetItems[index][key] = value;
+    syncBudgetState();
+}
+
+function removeBudgetItem(index) {
+    budgetItems.splice(index, 1);
+    renderBudgetEditor();
+}
+
+function buildExportDocumentHtml() {
+    const title = document.getElementById('project_name').value || '企劃書';
+    const orgName = document.getElementById('org_name').value || '未填機構';
+    const subsidySource = document.getElementById('subsidy_source').value || '未填補助來源';
+    const previewHtml = document.getElementById('proposalPreview').innerHTML;
+    return `<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<title>${title}</title>
+<style>
+body{font-family:"Noto Sans TC","Microsoft JhengHei",sans-serif;line-height:1.8;color:#222;padding:32px}
+h1{font-size:24px;margin:0 0 8px}
+.meta{margin-bottom:20px;color:#4b5a54}
+table{width:100%;border-collapse:collapse;margin:12px 0}
+th,td{border:1px solid #cfd8d4;padding:8px;vertical-align:top}
+.budget-total,.gantt-active{background:#e8f5f0}
+.gantt-empty{text-align:center;background:#fafcfc}
+</style>
+</head>
+<body>
+<h1>${title}</h1>
+<div class="meta">申請單位：${orgName} ｜ 補助來源：${subsidySource}</div>
+${previewHtml}
+</body>
+</html>`;
+}
+
+function exportProposalDoc() {
+    const html = buildExportDocumentHtml();
+    const blob = new Blob([html], { type: 'application/msword;charset=utf-8' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `${document.getElementById('project_name').value || '企劃書'}.doc`;
+    link.click();
+}
+
+function exportProposalPdf() {
+    const html = buildExportDocumentHtml();
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+        alert('無法開啟列印視窗，請確認瀏覽器未阻擋彈出視窗。');
+        return;
+    }
+    printWindow.document.open();
+    printWindow.document.write(html);
+    printWindow.document.close();
+    printWindow.focus();
+    setTimeout(() => {
+        printWindow.print();
+    }, 400);
+}
+
+async function copyResultTable(selector, label) {
+    const table = document.querySelector(`#proposalPreview ${selector}`);
+    if (!table) {
+        alert(`目前沒有可複製的${label}。`);
+        return;
+    }
+
+    const html = `<table border="1" style="border-collapse:collapse;width:100%;">${table.innerHTML}</table>`;
+    const text = table.innerText;
+
+    try {
+        if (navigator.clipboard && window.ClipboardItem) {
+            const item = new ClipboardItem({
+                'text/html': new Blob([html], { type: 'text/html' }),
+                'text/plain': new Blob([text], { type: 'text/plain' })
+            });
+            await navigator.clipboard.write([item]);
+        } else if (navigator.clipboard) {
+            await navigator.clipboard.writeText(text);
+        } else {
+            throw new Error('clipboard unavailable');
+        }
+        alert(`${label}已複製，可直接貼到 Word 或其他文書軟體。`);
+    } catch (error) {
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        textarea.remove();
+        alert(`${label}已以純文字方式複製。`);
+    }
+}
+
+function validateStep(step) {
+    if (step === 1) {
+        return document.getElementById('org_name').value.trim() && document.getElementById('project_name').value.trim();
+    }
+    if (step === 2) {
+        const validBudgetItems = budgetItems.filter(item => (item.name || '').trim() && Number(item.amount || 0) > 0);
+        return document.getElementById('subsidy_program').value.trim() && validBudgetItems.length > 0;
+    }
+    if (step === 3) {
+        const validTimelineItems = timelineItems.filter(item => (item.title || '').trim() && item.start_date && item.end_date);
+        return document.getElementById('background').value.trim() &&
+            document.getElementById('goals').value.trim() &&
+            document.getElementById('activities').value.trim() &&
+            (validTimelineItems.length > 0 || (document.getElementById('start_date').value && document.getElementById('end_date').value));
+    }
+    return true;
+}
+
+function updateReview() {
+    document.getElementById('review_org').textContent = document.getElementById('org_name').value || '—';
+    document.getElementById('review_project').textContent = document.getElementById('project_name').value || '—';
+    document.getElementById('review_project_type').textContent = `${document.getElementById('subsidy_category').value || '未填大類'} / ${document.getElementById('subsidy_program').value || '未填方案'}`;
+    document.getElementById('review_budget').textContent = document.getElementById('budget').value ? `NT$ ${Number(document.getElementById('budget').value).toLocaleString()}` : '—';
+}
+
+function goStep(nextStep) {
+    if (nextStep > currentStep && !validateStep(currentStep)) {
+        alert('請先完成目前步驟的必要欄位。');
+        return;
+    }
+
+    currentStep = nextStep;
+    document.querySelectorAll('.proposal-panel').forEach(panel => {
+        panel.classList.toggle('active', Number(panel.dataset.panel) === nextStep);
+    });
+    document.querySelectorAll('.proposal-step').forEach(step => {
+        step.classList.toggle('active', Number(step.dataset.step) === nextStep);
+    });
+
+    if (nextStep === 4) updateReview();
+}
+
+async function submitApplication() {
+    if (!validateStep(3)) {
+        alert('請先完整填寫計畫內容。');
+        return;
+    }
+
+    updateReview();
+    const formData = new FormData(document.getElementById('proposalForm'));
+    const btn = document.getElementById('generateBtn');
+    const loading = document.getElementById('loadingState');
+    const resultBlock = document.getElementById('resultBlock');
+
+    btn.disabled = true;
+    btn.textContent = '生成中...';
+    loading.hidden = false;
+
+    try {
+        const response = await fetch('/api/generate-proposal', {
+            method: 'POST',
+            body: formData
+        });
+        const result = await response.json();
+        if (!response.ok || result.status !== 'success') {
+            throw new Error(result.message || '生成失敗');
+        }
+
+        document.getElementById('proposalPreview').innerHTML = result.html_content;
+        document.getElementById('resultTemplateName').textContent = result.template_filename ? `已參考公版：${result.template_filename}` : '未使用上傳公版';
+        document.getElementById('resultGanttTag').textContent = result.gantt_included ? '已含甘特圖' : '未含甘特圖';
+        resultBlock.hidden = false;
+    } catch (error) {
+        alert(`生成企劃書時出錯：${error.message}`);
+    } finally {
+        btn.disabled = false;
+        btn.textContent = '開始生成';
+        loading.hidden = true;
+    }
+}
+
+document.getElementById('template_file').addEventListener('change', (event) => {
+    document.getElementById('template_file_name').textContent = event.target.files[0]?.name || '點擊選擇格式範本或政府公版';
+});
+addBudgetItem();
+addTimelineItem();
+</script>
+{% endblock %}
