@@ -1025,6 +1025,46 @@ def user_proposal():
 @app.route("/user/application/submit", methods=["POST"])
 def user_application_submit():
     if session.get("role") != "user":
+        return jsonify({'status': 'error', 'message': '權限不足'}), 403
+
+    case_title = request.form.get("case_title", "").strip()
+    background = request.form.get("background", "").strip()
+    issues = request.form.get("issues", "").strip()
+    goals = request.form.get("goals", "").strip()
+    subsidy_summary = request.form.get("subsidy_summary", "").strip()
+    proposal = request.form.get("proposal", "").strip()
+    success_pdf = request.form.get("success_pdf")
+    subsidy_pdf = request.form.get("subsidy_pdf")
+
+    if not case_title or not proposal:
+        return jsonify({'status': 'error', 'message': '計畫名稱或企劃書不能為空'}), 400
+
+    try:
+        new_app = create_application(
+            username=session.get("username"),
+            case_title=case_title,
+            background=background,
+            issues=issues,
+            goals=goals,
+            proposal=proposal,
+            subsidy_summary=subsidy_summary,
+            success_pdf=success_pdf,
+            subsidy_pdf=subsidy_pdf
+        )
+        
+        return jsonify({
+            'status': 'success',
+            'message': '企劃書已成功提交',
+            'application_id': new_app.get('id'),
+            'redirect_url': url_for('user_applications')
+        }), 200
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': f'提交失敗：{str(e)}'}), 500
+
+# 保持舊版本以支持重定向
+@app.route("/user/application/submit-redirect", methods=["POST"])
+def user_application_submit_redirect():
+    if session.get("role") != "user":
         return redirect(url_for("home"))
 
     case_title = request.form.get("case_title", "").strip()
