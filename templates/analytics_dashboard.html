@@ -2,6 +2,11 @@
 
 {% block title %}分析儀表板 - 系統{% endblock %}
 
+{% block head_extra %}
+    <link rel='stylesheet' href='{{ url_for('static', filename='css/analytics_dashboard.css') }}'>
+{% endblock %}
+
+
 {% block content %}
 <div class="main-container">
     <div class="page-header">
@@ -82,84 +87,6 @@
         </div>
     </div>
 </div>
-
-<style>
-.page-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 2rem;
-    padding: 0 1rem;
-}
-
-.page-actions {
-    display: flex;
-    gap: 1rem;
-}
-
-.page-header h1 {
-    margin: 0;
-}
-
-.stats-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 1.5rem;
-    margin-bottom: 2rem;
-}
-
-.stat-card {
-    background: var(--surface-soft);
-    border-radius: 12px;
-    padding: 1.5rem;
-    display: flex;
-    gap: 1rem;
-    align-items: center;
-    border: 1px solid var(--border-color);
-    transition: transform 0.2s, box-shadow 0.2s;
-}
-
-.stat-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-
-.stat-icon {
-    width: 60px;
-    height: 60px;
-    border-radius: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 2rem;
-}
-
-.stat-value {
-    font-size: 1.8rem;
-    font-weight: bold;
-    color: var(--text-primary);
-}
-
-.stat-label {
-    font-size: 0.9rem;
-    color: var(--text-secondary);
-    margin-top: 0.25rem;
-}
-
-.card {
-    background: var(--surface-soft);
-    border-radius: 12px;
-    padding: 1.5rem;
-    border: 1px solid var(--border-color);
-}
-
-.card h2 {
-    margin: 0 0 1rem 0;
-    font-size: 1.3rem;
-    color: var(--text-primary);
-}
-</style>
-
 <script>
 async function loadAnalytics() {
     try {
