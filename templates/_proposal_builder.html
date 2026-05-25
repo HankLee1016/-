@@ -213,6 +213,18 @@
                     </div>
                     <div id="proposalPreview" class="proposal-preview"></div>
                 </div>
+
+                <div id="submitBlock" class="submit-card" hidden>
+                    <div class="submit-notice">
+                        <h4>✓ 企劃書已生成完成</h4>
+                        <p>您的企劃書已由 AI 整理完畢。點擊下方「正式提交」按鈕送交管理員審核。</p>
+                    </div>
+                    <div class="submit-actions">
+                        <button type="button" class="btn-secondary" onclick="goStep(3)">返回編輯</button>
+                        <button type="button" class="btn-primary" id="submitBtn" onclick="formalSubmitApplication()">正式提交審核</button>
+                    </div>
+                    <div id="submitStatus" hidden class="status-message"></div>
+                </div>
             </div>
         </form>
     </div>
@@ -241,7 +253,7 @@
 .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .upload-box { display: block; border: 1px dashed #c7d4ce; border-radius: 10px; background: #f8fbf9; text-align: center; padding: 16px; cursor: pointer; }
 .upload-box input { display: none; }
-.reference-card, .summary-card, .result-card, .generate-box { border: 1px solid #e6ece8; border-radius: 12px; background: #fafcfb; padding: 16px; }
+.reference-card, .summary-card, .result-card, .submit-card, .generate-box { border: 1px solid #e6ece8; border-radius: 12px; background: #fafcfb; padding: 16px; }
 .reference-card h3, .summary-card h3, .result-card h3 { margin: 0 0 8px; font-size: 14px; }
 .reference-card p, .result-head p { margin: 0; color: #66756f; font-size: 13px; }
 .button-row { display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px; }
@@ -596,6 +608,7 @@ async function submitApplication() {
     const btn = document.getElementById('generateBtn');
     const loading = document.getElementById('loadingState');
     const resultBlock = document.getElementById('resultBlock');
+    const submitBlock = document.getElementById('submitBlock');
     btn.disabled = true; btn.textContent = '生成中...'; loading.hidden = false;
     try {
         const response = await fetch('/api/generate-proposal', { method: 'POST', body: formData });
@@ -605,10 +618,50 @@ async function submitApplication() {
         document.getElementById('resultTemplateName').textContent = result.template_filename ? `已參考公版：${result.template_filename}` : '未使用上傳公版';
         document.getElementById('resultGanttTag').textContent = result.gantt_included ? '已含甘特圖' : '未含甘特圖';
         resultBlock.hidden = false;
+        submitBlock.hidden = false;
     } catch (error) {
         alert(`生成企劃書時出錯：${error.message}`);
     } finally {
         btn.disabled = false; btn.textContent = '開始生成'; loading.hidden = true;
+    }
+}
+
+async function formalSubmitApplication() {
+    const btn = document.getElementById('submitBtn');
+    const statusDiv = document.getElementById('submitStatus');
+    btn.disabled = true;
+    btn.textContent = '提交中...';
+    statusDiv.hidden = false;
+    statusDiv.className = 'status-message';
+    
+    try {
+        const formData = new FormData();
+        const proposalHtml = document.getElementById('proposalPreview').innerHTML;
+        formData.append('case_title', document.getElementById('project_name').value);
+        formData.append('background', document.getElementById('background').value);
+        formData.append('issues', document.getElementById('target_people').value);
+        formData.append('goals', document.getElementById('goals').value);
+        formData.append('proposal', proposalHtml);
+        formData.append('subsidy_summary', `${document.getElementById('subsidy_source').value} - ${document.getElementById('subsidy_category').value}`);
+        
+        const response = await fetch('/user/application/submit', { 
+            method: 'POST', 
+            body: formData 
+        });
+        
+        if (response.ok) {
+            statusDiv.className = 'status-message success';
+            statusDiv.innerHTML = '✓ 企劃書已成功提交！管理員將於 3 個工作日內審核。<br><a href="/user/applications" style="color: inherit; text-decoration: underline;">點擊查看申請狀態</a>';
+            btn.textContent = '已提交';
+            setTimeout(() => { window.location.href = '/user/applications'; }, 2000);
+        } else {
+            throw new Error('提交失敗，請稍後重試');
+        }
+    } catch (error) {
+        statusDiv.className = 'status-message error';
+        statusDiv.innerHTML = `✗ 提交失敗：${error.message}`;
+        btn.disabled = false;
+        btn.textContent = '正式提交審核';
     }
 }
 
