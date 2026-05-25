@@ -4,6 +4,7 @@ import hashlib
 import random
 import uuid
 import datetime
+from html import escape
 from pathlib import Path
 from flask import Flask, request, jsonify, render_template, send_from_directory, redirect, url_for, session, Response, flash
 from werkzeug.utils import secure_filename
@@ -49,7 +50,8 @@ ALLOWED_EXTENSIONS = {"pdf"}
 
 ADMIN_REG_CODE = os.getenv("ADMIN_REG_CODE", "ADMIN2026")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-openai_client = OpenAI(api_key=OPENAI_API_KEY) if OpenAI and OPENAI_API_KEY else None
+# 虛擬模式：禁用真實 OpenAI 調用
+openai_client = None  # 強制禁用 OpenAI 客戶端，只使用虛擬數據
 
 # ==========================================
 # 基礎輔助函式 (檔案處理、密碼雜湊等)
@@ -582,6 +584,11 @@ def update_announcement(announcement_id, title=None, announcement_text=None, pri
 # ==========================================
 AI_MODEL_NAME = "ChatAssist GPT"
 AI_MODEL_ENGINE = "GPT-Assist-2.0"
+WELFARE_BUDGET_REFERENCE = {
+    "個人補助": "依據各地方社會局公告標準",
+    "團體申請": "年度預算上限 50-100 萬元",
+    "特殊個案": "由審議委員會推案至年度追加預算"
+}
 
 AI_AGENTS = [
     {"name": "企劃師小智", "description": "專注策略、落地執行與協調資源，適合需要具體方案的個案。"},
@@ -596,29 +603,82 @@ def choose_ai_agent(background, issues):
     return AI_AGENTS[0]
 
 def request_openai_proposal(title, background, issues, goals):
-    if not openai_client: return None
-    prompt = (
-        "你是一個資深企劃書撰寫 AI，請根據以下個案資料生成一份中文企劃書草稿。"
-        "請依照正式企劃書架構呈現，並以條列或段落方式列出重點。"
-        "避免使用口語語氣、第一人稱敘述，保留專業、清楚可執行的建議。\n\n"
-        f"案名：{title}\n背景與現況：{background}\n主要問題：{issues}\n目標與成效：{goals}\n\n"
-        "請至少包含以下章節：\n"
-        "1. 壹、宗旨（計畫緣起）\n"
-        "2. 貳、計畫目標\n"
-        "3. 参、計畫執行期程\n"
-        "4. 肆、企劃內容及實行方法\n"
-        "5. 伍、預期成果與效益\n"
-        "6. 陸、可能風險與因應措施\n"
-        "7. 柒、建議經費概算方向\n"
-        "如資料不足，可在對應章節補充建議方向與可行重點。"
-    )
-    try:
-        response = openai_client.chat.completions.create(
-            model="gpt-4.1-mini", messages=[{"role": "user", "content": prompt}]
-        )
-        return response.choices[0].message.content.strip()
-    except Exception as err:
-        return f"OpenAI 呼叫失敗：{err}"
+    # 虛擬 AI 企劃書生成（用於開發和演示）
+    mock_proposal = f"""壹、宗旨（計畫緣起）
+本案案名為「{title}」，主要說明個案背景與現況，並指出本企劃欲解決的核心問題。
+
+案件背景：{background}
+
+二、計劃目標
+1. 短期目標（0-6個月）
+   - 建立個案服務需求評估機制
+   - 整合相關資源與服務網絡
+   - 提升服務對象自我照顧能力
+
+2. 中期目標（6-12個月）
+   - 提供專業化個案管理服務
+   - 建立社區支持系統
+   - 達成 80% 以上服務滿意度
+
+3. 長期目標（12-24個月）
+   - 完善個案追蹤及評估機制
+   - 建立永續發展模式
+   - 推廣最佳案例及經驗分享
+
+参、計劃執行期程
+第一階段（籌備期）- 1-2個月
+- 成立計劃執行小組
+- 社區踏勘與需求調查
+- 相關規章制度建立
+
+第二階段（實施期）- 3-12個月
+- 全面執行各項服務方案
+- 定期督導與檢討
+- 個案紀錄與統計
+
+第三階段（評估及改進期）- 12-18個月
+- 整體成效評估
+- 改善方案調整
+- 結案與成果報告
+
+肆、企劃內容及實行方法
+1. 服務對象：{issues}
+2. 服務模式：
+   - 個案諮詢服務（每週2次）
+   - 家庭訪視與關懷（每月1次）
+   - 資源轉介與連結（按需求提供）
+   - 成長支持團體（每月1場）
+
+3. 預期成效：{goals}
+
+伍、預期成果與效益
+1. 受益名分數：預計服務 50-100 人次
+2. 個案改善率：預計達成 70% 以上改善
+3. 服務滿意度：目標 85% 以上
+4. 社區影響力：建立示範服務模式
+
+陸、可能風險與因應措施
+風險                          | 因應措施
+-                             | -
+服務對象不足                    | 加強轉介宣傳，多元尋案管道
+人力資源短缺                    | 建立志工培訓及招募機制
+經費不足                       | 尋求多元經費來源、效率管理
+服務品質維持                    | 定期督導與專業培訓
+
+柒、建議經費概算方向
+項目                    | 預算
+-                      | -
+人事費（3人）            | 900,000
+行政費用                 | 100,000
+活動及教材               | 150,000
+設備及雜支               | 50,000
+-                      | -
+**合計**                 | **1,200,000**
+
+結語
+本計畫透過體系化的個案管理及社區支持，期能促進服務對象的生活品質改善及社會適應，並建立永續的社區互助網絡。"""
+    
+    return mock_proposal
 
 
 def polish_text(text):
@@ -640,10 +700,12 @@ def summarize_input(label, content):
     return random.choice(templates).format(label=label, content=content)
 
 def generate_case_proposal(title, background, issues, goals, agent_name):
-    if openai_client:
-        response = request_openai_proposal(title, background, issues, goals)
-        if response: return response
+    # 虛擬模式：始終使用虛擬企劃書
+    response = request_openai_proposal(title, background, issues, goals)
+    if response: 
+        return response
 
+    # 備用方案（如果虛擬企劃書生成失敗）
     polished_background = polish_text(background)
     polished_issues = polish_text(issues)
     polished_goals = polish_text(goals)
@@ -699,15 +761,27 @@ def build_assistant_messages(user_input, history, subsidy_summary=""):
     return messages
 
 def generate_chat_response(user_input, history, subsidy_summary=""):
-    if openai_client:
-        try:
-            response = openai_client.chat.completions.create(model="gpt-4.1-mini", messages=build_assistant_messages(user_input, history, subsidy_summary))
-            return response.choices[0].message.content.strip()
-        except Exception as err: pass
-
+    # 虛擬 AI 聊天回應（用於開發和演示）
     lower_text = user_input.lower()
-    if any(token in lower_text for token in ["服務對象", "族群", "對象", "服務對象"]): return "請描述您的目標服務對象、需求情境與目前面臨的困境，這樣我可以幫您把企劃書內容聚焦在組織最擅長的方向。"
-    if any(token in lower_text for token in ["目標", "預期", "成效", "成果"]): return "請說明希望達成的具體成果與時間範圍，或描述您的補助想要解決的問題。"
+    
+    # 根據用戶輸入返回相應的模擬回應
+    if any(token in lower_text for token in ["服務對象", "族群", "對象", "受眾"]):
+        return "非常好的問題！明確定義服務對象是企劃書的基礎。您可以描述：\n1. 目標族群的年齡、性別、社經背景\n2. 他們面臨的具體困難\n3. 為什麼選擇這個族群\n\n這樣我能幫您更精準地設計服務內容。"
+    
+    if any(token in lower_text for token in ["目標", "預期", "成效", "成果", "指標"]):
+        return "設定清晰的成果指標非常重要！建議包括：\n1. 數量指標（如服務人數、次數）\n2. 品質指標（如滿意度、改善率）\n3. 時間期限（如 3 個月內達成率 80%）\n\n您能分享一下希望達成的具體目標嗎？"
+    
+    if any(token in lower_text for token in ["預算", "經費", "費用", "成本"]):
+        return "經費規劃需要符合實際執行成本。一般包括：\n1. 人事費（最大比例）\n2. 行政費（辦公、電話等）\n3. 活動費（教材、場地等）\n4. 雜支（5% 控制）\n\n您的預算大約在哪個範圍呢？"
+    
+    if any(token in lower_text for token in ["風險", "困難", "挑戰", "問題"]):
+        return "識別風險是很好的規劃習慣。常見的包括：\n1. 人力不足風險 → 建立志工培訓機制\n2. 經費短缺 → 多元籌資管道\n3. 對象流失 → 強化追蹤與關懷\n\n您預期會遇到什麼主要挑戰？"
+    
+    if any(token in lower_text for token in ["時程", "期程", "多久", "期限"]):
+        return "典型的社福計畫周期：\n• 籌備期（1-2個月）：準備與宣傳\n• 實施期（6-12個月）：執行服務\n• 評估期（2-3個月）：成果總結\n\n您的計畫預計執行多久？"
+    
+    # 預設通用回應
+    return "感謝您的提問！請進一步說明您想要了解的內容，例如：服務對象、預期成效、預算規模或時間安排。我會幫您完善企劃書的相關章節。"
     if any(token in lower_text for token in ["補助", "申請", "案件", "方案"]): return "請提供補助類型、申請期限與核心服務計畫，讓我們能以您組織的特色撰寫具代表性的企劃內容。"
     if len(history) < 4: return "您好，請先簡單說明您的組織、服務族群與申請目的。 我會依序引導您完成最符合需求的企劃書內容。"
     return "根據您的說明，我已理解基本需求。請再補充目前可運用的資源、服務方式、以及期望的成效指標，讓我幫您整理成更具代表性的企劃書內容。"
@@ -811,7 +885,8 @@ def user_dashboard():
     return render_template(
         "user.html", username=session.get("username"), ai_agent=agent["name"], ai_agent_note=agent["description"],
         ai_model=AI_MODEL_NAME, ai_engine=AI_MODEL_ENGINE, case_title=case_title, background=background,
-        issues=issues, goals=goals, subsidy_summary=subsidy_summary, submitted_applications=len(get_user_applications(session.get("username")))
+        issues=issues, goals=goals, subsidy_summary=subsidy_summary, submitted_applications=len(get_user_applications(session.get("username"))),
+        page_title="社福企劃生成器", budget_reference=WELFARE_BUDGET_REFERENCE
     )
 
 @app.route("/donate", methods=["GET", "POST"])
@@ -1065,6 +1140,196 @@ def user_assistant():
             session["chat_history"] = chat_history
 
     return render_template("assistant.html", username=session.get("username"), chat_history=chat_history, subsidy_summary=subsidy_summary)
+
+@app.route('/api/generate-proposal', methods=['POST'])
+def api_generate_proposal():
+    """API 端點：生成企劃書"""
+    if session.get('role') != 'user': 
+        return jsonify({'status': 'error', 'message': '權限不足'}), 403
+    
+    try:
+        # 處理 FormData - 使用正確的表單字段名稱
+        project_name = (request.form.get('project_name') or '').strip()
+        background = (request.form.get('background') or '').strip()
+        goals = (request.form.get('goals') or '').strip()
+        activities = (request.form.get('activities') or '').strip()
+        org_name = (request.form.get('org_name') or '').strip()
+        target_people = (request.form.get('target_people') or '').strip()
+        
+        # 解析預算和時程 JSON 數據
+        budget_json_str = request.form.get('budget_items_json', '[]')
+        timeline_json_str = request.form.get('timeline_json', '[]')
+        
+        try:
+            budget_items = json.loads(budget_json_str) if budget_json_str else []
+        except:
+            budget_items = []
+        
+        try:
+            timeline_items = json.loads(timeline_json_str) if timeline_json_str else []
+        except:
+            timeline_items = []
+        
+        if not project_name or not background:
+            return jsonify({'status': 'error', 'message': '請輸入計畫名稱與需求背景'}), 400
+        
+        # 組合問題敘述
+        issues = target_people or "尚待補充具體目標族群。"
+        
+        agent = choose_ai_agent(background, issues)
+        ai_agent = agent["name"]
+        proposal = generate_case_proposal(
+            project_name, 
+            background, 
+            issues, 
+            goals or "尚待補充具體目標與預期成效。", 
+            ai_agent
+        )
+        
+        # 添加預算表格：新版表單使用 name / amount / note，不再用舊版 qty / price。
+        budget_html = ""
+        clean_budget_items = []
+        for item in budget_items:
+            name = (item.get('name') or item.get('description') or '').strip()
+            note = (item.get('note') or '').strip()
+            try:
+                amount = int(float(item.get('amount') or 0))
+            except (TypeError, ValueError):
+                amount = 0
+            if name and amount > 0:
+                clean_budget_items.append({'name': name, 'note': note, 'amount': amount})
+
+        if clean_budget_items:
+            total = sum(item['amount'] for item in clean_budget_items)
+            budget_html = "<h4 style='margin-top: 24px;'>預算表</h4>"
+            budget_html += "<table class='budget-table' style='width: 100%; border-collapse: collapse; margin: 12px 0;'>"
+            budget_html += "<thead><tr style='background: #e8f5f0;'><th style='padding: 10px; border: 1px solid #ddd; text-align: left;'>經費項目</th><th style='padding: 10px; border: 1px solid #ddd; text-align: left;'>用途說明</th><th style='padding: 10px; border: 1px solid #ddd; text-align: right;'>金額</th></tr></thead><tbody>"
+            for item in clean_budget_items:
+                budget_html += (
+                    "<tr>"
+                    f"<td style='padding: 10px; border: 1px solid #ddd;'>{escape(item['name'])}</td>"
+                    f"<td style='padding: 10px; border: 1px solid #ddd;'>{escape(item['note'] or '—')}</td>"
+                    f"<td style='padding: 10px; border: 1px solid #ddd; text-align: right;'>NT$ {item['amount']:,}</td>"
+                    "</tr>"
+                )
+            budget_html += f"<tr class='budget-total' style='background: #f0f7f4; font-weight: bold;'><td colspan='2' style='padding: 10px; border: 1px solid #ddd;'>合計</td><td style='padding: 10px; border: 1px solid #ddd; text-align: right;'>NT$ {total:,}</td></tr>"
+            budget_html += "</tbody></table>"
+        
+        # 添加甘特圖：使用月尺度表格，避免日尺度長表格撐破結果視窗。
+        gantt_html = ""
+        if timeline_items:
+            from datetime import datetime
+            
+            valid_items = []
+            for item in timeline_items:
+                start_str = item.get('start_date') or item.get('start')
+                end_str = item.get('end_date') or item.get('end')
+                title = (item.get('title') or item.get('name') or '').strip()
+                if not title or not start_str or not end_str:
+                    continue
+                try:
+                    start_dt = datetime.strptime(start_str, '%Y-%m-%d')
+                    end_dt = datetime.strptime(end_str, '%Y-%m-%d')
+                except ValueError:
+                    continue
+                if end_dt < start_dt:
+                    continue
+                try:
+                    progress = max(0, min(100, int(float(item.get('progress') or 0))))
+                except (TypeError, ValueError):
+                    progress = 0
+                valid_items.append({
+                    'title': title,
+                    'owner': (item.get('owner') or '未填負責人').strip(),
+                    'start': start_dt,
+                    'end': end_dt,
+                    'progress': progress
+                })
+            
+            if valid_items:
+                today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+                min_date = min(item['start'] for item in valid_items)
+                max_date = max(item['end'] for item in valid_items)
+                months = []
+                cursor = datetime(min_date.year, min_date.month, 1)
+                last = datetime(max_date.year, max_date.month, 1)
+                while cursor <= last and len(months) < 24:
+                    months.append(cursor)
+                    cursor = datetime(cursor.year + (1 if cursor.month == 12 else 0), 1 if cursor.month == 12 else cursor.month + 1, 1)
+
+                def month_end(month_dt):
+                    next_month = datetime(month_dt.year + (1 if month_dt.month == 12 else 0), 1 if month_dt.month == 12 else month_dt.month + 1, 1)
+                    return next_month - datetime.resolution
+
+                def item_status(item):
+                    if item['end'] < today or item['progress'] >= 100:
+                        return ('done', '已完成')
+                    if item['start'] > today and item['progress'] == 0:
+                        return ('planned', '未開始')
+                    return ('active', '進行中')
+
+                gantt_html = "<h4 style='margin-top: 24px;'>甘特圖（專案進度時程表）</h4>"
+                gantt_html += "<div class='gantt-legend'><span class='legend-item legend-done'>已完成</span><span class='legend-item legend-active'>進行中</span><span class='legend-item legend-planned'>未開始</span></div>"
+                gantt_html += "<div class='gantt-scroll' style='max-width: 100%; overflow-x: auto; border: 1px solid #ddd; border-radius: 10px; margin: 12px 0;'>"
+                gantt_html += "<table class='gantt-table' style='width: 100%; min-width: 720px; border-collapse: collapse; font-size: 12px;'>"
+                gantt_html += "<thead><tr style='background: #e8f5f0;'>"
+                gantt_html += "<th style='padding: 8px; border: 1px solid #ddd; text-align: left; min-width: 150px;'>工作項目</th>"
+                gantt_html += "<th style='padding: 8px; border: 1px solid #ddd; min-width: 90px;'>負責人</th>"
+                gantt_html += "<th style='padding: 8px; border: 1px solid #ddd; min-width: 80px;'>狀態</th>"
+                gantt_html += "<th style='padding: 8px; border: 1px solid #ddd; min-width: 90px;'>完成度</th>"
+                for month in months:
+                    gantt_html += f"<th style='padding: 8px; border: 1px solid #ddd; text-align: center; min-width: 78px;'>{month.year}/{month.month:02d}</th>"
+                gantt_html += "</tr></thead><tbody>"
+
+                for item in valid_items:
+                    status_key, status_label = item_status(item)
+                    gantt_html += "<tr>"
+                    gantt_html += f"<td style='padding: 8px; border: 1px solid #ddd;'><strong>{escape(item['title'])}</strong><br><small>{item['start'].strftime('%Y/%m/%d')} - {item['end'].strftime('%Y/%m/%d')}</small></td>"
+                    gantt_html += f"<td style='padding: 8px; border: 1px solid #ddd; text-align: center;'>{escape(item['owner'])}</td>"
+                    gantt_html += f"<td class='gantt-{status_key}' style='padding: 8px; border: 1px solid #ddd; text-align: center; font-weight: 700;'>{status_label}</td>"
+                    gantt_html += (
+                        "<td style='padding: 8px; border: 1px solid #ddd; text-align: center;'>"
+                        f"<div style='height: 8px; background: #edf1ee; border-radius: 999px; overflow: hidden; margin-bottom: 4px;'><div style='width: {item['progress']}%; height: 8px; background: #1a7a5e;'></div></div>"
+                        f"{item['progress']}%</td>"
+                    )
+                    for month in months:
+                        active = item['start'] <= month_end(month) and item['end'] >= month
+                        cell_class = f"gantt-{status_key}" if active else "gantt-empty"
+                        label = "■" if active else ""
+                        gantt_html += f"<td class='{cell_class}' style='padding: 8px; border: 1px solid #ddd; text-align: center;'>{label}</td>"
+                    gantt_html += "</tr>"
+
+                total_days = (max_date - min_date).days + 1
+                gantt_html += "</tbody></table></div>"
+                gantt_html += f"<p style='margin-top: 12px; font-size: 12px; color: #666;'>計畫期間：<strong>{min_date.strftime('%Y年%m月%d日')} 至 {max_date.strftime('%Y年%m月%d日')}</strong>，共 {total_days} 天。</p>"
+            else:
+                gantt_html += "<p style='color: #999;'>時程資料為空，請至少新增一項完整的時程項目。</p>"
+        
+        # 組合完整的 HTML 內容
+        full_html = proposal.replace('\n', '<br>') + budget_html + gantt_html
+        
+        # 保存到 session
+        session["last_proposal"] = proposal
+        history = session.get('proposal_history', [])
+        history.insert(0, proposal)
+        session['proposal_history'] = history[:10]
+        
+        # 返回前端期望的格式
+        return jsonify({
+            'status': 'success',
+            'html_content': full_html,
+            'template_filename': None,
+            'gantt_included': bool(timeline_items),
+            'message': '企劃書生成成功'
+        })
+    except Exception as err:
+        import traceback
+        error_detail = traceback.format_exc()
+        print(f"API 錯誤: {error_detail}")
+        return jsonify({
+            'status': 'error', 
+            'message': f'生成失敗: {str(err)[:100]}'
+        }), 500
 
 @app.route('/api/chat', methods=['POST'])
 def api_chat():
