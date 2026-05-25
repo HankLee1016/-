@@ -1,0 +1,28 @@
+.recent-updates-section {
+    margin-top: 2rem;
+}
+
+.recent-updates-grid {
+    display: grid;
+    gap: 1rem;
+}
+
+.recent-update-card {
+    padding: 1rem;
+    border-radius: 8px;
+}
+
+.recent-update-card--info {
+    background: #eff6ff;
+    border-left: 4px solid var(--primary);
+}
+
+.recent-update-card--success {
+    background: #ecfdf5;
+    border-left: 4px solid #10b981;
+}
+
+.recent-update-card--warning {
+    background: #fffbeb;
+    border-left: 4px solid #f59e0b;
+}
