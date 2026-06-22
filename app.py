@@ -50,8 +50,14 @@ ALLOWED_EXTENSIONS = {"pdf"}
 
 ADMIN_REG_CODE = os.getenv("ADMIN_REG_CODE", "ADMIN2026")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-# 虛擬模式：禁用真實 OpenAI 調用
-openai_client = None  # 強制禁用 OpenAI 客戶端，只使用虛擬數據
+AI_MOCK_MODE = os.getenv("AI_MOCK_MODE", "false").strip().lower() in {"1", "true", "yes", "on"}
+AI_TIMEOUT_SECONDS = int(os.getenv("AI_TIMEOUT_SECONDS", "15"))
+AI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
+
+# 依環境變數決定是否啟用真實 OpenAI；開發/展示時可用 mock mode 保持穩定
+openai_client = None
+if OpenAI and OPENAI_API_KEY and not AI_MOCK_MODE:
+    openai_client = OpenAI(api_key=OPENAI_API_KEY, timeout=AI_TIMEOUT_SECONDS)
 
 # ==========================================
 # 基礎輔助函式 (檔案處理、密碼雜湊等)
@@ -602,85 +608,6 @@ def choose_ai_agent(background, issues):
     if any(keyword in combined for keyword in ["工作", "就業", "收入", "經濟", "社區"]): return AI_AGENTS[2]
     return AI_AGENTS[0]
 
-def request_openai_proposal(title, background, issues, goals):
-    # 虛擬 AI 企劃書生成（用於開發和演示）
-    mock_proposal = f"""壹、宗旨（計畫緣起）
-本案案名為「{title}」，主要說明個案背景與現況，並指出本企劃欲解決的核心問題。
-
-案件背景：{background}
-
-二、計劃目標
-1. 短期目標（0-6個月）
-   - 建立個案服務需求評估機制
-   - 整合相關資源與服務網絡
-   - 提升服務對象自我照顧能力
-
-2. 中期目標（6-12個月）
-   - 提供專業化個案管理服務
-   - 建立社區支持系統
-   - 達成 80% 以上服務滿意度
-
-3. 長期目標（12-24個月）
-   - 完善個案追蹤及評估機制
-   - 建立永續發展模式
-   - 推廣最佳案例及經驗分享
-
-参、計劃執行期程
-第一階段（籌備期）- 1-2個月
-- 成立計劃執行小組
-- 社區踏勘與需求調查
-- 相關規章制度建立
-
-第二階段（實施期）- 3-12個月
-- 全面執行各項服務方案
-- 定期督導與檢討
-- 個案紀錄與統計
-
-第三階段（評估及改進期）- 12-18個月
-- 整體成效評估
-- 改善方案調整
-- 結案與成果報告
-
-肆、企劃內容及實行方法
-1. 服務對象：{issues}
-2. 服務模式：
-   - 個案諮詢服務（每週2次）
-   - 家庭訪視與關懷（每月1次）
-   - 資源轉介與連結（按需求提供）
-   - 成長支持團體（每月1場）
-
-3. 預期成效：{goals}
-
-伍、預期成果與效益
-1. 受益名分數：預計服務 50-100 人次
-2. 個案改善率：預計達成 70% 以上改善
-3. 服務滿意度：目標 85% 以上
-4. 社區影響力：建立示範服務模式
-
-陸、可能風險與因應措施
-風險                          | 因應措施
--                             | -
-服務對象不足                    | 加強轉介宣傳，多元尋案管道
-人力資源短缺                    | 建立志工培訓及招募機制
-經費不足                       | 尋求多元經費來源、效率管理
-服務品質維持                    | 定期督導與專業培訓
-
-柒、建議經費概算方向
-項目                    | 預算
--                      | -
-人事費（3人）            | 900,000
-行政費用                 | 100,000
-活動及教材               | 150,000
-設備及雜支               | 50,000
--                      | -
-**合計**                 | **1,200,000**
-
-結語
-本計畫透過體系化的個案管理及社區支持，期能促進服務對象的生活品質改善及社會適應，並建立永續的社區互助網絡。"""
-    
-    return mock_proposal
-
-
 def polish_text(text):
     if not text: return ""
     cleaned = " ".join(text.replace("\n", " ").replace("　", " ").split())
@@ -699,92 +626,137 @@ def summarize_input(label, content):
     templates = ["{label}重點為：{content}", "{label}描述了：{content}", "此段說明了{content}", "本段內容指出：{content}"]
     return random.choice(templates).format(label=label, content=content)
 
-def generate_case_proposal(title, background, issues, goals, agent_name):
-    # 虛擬模式：始終使用虛擬企劃書
-    response = request_openai_proposal(title, background, issues, goals)
-    if response: 
-        return response
 
-    # 備用方案（如果虛擬企劃書生成失敗）
-    polished_background = polish_text(background)
-    polished_issues = polish_text(issues)
-    polished_goals = polish_text(goals)
-    case_title = polish_text(title)
+def _normalize_text(value):
+    return " ".join(str(value or "").split())
 
-    sections = []
-    sections.append("壹、宗旨（計畫緣起）\n本案案名為「%s」，主要說明個案背景與現況，並指出本企劃欲解決的核心問題。" % case_title)
-    if polished_background:
-        sections.append("本案背景與現況說明：%s" % polished_background)
-    if polished_issues:
-        sections.append("本案欲解決的主要議題為：%s" % polished_issues)
 
-    goals_section = "貳、計劃目標\n"
-    goals_section += "1. 建立明確可衡量之目標，涵蓋短期與長期成效。\n"
-    if polished_goals:
-        goals_section += "2. 目標內容：%s" % polished_goals
-    else:
-        goals_section += "2. 目標內容：尚待補充具體目標與預期成效。"
-    sections.append(goals_section)
-
-    schedule = "参、計畫執行期程\n- 建議將計畫分為籌備、執行與評估三階段，並訂定明確時間點。\n- 若已有補助或成功經驗資料，可用於確認時程與資源配置。"
-    sections.append(schedule)
-
-    content = "肆、企劃內容及實行方法\n- 依據背景與問題分析，提出具體執行方案與方法。\n- 建議包含服務對象、施作方式、資源整合與協調機制。"
-    if polished_issues:
-        content += "\n- 針對主要議題，應提出逐步解決策略，避免方案過於籠統。"
-    sections.append(content)
-
-    outcome = "伍、預期成果與效益\n- 預期本計畫可提升個案自立能力並改善相關生活品質。"
-    if polished_goals:
-        outcome += "\n- 依照目標設定，可採用數量化或可觀察之指標檢視成效。"
-    sections.append(outcome)
-
-    risk = "陸、可能風險與因應措施\n- 針對資源不足、執行進度延遲或需求變動訂定備援方案。\n- 建議定期檢視成效，並依反饋調整執行方式。"
-    sections.append(risk)
-
-    budget = "柒、建議經費概算方向\n- 初步預估應包含人事費、辦理費用、材料耗材與雜支。\n- 若申請政府補助，務必先確認核銷規定與可報支項目。"
-    sections.append(budget)
-
-    footer = [
-        "本回覆已依據企劃書範本格式整理，並保留可執行性與專業建議。",
-        f"AI 模型：{AI_MODEL_NAME} / 引擎：{AI_MODEL_ENGINE}",
-        f"回覆識別碼：{uuid.uuid4().hex[:8]}"
+def _fallback_proposal(title, background, issues, goals):
+    sections = [
+        f"計畫名稱：{_normalize_text(title) or '未命名計畫'}",
+        "一、計畫緣起",
+        _normalize_text(background) or "請補充組織背景、服務脈絡與本計畫推動原因。",
+        "二、問題分析",
+        _normalize_text(issues) or "請補充服務對象目前面臨的主要問題與需求。",
+        "三、計畫目標",
+        _normalize_text(goals) or "請補充本計畫欲達成的具體目標與預期成效。",
+        "四、服務對象",
+        "請補充年齡層、身份背景、服務規模與選案依據。",
+        "五、執行方式",
+        "請依服務流程、分工、資源配置與期程進一步撰寫。",
+        "六、預期效益",
+        "請補充量化與質化成果指標。",
+        "七、經費概算",
+        "請依實際補助規定拆分人事費、業務費與雜支。",
+        "八、風險與因應",
+        "請補充可能風險與對應措施。",
     ]
+    return "\n".join(sections)
 
-    return "\n\n".join([section for section in sections if section] + footer)
+
+def request_openai_proposal(title, background, issues, goals):
+    if openai_client is None:
+        return None
+
+    system_prompt = (
+        "你是政府補助計畫書撰寫助手。請以正式、公文式、可送件的語氣撰寫，"
+        "內容需穩定、分段清楚、避免口語化、避免重複，並優先使用使用者提供的資訊。"
+        "請嚴格遵守下列格式要求：\n"
+        "1. 以標題列出各章節，章節名稱需固定且一致。\n"
+        "2. 每一章需有具體段落，避免只列點不說明。\n"
+        "3. 內容必須補足計畫可送件所需的基本要素，不可留下空白章節。\n"
+        "4. 語氣需正式、穩定、客觀，避免宣傳式、聊天式或推測式語句。"
+    )
+    user_prompt = (
+        f"計畫名稱：{_normalize_text(title)}\n"
+        f"計畫背景：{_normalize_text(background)}\n"
+        f"主要問題：{_normalize_text(issues)}\n"
+        f"計畫目標：{_normalize_text(goals)}\n\n"
+        "請輸出完整企劃草案，並嚴格依下列章節順序撰寫：\n"
+        "一、計畫緣起\n"
+        "二、問題分析\n"
+        "三、計畫目標\n"
+        "四、服務對象\n"
+        "五、執行方式\n"
+        "六、預期效益\n"
+        "七、經費概算\n"
+        "八、風險與因應\n\n"
+        "請保持章節順序固定、標題格式一致、每段內容完整且可直接作為送件初稿。"
+    )
+
+    try:
+        completion = openai_client.chat.completions.create(
+            model=AI_MODEL,
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt},
+            ],
+            temperature=0.2,
+            max_tokens=1400,
+        )
+        content = completion.choices[0].message.content
+        return content.strip() if content else None
+    except Exception:
+        return None
+
+
+def generate_case_proposal(title, background, issues, goals, agent_name):
+    response = request_openai_proposal(title, background, issues, goals)
+    if response:
+        return response
+    return _fallback_proposal(title, background, issues, goals)
 
 def build_assistant_messages(user_input, history, subsidy_summary=""):
-    messages = [{"role": "system", "content": "你是一個社福企劃對話助理，透過問答引導使用者按步驟整理企劃書內容。請先釐清服務對象、補助目的、組織特色與預期成效，然後再進一步提供可行建議。"}]
-    if subsidy_summary: messages.append({"role": "system", "content": f"補助摘要提示：{subsidy_summary}"})
-    for item in history: messages.append({"role": item["role"], "content": item["content"]})
-    messages.append({"role": "user", "content": user_input})
+    messages = [{"role": "system", "content": _build_chat_system_prompt(subsidy_summary)}]
+    for item in history:
+        role = item.get("role", "user")
+        content = _normalize_text(item.get("content", ""))
+        if content:
+            messages.append({"role": role, "content": content})
+    messages.append({"role": "user", "content": _normalize_text(user_input)})
     return messages
 
-def generate_chat_response(user_input, history, subsidy_summary=""):
-    # 虛擬 AI 聊天回應（用於開發和演示）
-    lower_text = user_input.lower()
-    
-    # 根據用戶輸入返回相應的模擬回應
+
+def _chat_fallback_response(user_input, history):
+    lower_text = _normalize_text(user_input).lower()
     if any(token in lower_text for token in ["服務對象", "族群", "對象", "受眾"]):
-        return "非常好的問題！明確定義服務對象是企劃書的基礎。您可以描述：\n1. 目標族群的年齡、性別、社經背景\n2. 他們面臨的具體困難\n3. 為什麼選擇這個族群\n\n這樣我能幫您更精準地設計服務內容。"
-    
+        return "請先明確列出服務對象的年齡層、身份背景與目前面臨的困難，這樣後續目標與服務方法會更精準。"
     if any(token in lower_text for token in ["目標", "預期", "成效", "成果", "指標"]):
-        return "設定清晰的成果指標非常重要！建議包括：\n1. 數量指標（如服務人數、次數）\n2. 品質指標（如滿意度、改善率）\n3. 時間期限（如 3 個月內達成率 80%）\n\n您能分享一下希望達成的具體目標嗎？"
-    
+        return "成果指標建議分成數量、品質與時程三類，例如服務人次、滿意度、改善率與完成期限。"
     if any(token in lower_text for token in ["預算", "經費", "費用", "成本"]):
-        return "經費規劃需要符合實際執行成本。一般包括：\n1. 人事費（最大比例）\n2. 行政費（辦公、電話等）\n3. 活動費（教材、場地等）\n4. 雜支（5% 控制）\n\n您的預算大約在哪個範圍呢？"
-    
+        return "經費規劃可先拆成人事費、業務費與雜支，再依補助規定補上金額與比例。"
     if any(token in lower_text for token in ["風險", "困難", "挑戰", "問題"]):
-        return "識別風險是很好的規劃習慣。常見的包括：\n1. 人力不足風險 → 建立志工培訓機制\n2. 經費短缺 → 多元籌資管道\n3. 對象流失 → 強化追蹤與關懷\n\n您預期會遇到什麼主要挑戰？"
-    
+        return "風險可先從人力、經費、對象參與與執行期程四個面向整理，再為每項安排對應措施。"
     if any(token in lower_text for token in ["時程", "期程", "多久", "期限"]):
-        return "典型的社福計畫周期：\n• 籌備期（1-2個月）：準備與宣傳\n• 實施期（6-12個月）：執行服務\n• 評估期（2-3個月）：成果總結\n\n您的計畫預計執行多久？"
-    
-    # 預設通用回應
-    return "感謝您的提問！請進一步說明您想要了解的內容，例如：服務對象、預期成效、預算規模或時間安排。我會幫您完善企劃書的相關章節。"
-    if any(token in lower_text for token in ["補助", "申請", "案件", "方案"]): return "請提供補助類型、申請期限與核心服務計畫，讓我們能以您組織的特色撰寫具代表性的企劃內容。"
-    if len(history) < 4: return "您好，請先簡單說明您的組織、服務族群與申請目的。 我會依序引導您完成最符合需求的企劃書內容。"
-    return "根據您的說明，我已理解基本需求。請再補充目前可運用的資源、服務方式、以及期望的成效指標，讓我幫您整理成更具代表性的企劃書內容。"
+        return "常見做法是分成籌備期、執行期與評估期三段，並標示每一階段的月數與主要工作。"
+    if any(token in lower_text for token in ["補助", "申請", "案件", "方案"]):
+        return "請提供補助名稱、申請期限與服務重點，我可以幫您把內容整理成更接近正式送件格式。"
+    if len(history) < 4:
+        return "您好，請先簡單說明組織背景、服務族群與申請目的，我會依序幫您補齊企劃內容。"
+    return "請補充目前可運用的資源、服務方式與期望成效，我會協助整理成更完整的企劃書。"
+
+
+def generate_chat_response(user_input, history, subsidy_summary=""):
+    normalized_input = _normalize_text(user_input)
+    if not normalized_input:
+        return "請先輸入要優化的內容，我會協助整理成正式企劃語氣。"
+
+    if openai_client is None:
+        return _chat_fallback_response(normalized_input, history)
+
+    try:
+        completion = openai_client.chat.completions.create(
+            model=AI_MODEL,
+            messages=build_assistant_messages(normalized_input, history, subsidy_summary),
+            temperature=0.35,
+            max_tokens=900,
+        )
+        content = completion.choices[0].message.content
+        if not content:
+            return _chat_fallback_response(normalized_input, history)
+        return polish_text(content.strip())
+    except Exception:
+        return _chat_fallback_response(normalized_input, history)
 
 # ==========================================
 # 路由 (Routes) - 基礎認證與個人設定
