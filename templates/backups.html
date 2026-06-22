@@ -1,0 +1,168 @@
+{% extends 'base.html' %}
+
+{% block title %}備份管理 - 系統{% endblock %}
+
+{% block head_extra %}
+    <link rel='stylesheet' href='{{ url_for('static', filename='css/backups.css') }}'>
+{% endblock %}
+
+
+{% block content %}
+<div class="main-container">
+    <div class="page-header">
+        <h1>備份管理</h1>
+        <button onclick="createBackup()" class="btn btn-primary">建立備份</button>
+    </div>
+
+    <!-- 備份統計 -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-label">總備份數</div>
+            <div class="stat-value" id="totalBackups">-</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">最後備份</div>
+            <div class="stat-value" id="lastBackup">-</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">使用空間</div>
+            <div class="stat-value" id="totalSize">-</div>
+        </div>
+    </div>
+
+    <!-- 備份列表 -->
+    <div class="card">
+        <h2>備份列表</h2>
+        <div id="backupsList" style="margin-top: 1rem;">
+            <div style="text-align: center; padding: 2rem; color: var(--text-secondary);">
+                載入中...
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+async function loadBackups() {
+    try {
+        const response = await fetch('/admin/backups/list');
+        const data = await response.json();
+        
+        displayBackups(data.backups || []);
+        updateStats(data.backups || []);
+    } catch (error) {
+        console.error('載入備份列表失敗:', error);
+        document.getElementById('backupsList').innerHTML = 
+            '<div class="no-backups" style="color: var(--error-color);">載入失敗</div>';
+    }
+}
+
+function updateStats(backups) {
+    document.getElementById('totalBackups').textContent = backups.length;
+    
+    if (backups.length > 0) {
+        const lastBackup = new Date(backups[0].created_at);
+        document.getElementById('lastBackup').textContent = 
+            lastBackup.toLocaleDateString('zh-HK', {year: 'numeric', month: '2-digit', day: '2-digit'});
+        
+        const totalSize = backups.reduce((sum, b) => sum + (b.size_mb || 0), 0);
+        document.getElementById('totalSize').textContent = totalSize > 0 ? totalSize.toFixed(2) + ' MB' : '-';
+    }
+}
+
+function displayBackups(backups) {
+    const container = document.getElementById('backupsList');
+    
+    if (backups.length === 0) {
+        container.innerHTML = '<div class="no-backups">尚無備份</div>';
+        return;
+    }
+
+    const html = backups.map(backup => `
+        <div class="backup-item">
+            <div class="backup-info">
+                <div class="backup-name">
+                    <span class="status-${backup.status === 'success' ? 'success' : 'failed'}"></span>
+                    ${backup.name || '備份'}
+                </div>
+                <div class="backup-meta">
+                    <span>日期: ${formatDate(backup.created_at)}</span>
+                    <span>大小: ${backup.size_mb ? backup.size_mb.toFixed(2) + ' MB' : '未知'}</span>
+                    <span>狀態: ${backup.status === 'success' ? '成功' : '失敗'}</span>
+                </div>
+            </div>
+            <div class="backup-actions">
+                ${backup.status === 'success' ? `
+                    <button class="btn btn-sm btn-secondary" onclick="restoreBackup('${backup.id}')">還原</button>
+                    <button class="btn btn-sm btn-secondary" onclick="downloadBackup('${backup.id}')">下載</button>
+                ` : ''}
+                <button class="btn btn-sm btn-danger" onclick="deleteBackup('${backup.id}')">刪除</button>
+            </div>
+        </div>
+    `).join('');
+
+    container.innerHTML = html;
+}
+
+async function createBackup() {
+    try {
+        const response = await fetch('/admin/backups/create', { method: 'POST' });
+        if (response.ok) {
+            alert('備份已建立');
+            loadBackups();
+        } else {
+            alert('建立備份失敗');
+        }
+    } catch (error) {
+        console.error('建立備份失敗:', error);
+    }
+}
+
+async function restoreBackup(backupId) {
+    if (!confirm('確認要還原此備份嗎？此操作無法撤銷。')) return;
+    
+    try {
+        const response = await fetch(`/admin/backups/${backupId}/restore`, { method: 'POST' });
+        if (response.ok) {
+            alert('備份已還原');
+            loadBackups();
+        } else {
+            alert('還原失敗');
+        }
+    } catch (error) {
+        console.error('還原失敗:', error);
+    }
+}
+
+async function downloadBackup(backupId) {
+    window.location.href = `/admin/backups/${backupId}/download`;
+}
+
+async function deleteBackup(backupId) {
+    if (!confirm('確認刪除此備份嗎？')) return;
+    
+    try {
+        const response = await fetch(`/admin/backups/${backupId}`, { method: 'DELETE' });
+        if (response.ok) {
+            alert('備份已刪除');
+            loadBackups();
+        } else {
+            alert('刪除失敗');
+        }
+    } catch (error) {
+        console.error('刪除失敗:', error);
+    }
+}
+
+function formatDate(dateString) {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('zh-HK', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+}
+
+document.addEventListener('DOMContentLoaded', loadBackups);
+</script>
+{% endblock %}

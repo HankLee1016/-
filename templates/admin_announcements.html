@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>公告管理</title>
+    <link rel="stylesheet" href="/static/css/index.css">
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="/static/css/admin-forms.css">
+    <link rel="stylesheet" href="/static/css/status-badges.css">
+    <link rel="stylesheet" href="/static/css/admin-pages.css">
+</head>
+<body>
+    <div class="page-bg"></div>
+    <div class="container">
+        <header class="hero-card">
+            <div class="hero-copy">
+                <span class="eyebrow">公告管理</span>
+                <h1>系統公告管理</h1>
+                <p>發佈和管理重要公告。</p>
+            </div>
+            <div class="hero-actions">
+                <a class="button" href="/admin/announcements/create">+ 新增公告</a>
+                <a class="button" href="/admin">返回管理首頁</a>
+                <a class="button" href="/logout">登出</a>
+            </div>
+        </header>
+
+        <section class="card">
+            <div class="card-title">
+                <h2>公告列表</h2>
+                <span>共 {{ announcements|length }} 則公告</span>
+            </div>
+            
+            {% if announcements %}
+            {% for announcement in announcements %}
+            <div class="announcement-card">
+                <div>
+                    <h3>{{ announcement.title }}</h3>
+                    <div class="announcement-content">{{ announcement.content[:80] }}{% if announcement.content|length > 80 %}...{% endif %}</div>
+                    <span class="announcement-priority {{ announcement.priority }}">{{ announcement.priority }}</span>
+                    <span class="announcement-status {{ announcement.status }}">{{ announcement.status }}</span>
+                </div>
+                <div class="announcement-actions">
+                    <a class="button" href="/admin/announcements/{{ announcement.id }}/edit">編輯</a>
+                    <form method="post" action="/admin/announcements/{{ announcement.id }}/delete" style="display:inline;">
+                        <button type="submit" class="button" onclick="return confirm('確認刪除此公告嗎？');">刪除</button>
+                    </form>
+                </div>
+            </div>
+            {% endfor %}
+            {% else %}
+            <div class="empty-state">
+                <div class="empty-state-icon">📢</div>
+                <p>還沒有任何公告。<a href="/admin/announcements/create">立即發佈第一則公告</a></p>
+            </div>
+            {% endif %}
+        </section>
+    </div>
+</body>
+</html>

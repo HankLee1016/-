@@ -1,0 +1,283 @@
+{% extends 'base.html' %}
+
+{% block title %}分析儀表板 - 系統{% endblock %}
+
+{% block head_extra %}
+    <link rel='stylesheet' href='{{ url_for('static', filename='css/analytics_dashboard.css') }}'>
+{% endblock %}
+
+
+{% block content %}
+<div class="main-container">
+    <div class="page-header">
+        <h1>分析儀表板</h1>
+        <div class="page-actions">
+            <a href="{{ url_for('features.reports_list') }}" class="btn btn-secondary">查看報告</a>
+            <button onclick="generateNewReport()" class="btn btn-primary">生成報告</button>
+        </div>
+    </div>
+
+    <!-- 快速統計 -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-icon" style="background-color: #4CAF50;">📊</div>
+            <div class="stat-content">
+                <div class="stat-value">{{ stats.activities_count }}</div>
+                <div class="stat-label">活動</div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon" style="background-color: #2196F3;">👥</div>
+            <div class="stat-content">
+                <div class="stat-value">{{ stats.members_count }}</div>
+                <div class="stat-label">成員</div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon" style="background-color: #FF9800;">⚠️</div>
+            <div class="stat-content">
+                <div class="stat-value">{{ stats.pending_cases_count }}</div>
+                <div class="stat-label">待處理個案</div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon" style="background-color: #9C27B0;">📢</div>
+            <div class="stat-content">
+                <div class="stat-value">{{ stats.donations_count }}</div>
+                <div class="stat-label">捐款筆數</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 數據概覽 -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 2rem; margin: 2rem 0;">
+        <div class="card">
+            <h2>活動類型分佈</h2>
+            <div id="activityChart" style="min-height: 300px; display: flex; align-items: center; justify-content: center; color: var(--text-secondary);">
+                載入中...
+            </div>
+        </div>
+        <div class="card">
+            <h2>個案狀態分佈</h2>
+            <div id="caseChart" style="min-height: 300px; display: flex; align-items: center; justify-content: center; color: var(--text-secondary);">
+                載入中...
+            </div>
+        </div>
+        <div class="card">
+            <h2>捐款月份分佈</h2>
+            <div id="donationChart" style="min-height: 300px; display: flex; align-items: center; justify-content: center; color: var(--text-secondary);">
+                載入中...
+            </div>
+        </div>
+        <div class="card">
+            <h2>捐款金額趨勢</h2>
+            <div id="donationTrend" style="min-height: 300px; display: flex; align-items: center; justify-content: center; color: var(--text-secondary);">
+                載入中...
+            </div>
+        </div>
+    </div>
+
+    <!-- 最近活動 -->
+    <div class="card" style="margin-top: 2rem;">
+        <h2>最近報告</h2>
+        <div id="recentReports" style="margin-top: 1rem;">
+            <div style="text-align: center; padding: 2rem; color: var(--text-secondary);">
+                載入中...
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+async function loadAnalytics() {
+    try {
+        const response = await fetch('/api/stats/summary');
+        const data = await response.json();
+        
+        // 更新圖表
+        displayActivityChart(data.activity_distribution || {});
+        displayCaseChart(data.case_distribution || {});
+        displayDonationChart(data.donation_distribution || {});
+        displayDonationTrend(data.donation_amount_trend || {});
+        displayRecentReports(data.recent_reports || []);
+    } catch (error) {
+        console.error('載入分析數據失敗:', error);
+        document.getElementById('activityChart').innerHTML = '<p style="color: var(--error-color);">載入失敗</p>';
+    }
+}
+
+function displayActivityChart(distribution) {
+    const chart = document.getElementById('activityChart');
+    if (!distribution || Object.keys(distribution).length === 0) {
+        chart.innerHTML = '<p style="color: var(--text-secondary);">暫無數據</p>';
+        return;
+    }
+    
+    const items = Object.entries(distribution)
+        .map(([type, count]) => `<div style="padding: 0.5rem 0;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 0.3rem;">
+                <span>${type}</span>
+                <strong>${count}</strong>
+            </div>
+            <div style="background: var(--border-color); height: 8px; border-radius: 4px; overflow: hidden;">
+                <div style="background: linear-gradient(90deg, #4CAF50, #8BC34A); height: 100%; width: ${Math.min(count * 10, 100)}%;"></div>
+            </div>
+        </div>`)
+        .join('');
+    
+    chart.innerHTML = items;
+}
+
+function displayCaseChart(distribution) {
+    const chart = document.getElementById('caseChart');
+    if (!distribution || Object.keys(distribution).length === 0) {
+        chart.innerHTML = '<p style="color: var(--text-secondary);">暫無數據</p>';
+        return;
+    }
+    
+    const statusColors = {
+        '待處理': '#FF9800',
+        '進行中': '#2196F3',
+        '已完成': '#4CAF50',
+        '已關閉': '#9E9E9E'
+    };
+    
+    const items = Object.entries(distribution)
+        .map(([status, count]) => {
+            const color = statusColors[status] || '#757575';
+            return `<div style="padding: 0.5rem 0;">
+                <div style="display: flex; align-items: center; margin-bottom: 0.3rem;">
+                    <span style="width: 12px; height: 12px; background: ${color}; border-radius: 3px; margin-right: 0.5rem;"></span>
+                    <span>${status}</span>
+                    <strong style="margin-left: auto;">${count}</strong>
+                </div>
+            </div>`;
+        })
+        .join('');
+    
+    chart.innerHTML = items;
+}
+
+function displayDonationChart(distribution) {
+    const chart = document.getElementById('donationChart');
+    if (!distribution || Object.keys(distribution).length === 0) {
+        chart.innerHTML = '<p style="color: var(--text-secondary);">暫無捐款資料</p>';
+        return;
+    }
+
+    const items = Object.entries(distribution)
+        .map(([month, count]) => `<div style="padding: 0.5rem 0;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 0.3rem;">
+                <span>${month}</span>
+                <strong>${count}</strong>
+            </div>
+            <div style="background: var(--border-color); height: 8px; border-radius: 4px; overflow: hidden;">
+                <div style="background: linear-gradient(90deg, #673AB7, #9C27B0); height: 100%; width: ${Math.min(count * 10, 100)}%;"></div>
+            </div>
+        </div>`)
+        .join('');
+
+    chart.innerHTML = items;
+}
+
+function displayDonationTrend(trend) {
+    const chart = document.getElementById('donationTrend');
+    if (!trend || Object.keys(trend).length === 0) {
+        chart.innerHTML = '<p style="color: var(--text-secondary);">暫無捐款趨勢</p>';
+        return;
+    }
+
+    const months = Object.keys(trend).sort();
+    const values = months.map(month => trend[month]);
+    const maxValue = Math.max(...values, 1);
+    const svgWidth = 520;
+    const svgHeight = 260;
+    const padding = 48;
+    const chartWidth = svgWidth - padding * 2;
+    const chartHeight = svgHeight - padding * 2;
+
+    const points = values.map((value, index) => {
+        const x = padding + (chartWidth / (months.length - 1 || 1)) * index;
+        const y = padding + chartHeight - (value / maxValue) * chartHeight;
+        return `${x},${y}`;
+    }).join(' ');
+
+    const labels = months.map((month, index) => {
+        const x = padding + (chartWidth / (months.length - 1 || 1)) * index;
+        return `<text x="${x}" y="${svgHeight - 8}" text-anchor="middle" font-size="12" fill="#333">${month}</text>`;
+    }).join('');
+
+    const valueLabels = values.map((value, index) => {
+        const x = padding + (chartWidth / (months.length - 1 || 1)) * index;
+        const y = padding + chartHeight - (value / maxValue) * chartHeight - 10;
+        return `<text x="${x}" y="${Math.max(y, 18)}" text-anchor="middle" font-size="11" fill="#4CAF50">${value.toLocaleString()}</text>`;
+    }).join('');
+
+    const axes = `
+        <line x1="${padding}" y1="${padding}" x2="${padding}" y2="${svgHeight - padding}" stroke="#ccc" />
+        <line x1="${padding}" y1="${svgHeight - padding}" x2="${svgWidth - padding}" y2="${svgHeight - padding}" stroke="#ccc" />
+    `;
+
+    const path = `<polyline fill="none" stroke="#4CAF50" stroke-width="3" points="${points}" />`;
+    const dots = values.map((value, index) => {
+        const x = padding + (chartWidth / (months.length - 1 || 1)) * index;
+        const y = padding + chartHeight - (value / maxValue) * chartHeight;
+        return `<circle cx="${x}" cy="${y}" r="4" fill="#4CAF50" />`;
+    }).join('');
+
+    chart.innerHTML = `
+        <svg width="${svgWidth}" height="${svgHeight}" role="img" aria-label="捐款金額趨勢圖">
+            ${axes}
+            ${path}
+            ${dots}
+            ${labels}
+            ${valueLabels}
+        </svg>
+    `;
+}
+
+function displayRecentReports(reports) {
+    const container = document.getElementById('recentReports');
+    if (!reports || reports.length === 0) {
+        container.innerHTML = '<p style="text-align: center; padding: 2rem; color: var(--text-secondary);">暫無報告</p>';
+        return;
+    }
+    
+    const items = reports.slice(0, 5).map(report => `
+        <div style="padding: 1rem; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <div style="font-weight: 500; color: var(--text-primary);">${report.title || '報告'}</div>
+                <div style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 0.25rem;">
+                    ${new Date(report.created_at).toLocaleDateString('zh-HK', {year: 'numeric', month: '2-digit', day: '2-digit'})}
+                </div>
+            </div>
+            <a href="/analytics/reports/${report.id}" class="btn btn-sm btn-secondary">查看</a>
+        </div>
+    `).join('');
+    
+    container.innerHTML = items || '<p style="text-align: center; padding: 2rem; color: var(--text-secondary);">暫無報告</p>';
+}
+
+function generateNewReport() {
+    const title = prompt('請輸入報告標題:');
+    if (!title) return;
+    
+    fetch('/api/stats/generate-report', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({title})
+    }).then(r => r.json())
+      .then(data => {
+          if (data.success) {
+              alert('報告已生成');
+              loadAnalytics();
+          } else {
+              alert('生成失敗: ' + (data.error || '未知錯誤'));
+          }
+      })
+      .catch(e => alert('錯誤: ' + e.message));
+}
+
+// 頁面載入時
+document.addEventListener('DOMContentLoaded', loadAnalytics);
+</script>
+{% endblock %}

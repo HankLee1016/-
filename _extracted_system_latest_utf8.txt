@@ -1,0 +1,467 @@
+國立臺北商業大學
+資 訊 管 理 系
+115資訊系統專案設計
+系統手冊
+組    別：第115505組
+題    目：ABCDE系統
+指導老師：唐日新老師
+組    長：11156034 李承恩
+組    員：11156035 曾品嘉		11156037 粘妤甄
+11156038 廖冠丞		11151052 莊詠翔
+中華民國115年O月OO日
+目錄
+第一章 前言
+1-1   背景介紹
+1-2   動機
+1-3   系統目的與目標
+1-4   預期成果
+第二章 地營運計畫
+2-1   可行性分析
+2-2   商業模式－Business model
+2-3   市場分析－STP
+2-4   競爭力分析SWOT-TOWS或五力分析
+第三章 系統規格
+3-1   系統架構：最好以圖示方式說明。
+3-2   系統軟、硬體需求與技術平台。
+3-3   開發標準與使用工具。
+第四章 專案時程與組織分工
+4-1   專案時程：甘特圖或PERT／CPM圖。
+4-2   專案組織與分工。
+4-3   上傳GitHub紀錄。
+第五章 需求模型
+5-1   功能分解圖（Functional decomposition diagram）
+5-2   需求清單：須分功能需求與非功能需求兩部分描述。
+第六章 程序模型
+6-1   資料流程圖(Data flow diagram)。
+6-2   程序規格書(Process specification)。
+第七章 資料模型
+7-1   實體關聯圖(Entity relationship diagram)或資料結構圖(Data structure          diagram)。
+7-2   資料字典(Data dictionary)。
+第八章 資料庫設計
+8-1   資料庫關聯圖：需註明參考關係及限制(Constraints)。
+8-2   表格及其Meta data。
+第九章 程式
+9-1   軟體架構與程式清單
+9-2   程式規格描述。
+第十章 測試模型
+10-1  測試計畫：說明採用之測試方法及其進行方式。
+10-2  測試個案與測試結果。
+第十一章 操作手冊
+介紹系統之元件及其安裝及系統管理。
+第十二章 使用手冊
+介紹各畫面、操作之移轉，以類似State Transition Diagram之表示之。
+第十三章 感想
+說明感想與建議。
+第十四章 參考資料
+參考資料
+第一章 前言
+1-1   背景介紹
+【社會現況：斷裂的安全網】
+在現行體制下，許多「邊緣戶」因法規限制無法獲得公部門補助，僅能仰賴第一線微型社福團體伸出援手。然而，這些團體卻處於資源極度匱乏的困境。
+【資源困境：公益界的生存爭奪戰】
+根據 2021 年公益責信調查，台灣 94% 的小型 NPO 僅能分配到 19% 的社會捐款。這使得「政府補助案」成為微型團體維持運作的唯一救命稻草。但在實際執行上，這些團體面臨兩大致命障礙：
+資訊海洋中的孤島： 補助資訊散落各機關，微型組織因缺乏行政人力，常陷入「看得到、抓不到」的資訊不對稱困局。
+文書行政的高牆： 基層人員雖具備實戰經驗，卻受限於組織高齡化與文書撰寫能力，難以跨越嚴苛的企劃書審核門檻。
+【專題核心：以 AI 降低公益門檻】
+本專題針對上述痛點，研發一套「智慧補助資訊與企劃生成平台」。不同於傳統的資訊整合網站，我們結合 大型語言模型 (LLM) 與 自動化檢索技術，將原本繁雜的「找計畫、讀指標、寫企劃」流程簡化為直覺式的數位輔助系統。
+我們的目標是透過科技手段消弭數位落差，讓社福人員能將 80% 的精力從文書作業回歸到實體服務，真正實現社會資源的精準分配。
+1-2  動機
+在台灣，許多弱勢家庭因受限於嚴格的法規限制（如家戶所得、不動產限制等），無法取得正式的「低收入戶」身分，成為所謂的「邊緣戶」。這些群體往往被擋在公部門資源的大門外，成為社會安全網難以覆蓋的灰色地帶。真正能深入巷弄、進入部落，並及時接住這些邊緣戶的，往往是身處第一線的微型社福團體或部落發展協會。這類組織具備高度的靈活性與在地性，能提供政府無法觸及的即時援助。
+同時跟據Right plus 多多益善、公益信責協會於2021年的調查據2021年調查，前 6% 大型NPO 吸納超過 81% 的捐款，其餘 94% 的 小型NPO 辛苦競爭 19% 的捐款資源。依本作者於台灣一起夢想公益協會的工作觀察，多數NPO團體的人員組成皆為高齡化，以及遍佈偏鄉地區，對於除了靠捐款支持外需依靠政府補助的運作環境下，企劃書成了這類小型NPO運作的最大困難。
+因此，本專題旨在開發一套「智慧補助資訊與企劃生成平台」，透過 AI 技術縮減資訊不對稱與撰寫門檻。我們的目標是讓第一線的社福人員不再受困於文書作業，能將寶貴的時間與精神專注於服務大眾，確保社會資源能精準流向最需要的地方。
+1-3 系統目的與目標
+本專題之研發目標可拆解為以下三個層面：
+【資訊端】實現補助資源的自動化監測與整合
+運用 Web Crawler (爬蟲) 技術，針對衛福部、原民會、基金會及各縣市社會局進行自動化掃描，解決微型團體因行政人力不足導致的資訊獲取遲滯問題。
+【技術端】構建具備事實依據的 RAG 知識庫
+透過 Retrieval-Augmented Generation (RAG) 技術，將非結構化的補助簡章與法規轉化為向量知識庫，確保 AI 生成內容精準對接政府徵案需求，徹底消除生成式 AI 的「幻覺」現象。
+【應用端】降低撰寫門檻並提升資源競爭力
+提供引導式對話介面，協助高齡或缺乏行政背景的人員產出結構完整的企劃書草案，協助 94% 的小型 NPO 爭取關鍵運作資金，打破資源分配不均的現況。
+1-4 預期成果
+本專題預期達成之成果，涵蓋系統功能之實現、使用者體驗之優化，以及社會公益資源之重新分配，具體指標如下：
+1. 系統功能與技術產出
+自動化補助資訊情報網： 成功建置針對衛福部、原民會及各縣市社會局的自動化爬蟲系統，實現補助資訊的即時抓取與分類，減少人工搜尋時間達 80% 以上。
+高精確度之 AI 企劃生成模型： 透過 RAG 技術連結最新法規與徵案指標，確保 AI 生成之企劃書草案具備 「事實一致性」，有效避免傳統生成式 AI 的資訊幻覺，達成格式符合率 95% 以上。
+跨載具智慧互動平台： 完成一套具備引導式對話介面的網頁平台，讓不具備資訊背景的基層社工，僅需透過簡單問答即可完成企劃書初稿。
+2. 使用者端之質性效益
+降低數位與行政門檻： 協助高齡化之微型社福組織跨越「文書撰寫」與「資訊篩選」兩大門檻，解決「有能力服務卻無力撰稿」的痛點。
+行政減壓與重心回歸： 透過 AI 自動化大幅縮短企劃撰寫週期，使第一線社福人員能將更多精力從「繁瑣文書」轉移至「實體個案服務」，提升整體服務品質。
+3. 社會層面之量化影響
+推動公益資源精準再分配： 透過技術賦能，提升 94% 小型 NPO 的資源競爭力，打破目前資源過度集中於大型組織（80/20 法則）的現狀，協助資源流向更深入巷弄、部落的微型組織。
+強化社會安全網韌性： 協助微型團體獲得關鍵資金，間接確保法規邊緣的「邊緣戶」能獲得更穩定、及時的救助服務。
+第二章 地營運計畫
+2-1   可行性分析
+本計畫針對微型社福組織之轉型痛點，由技術實踐、成本效益及市場需求三面向評估，具備高度執行可行性：
+一、 技術可行性 (Technical Feasibility)
+技術整合成熟： 目前開源之 Web Crawler (爬蟲) 與 ? RAG (檢索增強生成) 框架（如 LangChain）已發展成熟，能穩定解析 PDF、HTML 等非結構化政府公文。
+精準度保障： 透過 RAG 技術將補助簡章導入向量知識庫，能讓 AI 在生成企劃時具備「參考文獻」，徹底克服生成式 AI 容易產生的資訊幻覺（Hallucination），確保產出的企劃書符合政府徵案標準。
+二、 經濟可行性 (Economic Feasibility)
+低開發門檻： 系統主要開發資源為雲端伺服器與 LLM API 呼叫費用，相較於聘請專業行政人員或顧問公司，本平台的維護成本極低，具備長期運行的經濟誘因。
+高產出價值： 僅需投入微小的技術成本，即可協助微型團體爭取到關鍵的政府補助金，對整體社會福利資源的流動具有極高的投資報酬率 (ROI)。
+三、 營運可行性 (Operational Feasibility)
+使用者需求強烈： 團隊基於「台灣一起夢想公益協會」的實務觀察，確認微型 NPO 對於「補助資訊自動化」與「企劃輔助撰寫」具備迫切需求。
+進入門檻低： 透過專為高齡者設計的「引導式對話介面」，能大幅降低數位工具的操作壓力，確保第一線社福人員能順利導入並持續使用。
+2-2   商業模式－Business model
+本平台採用「賦能型社會創新」模式：
+價值主張： 為資訊與能力相對弱勢的微型組織提供「數位平權」，解決資源獲取的不對稱 。
+關鍵活動： 建立補助資源自動化監測、維護 RAG 事實知識庫、開發引導式對話介面 。
+核心收入（或資源循環）： 初期可透過公益創新補助、企業社會責任 (CSR) 專案支持，或與相關中介組織合作以維持系統維運 。
+2-3   市場分析－STP
+1.市場區隔(Segmentation)：
+聚焦於資源分配中的「94% 小型 NPO」，包含部落發展協會、社區發展協會及偏鄉在地服務組織 。
+2.目標市場(Targeting)：
+鎖定人員高齡化、缺乏專職行政人才、擁有豐富在地服務經驗但欠缺數位撰稿能力的微型組織 。
+3.定位 (Positioning)：
+定位為「社福專用的智慧賦能輔助平台」，強調自動化、零幻覺的事實依據，以及符合政府公文格式的「一站式」產出功能 。
+2-4   競爭力分析SWOT-TOWS或五力分析
+TOWS 策略運用建議：
+SO 策略 (優勢+機會)： 利用技術優勢，積極與政府單位合作推動數位賦能專案。
+ST 策略 (優勢+威脅)： 持續優化 RAG 模組，確保對抗格式變動的彈性，維持專業護城河。
+WO 策略 (劣勢+機會)： 透過開放社群協作，降低維護成本。
+WT 策略 (劣勢+威脅)： 專注於微型 NPO 的細分需求，避免與大眾化 AI 工具進行價格競爭。
+第三章 系統規格
+3-1 系統架構
+本系統採用四層式架構：
+1.使用者層 (Presentation Layer)：
+Web 響應式介面：提供給社福人員登入、輸入需求及查看生成企劃的空間，
+支援平板與行動裝置，方便社工在外訪時使用。
+2.應用層 (Application Layer)：
+API 橋接器：負責處理前端請求，並與後端 LLM 模型進行對接。
+RAG 檢索模組：系統的核心，負責將使用者提出的問題轉為向量，並在知識庫中搜尋對應的政府補助法規。
+3.資料與服務層 (Data & Service Layer)：
+自動化爬蟲服務：定時掃描衛福部、原民會及各地方社會局網站，自動更新最新的補助簡章。
+向量資料庫 (Vector Database)：儲存經過清理、分段後的非結構化補助公文，作為 AI 生成時的「事實依據」。
+4.外部整合層 (External Integration Layer)：
+大型語言模型 (LLM)：串聯 OpenAI GPT 系列或 Google Gemini，負責最後的文本修飾與結構化生成。
+3-2 系統軟、硬體需求與技術平台
+3-3 使用標準與工具
+第四章 專案時程與組織分工
+4-1   專案時程：甘特圖或PERT／CPM圖
+4-2   專案組織與分工。
+11156034
+11156035
+11156037
+11156038
+11151052
+4-3   上傳GitHub紀錄。
+11156034李承恩 上傳 GitHub 紀錄
+11156037粘妤甄 上傳 GitHub 紀錄
+11151052 莊詠翔 上傳 GitHub 紀錄
+第五章 需求模型
+5-1   功能分解圖
+5-2   需求清單
+需求清單分為功能性需求（系統「做什麼」）與非功能性需求（系統「表現如何」）。
+1. 功能性需求 (Functional Requirements)
+2. 非功能性需求 (Non-functional Requirements)
+第六章 程序模型
+6-1   資料流程圖(Data flow diagram)。
+6-2   程序規格書(Process specification)。
+第七章 資料模型
+7-1   實體關聯圖(Entity relationship diagram)或資料結構圖(Data structure          diagram)。
+7-2   資料字典(Data dictionary)。
+表7-2-1 資料字典
+第八章 資料庫設計
+8-1   資料庫關聯圖：需註明參考關係及限制(Constraints)。
+8-2   表格及其Meta data。
+表8-2-1 T01用戶資料表
+表8-2-2 T02活動資料表
+表8-2-3 T03活動報名資料表
+表8-2-4 T04活動簽到資料表
+表8-2-5 T05志工排班資料表
+表8-2-6 T06志工分配資料表
+表8-2-7 T07個案資料表
+表8-2-8 T08個案進度日誌資料表
+表8-2-9 T09公告資料表
+表8-2-10 T10服務項目資料表
+表8-2-11 T11網頁內容資料表
+表8-2-12 T12捐款明細資料表
+表8-2-13 T13系統日誌資料表
+表8-2-14 T14站內通知資料表
+表8-2-15 T15系統備份資料表
+表8-2-16 T16用戶細部權限資料表
+表8-2-17 T17檔案管理資料表
+表8-2-18 T18統計報表資料表
+表8-2-19 T19服務申請資料表
+第十四章 參考資料
+項目 | 描述
+Strengths (優勢) | 結合 RAG 技術消除 AI 幻覺，具高度專業性；專為微型組織開發，介面親和度高 。
+Weaknesses (劣勢) | 知識庫需持續人工校驗與更新；需投入資源處理各類繁雜的政府公文格式 。
+Opportunities (機會) | 政府推動數位轉型政策；大型 NPO 資源過剩下的社會責任分流趨勢 。
+Threats (威脅) | 政府補助公告格式頻繁變動；大型商業軟體若切入此小眾市場的競爭壓力 。
+作業系統版本 | Windows 11以上
+處理器 (CPU) | Intel i5 以上
+記憶體 | 16GB RAM 以上 (因需跑爬蟲及本地端向量處理)
+儲存空間 | 20GB 以上可用空間
+網路 | Wifi無線網路
+系統開發環境 | 系統開發環境
+作業系統 | Windows 10 / 11
+程式開發工具 | 程式開發工具
+應用程式 | vsc
+程式語言 | Python 3.10+
+開發框架 | Flask / FastAPI, React.js
+API 服務 | OpenAI API / Gemini API
+專案管理工具 | 專案管理工具
+專案管理 | github
+設計與文件 | Microsoft Word
+登入功能 | 管理者、使用者需建立帳號註冊，才可登入。 
+若登入失敗（例如密碼錯誤），需顯示錯誤訊息提示
+捐款表單 | 使用者於捐款頁面輸入金額並填妥金額及日期，完成後，系統將捐款資訊與支付狀態寫入資料庫，並於前端彈出確認提示。
+AI 個案企劃書產生器 | 系統須能生成符合政府公文格式與徵案指標的企劃書草案。後端系統隨即串接調用 OpenAI 進行文本結構化與修飾，生成完畢的企劃書可直接提交申請
+需求類別 | 需求項目 | 具體描述與系統規範限制
+效能需求 (Performance) | AI 企劃生成回應時間 | 系統調用 API 進行 AI 生成時，回應等待時間應控制在 15 秒內。
+安全性需求 (Security) | 角色權限存取控制 | 非管理員角色若非法存取後台路由，系統一律強制攔截導回首頁。
+可用性需求 (Usability) | 錯誤回報 | 系統發生異常時，應提供錯誤提示並記錄，方便追蹤與修復。
+功能說明 | 用戶註冊登入
+操作說明 | 使用者可輸入帳號進行註冊與登入，登入後可使用系統全部功能。
+輸入值 | 使用者登入資料及資料庫中的使用者資訊
+輸出值 | 登入失敗通知及登入狀態（是否登入？）
+功能說明 | 編輯團體背景設定
+操作說明 | 使用者可在此頁面填寫並更新社福團體的組織基本資料，點擊儲存後更新系統紀錄。
+輸入值 | 團體名稱、字號、社員人數、志工人數、負責人、登記地址、儲存/取消指令
+輸出值 | 儲存成功訊息、更新後之團體基本資料
+功能說明 | 公家機關補助查詢
+操作說明 | 使用者可依類別或關鍵字篩選公家機關補助公告，系統會即時統計總數並於列表顯示詳細補助資訊
+輸入值 | 類別篩選、關鍵字輸入、查詢指令
+輸出值 | 統計數據（補助金額、補助類別、補助機關）
+功能說明 | AI 個案企劃書產生器
+操作說明 | 使用者輸入企劃案的基本資料並可選擇上傳參考檔案，系統將透過 OpenAI API 進行智慧文本整合，自動生成企劃書草稿。
+輸入值 | 案名、背景與現況、主要問題、目標與成效、補充檔案(PDF)、申請補助資訊(PDF)、產生企劃書指令
+輸出值 | AI 自動生成之企劃書草稿、檔案上傳成功提示
+功能說明 | 下載個案企劃書
+操作說明 | 檢視 AI 自動生成的企劃書草稿內容，並提供下載
+輸入值 | 下載企劃 (TXT) 指令
+輸出值 | 跳出下載 TXT 企劃檔案
+功能說明 | 用對話優化企劃
+操作說明 | 編輯企劃書草稿內容 使用與AI對話功能來修改企劃書
+輸入值 | 用對話優化企劃指令
+輸出值 | 跳轉至對話優化介面 並與AI對話修改草稿
+功能說明 | 提交補助申請
+操作說明 | 使用者提交企劃書後，可在本頁面依時間順序檢視所有已送出的補助申請案及其最新審核狀態。
+輸入值 | 檢視申請紀錄指令
+輸出值 | 申請紀錄列表（包含申請時間、案名、狀態、管理者備註）
+功能說明 | 捐款管理
+操作說明 | 使用者可在此頁面填寫捐款意願與基本資訊，點擊送出後由系統記錄捐款明細。
+輸入值 | 捐款人姓名、捐款金額、捐款日期、捐款用途／備註、送出捐款指令
+輸出值 | 捐款成功、失敗提示訊息、更新之捐款紀錄
+資料表編號 | 資料表名稱 | 資料表中文名稱
+T01 | users | 用戶表
+T02 | activities | 活動表
+T03 | registrations | 活動報名表
+T04 | attendances | 活動簽到表
+T05 | volunteer_shifts | 志工排班表
+T06 | shift_volunteers | 志工分配表
+T07 | cases | 個案表
+T08 | case_logs | 個案進度日誌表
+T09 | announcements | 公告表
+T10 | services | 服務表
+T11 | contents | 內容表
+T12 | donations | 捐款表
+T13 | system_logs | 系統日誌表
+T14 | notifications | 通知表
+T15 | backups | 備份表
+T16 | user_permissions | 用戶權限表
+T17 | files | 檔案表
+T18 | reports | 統計報表表
+T19 | service_applications | 服務申請資料表
+T01 users（用戶） | T01 users（用戶） | T01 users（用戶） | T01 users（用戶） | T01 users（用戶） | T01 users（用戶）
+欄位名稱 | 中文名稱 | 資料型態 | 欄位長度 | 主鍵 | 外鍵
+id | 流水號 | SERIAL | - | ˇ
+username | 用户帳號 | VARCHAR | 255
+password | 用戶密碼 | VARCHAR | 255
+role | 權限角色 | VARCHAR | 50
+org_name | 機構名稱 | VARCHAR | 255
+org_id | 機構代碼 | VARCHAR | 255
+member_count | 會員人數 | INTEGER | -
+volunteer_count | 志工人數 | INTEGER | -
+contact_person | 聯絡人姓名 | VARCHAR | 255
+address | 聯絡地址 | TEXT | -
+created_at | 建立時間 | TIMESTAMP | -
+updated_at | 更新時間 | TIMESTAMP | -
+T02 activities（活動） | T02 activities（活動） | T02 activities（活動） | T02 activities（活動） | T02 activities（活動） | T02 activities（活動）
+欄位名稱 | 中文名稱 | 資料型態 | 欄位長度 | 主鍵 | 外鍵
+id | 活動識別碼 | UUID | - | ˇ
+username | 主辦人帳號 | VARCHAR | 255 | users(username)
+activity_name | 活動名稱 | VARCHAR | 255
+description | 詳細描述 | TEXT | -
+category | 活動分類 | VARCHAR | 100
+start_date | 開始日期 | DATE | -
+end_date | 結束日期 | DATE | -
+location | 舉辦地點 | VARCHAR | 255
+max_capacity | 人數上限 | INTEGER | -
+registration_deadline | 報名截止日 | DATE | -
+status | 活動狀態 | VARCHAR | 50
+created_at | 建立時間 | TIMESTAMP | -
+updated_at | 更新時間 | TIMESTAMP | -
+T03 registrations（活動報名） | T03 registrations（活動報名） | T03 registrations（活動報名） | T03 registrations（活動報名） | T03 registrations（活動報名） | T03 registrations（活動報名）
+欄位名稱 | 中文名稱 | 資料型態 | 欄位長度 | 主鍵 | 外鍵
+id | 報名識別碼 | UUID | - | ˇ
+activity_id | 活動識別碼 | UUID | - | activities(id)
+username | 報名者帳號 | VARCHAR | 255 | users(username)
+status | 審核狀態 | VARCHAR | 50
+applied_at | 提交報名時間 | TIMESTAMP | -
+reviewed_by | 審核管理員 | VARCHAR | 255
+reviewed_at | 審核時間 | TIMESTAMP | -
+rejection_reason | 拒絕原因 | TEXT | -
+T04 attendances（活動簽到） | T04 attendances（活動簽到） | T04 attendances（活動簽到） | T04 attendances（活動簽到） | T04 attendances（活動簽到） | T04 attendances（活動簽到）
+欄位名稱 | 中文名稱 | 資料型態 | 欄位長度 | 主鍵 | 外鍵
+id | 簽到識別碼 | UUID | - | ˇ
+activity_id | 活動識別碼 | UUID | - | activities(id)
+username | 簽到者帳號 | VARCHAR | 255 | users(username)
+check_in_time | 簽到時間 | TIMESTAMP | -
+check_out_time | 簽退時間 | TIMESTAMP | -
+status | 出席狀態 | VARCHAR | 50
+created_at | 紀錄建立時間 | TIMESTAMP | -
+T05 volunteer_shifts（志工排班） | T05 volunteer_shifts（志工排班） | T05 volunteer_shifts（志工排班） | T05 volunteer_shifts（志工排班） | T05 volunteer_shifts（志工排班） | T05 volunteer_shifts（志工排班）
+欄位名稱 | 中文名稱 | 資料型態 | 欄位長度 | 主鍵 | 外鍵
+id | 班次識別碼 | UUID | - | ˇ
+activity_id | 所屬活動識別碼 | UUID | - | activities(id)
+shift_name | 班次名稱 | VARCHAR | 255
+start_time | 開始時間 | TIME | -
+end_time | 結束時間 | TIME | -
+required_count | 所需志工人數 | INTEGER | -
+status | 招募狀態 | VARCHAR | 50
+created_at | 建立時間 | TIMESTAMP | -
+T06 shift_volunteers（志工分配） | T06 shift_volunteers（志工分配） | T06 shift_volunteers（志工分配） | T06 shift_volunteers（志工分配） | T06 shift_volunteers（志工分配） | T06 shift_volunteers（志工分配）
+欄位名稱 | 中文名稱 | 資料型態 | 欄位長度 | 主鍵 | 外鍵
+id | 分配識別碼 | UUID | - | ˇ
+shift_id | 所屬班次識別碼 | UUID | - | volunteer_shifts
+(id)
+volunteer_name | 志工姓名 | VARCHAR | 255
+assigned_at | 指派時間 | TIMESTAMP | -
+T07 cases（個案） | T07 cases（個案） | T07 cases（個案） | T07 cases（個案） | T07 cases（個案） | T07 cases（個案）
+欄位名稱 | 中文名稱 | 資料型態 | 欄位長度 | 主鍵 | 外鍵
+id | 個案識別碼 | UUID | - | ˇ
+case_name | 個案主旨 | VARCHAR | 255
+member_name | 求助者姓名 | VARCHAR | 255
+issue_description | 問題詳細描述 | TEXT | -
+status | 個案狀態 | VARCHAR | 50
+priority | 優先等級 | VARCHAR | 50
+assigned_to | 負責社工帳號 | VARCHAR | 255 | users(username)
+progress | 處理進度(%) | INTEGER | -
+created_at | 建立時間 | TIMESTAMP | -
+updated_at | 更新時間 | TIMESTAMP | -
+closed_at | 結案時間 | TIMESTAMP | -
+T08 case_logs（個案進度日誌） | T08 case_logs（個案進度日誌） | T08 case_logs（個案進度日誌） | T08 case_logs（個案進度日誌） | T08 case_logs（個案進度日誌） | T08 case_logs（個案進度日誌）
+欄位名稱 | 中文名稱 | 資料型態 | 欄位長度 | 主鍵 | 外鍵
+id | 日誌識別碼 | UUID | - | ˇ
+case_id | 所屬個案識別碼 | UUID | - | cases(id)
+action | 變更動作 | VARCHAR | 255
+description | 處置描述 | TEXT | -
+changed_by | 經辦人帳號 | VARCHAR | 255 | users(username)
+created_at | 紀錄時間 | TIMESTAMP | -
+T09 announcements（公告） | T09 announcements（公告） | T09 announcements（公告） | T09 announcements（公告） | T09 announcements（公告） | T09 announcements（公告）
+欄位名稱 | 中文名稱 | 資料型態 | 欄位長度 | 主鍵 | 外鍵
+id | 公告識別碼 | UUID | - | ˇ
+title | 公告標題 | VARCHAR | 255
+content | 公告內容 | TEXT | -
+priority | 重要程度 | VARCHAR | 50
+status | 發佈狀態 | VARCHAR | 50
+author | 發佈者帳號 | VARCHAR | 255 | users(username)
+created_at | 建立時間 | TIMESTAMP | -
+updated_at | 修改時間 | TIMESTAMP | -
+published_at | 公開時間 | TIMESTAMP | -
+T10 services（服務項目） | T10 services（服務項目） | T10 services（服務項目） | T10 services（服務項目） | T10 services（服務項目） | T10 services（服務項目）
+欄位名稱 | 中文名稱 | 資料型態 | 欄位長度 | 主鍵 | 外鍵
+id | 服務識別碼 | UUID | - | ˇ
+service_name | 服務名稱 | VARCHAR | 255
+service_type | 服務類型 | VARCHAR | 100
+target_group | 服務對象 | VARCHAR | 255
+description | 服務說明 | TEXT | -
+contact | 聯絡窗口 | VARCHAR | 255
+status | 開辦狀態 | VARCHAR | 50
+created_at | 上架時間 | TIMESTAMP | -
+updated_at | 更新時間 | TIMESTAMP | -
+T11 contents（網頁內容） | T11 contents（網頁內容） | T11 contents（網頁內容） | T11 contents（網頁內容） | T11 contents（網頁內容） | T11 contents（網頁內容）
+欄位名稱 | 中文名稱 | 資料型態 | 欄位長度 | 主鍵 | 外鍵
+id | 網頁內容識別碼 | UUID | - | ˇ
+title | 文章標題 | VARCHAR | 255
+content | 文章本文 | TEXT | -
+category | 文章分類 | VARCHAR | 100
+author | 編輯者帳號 | VARCHAR | 255 | users(username)
+status | 上線狀態 | VARCHAR | 50
+created_at | 建立時間 | TIMESTAMP | -
+updated_at | 更新時間 | TIMESTAMP | -
+T12 donations（捐款明細） | T12 donations（捐款明細） | T12 donations（捐款明細） | T12 donations（捐款明細） | T12 donations（捐款明細） | T12 donations（捐款明細） | T12 donations（捐款明細）
+欄位名稱 | 中文名稱 | 資料型態 | 欄位長度 | 主鍵 | 外鍵
+id | 捐款唯一識別碼 | BIGINT | - | ˇ
+donor | 捐款者姓名 | VARCHAR | 255
+funds_no | 專案款項編號 | VARCHAR | 100
+amount | 捐款金額 | NUMERIC | -
+donation_date | 捐款日期 | DATE | -
+note | 捐款備註 | TEXT | -
+category | 項目分類代碼 | INTEGER | -
+unit_data_id | 單位數據對應碼 | INTEGER | -
+show_flag | 徵信公開標記 | INTEGER | -
+user_id | 最後修改人員代碼 | VARCHAR | - | users(username)
+last_date | 最後異動時間 | TIMESTAMP | -
+build_date | 原始資料建立日 | TIMESTAMP | -
+created_at | 系統寫入時間 | TIMESTAMP | -
+T13 system_logs（系統日誌） | T13 system_logs（系統日誌） | T13 system_logs（系統日誌） | T13 system_logs（系統日誌） | T13 system_logs（系統日誌） | T13 system_logs（系統日誌）
+欄位名稱 | 中文名稱 | 資料型態 | 欄位長度 | 主鍵 | 外鍵
+id | 日誌識別碼 | UUID | - | ˇ
+user_id | 操作者帳號 | VARCHAR | 255 | users(username)
+action | 操作行為 | VARCHAR | 255
+resource_type | 資源類型 | VARCHAR | 100
+resource_id | 資源識別碼 | VARCHAR | 255
+details | 詳細參數 | TEXT | -
+ip_address | 操作網路IP | VARCHAR | 45
+created_at | 行為時間 | TIMESTAMP | -
+T14 notifications（站內通知） | T14 notifications（站內通知） | T14 notifications（站內通知） | T14 notifications（站內通知） | T14 notifications（站內通知） | T14 notifications（站內通知）
+欄位名稱 | 中文名稱 | 資料型態 | 欄位長度 | 主鍵 | 外鍵
+id | 通知識別碼 | UUID | - | ˇ
+user_id | 接收者帳號 | VARCHAR | 255 | users(username)
+title | 通知標題 | VARCHAR | 255
+message | 通知訊息本文 | TEXT | -
+type | 通知分類 | VARCHAR | 50
+status | 讀取狀態 | VARCHAR | 50
+related_resource_type | 關聯模組名稱 | VARCHAR | 100
+related_resource_id | 關聯模組ID | VARCHAR | 255
+created_at | 發出時間 | TIMESTAMP | -
+read_at | 點閱時間 | TIMESTAMP | -
+T15 backups（系統備份） | T15 backups（系統備份） | T15 backups（系統備份） | T15 backups（系統備份） | T15 backups（系統備份） | T15 backups（系統備份）
+欄位名稱 | 中文名稱 | 資料型態 | 欄位長度 | 主鍵 | 外鍵
+id | 備份識別碼 | UUID | - | ˇ
+backup_name | 備份檔案名稱 | VARCHAR | 255
+backup_type | 備份類型 | VARCHAR | 50
+backup_size | 檔案大小(Bytes) | BIGINT | -
+status | 備份狀態 | VARCHAR | 50
+created_by | 執行者帳號 | VARCHAR | 255 | users(username)
+created_at | 備份時間 | TIMESTAMP | -
+restored_at | 還原時間 | TIMESTAMP | -
+T16 user_permissions（用戶細部權限） | T16 user_permissions（用戶細部權限） | T16 user_permissions（用戶細部權限） | T16 user_permissions（用戶細部權限） | T16 user_permissions（用戶細部權限） | T16 user_permissions（用戶細部權限）
+欄位名稱 | 中文名稱 | 資料型態 | 欄位長度 | 主鍵 | 外鍵
+id | 權限紀錄識別碼 | UUID | - | ˇ
+user_id | 受權用戶帳號 | VARCHAR | 255 | users(username)
+permission | 權限節點字串 | VARCHAR | 255
+granted_by | 授權管理員帳號 | VARCHAR | 255 | users(username)
+granted_at | 授權時間 | TIMESTAMP | -
+T17 files（檔案管理） | T17 files（檔案管理） | T17 files（檔案管理） | T17 files（檔案管理） | T17 files（檔案管理） | T17 files（檔案管理）
+欄位名稱 | 中文名稱 | 資料型態 | 欄位長度 | 主鍵 | 外鍵
+id | 檔案唯一識別碼 | UUID | - | ˇ
+filename | 檔案原始名稱 | VARCHAR | 255
+file_path | 磁碟儲存路徑 | TEXT | -
+file_size | 檔案大小(Bytes) | BIGINT | -
+file_type | MIME檔案類型 | VARCHAR | 50
+uploaded_by | 上傳者帳號 | VARCHAR | 255 | users(username)
+related_resource_type | 附屬模組名稱 | VARCHAR | 100
+related_resource_id | 附屬模組資源ID | VARCHAR | 255
+created_at | 上傳時間 | TIMESTAMP | -
+T18 reports（統計報表） | T18 reports（統計報表） | T18 reports（統計報表） | T18 reports（統計報表） | T18 reports（統計報表） | T18 reports（統計報表）
+欄位名稱 | 中文名稱 | 資料型態 | 欄位長度 | 主鍵 | 外鍵
+id | 報表識別碼 | UUID | - | ˇ
+report_name | 報表名稱 | VARCHAR | 255
+report_type | 報表分類 | VARCHAR | 100
+report_data | 報表JSON數據 | JSONB | -
+generated_by | 產出者帳號 | VARCHAR | 255 | users(username)
+start_date | 統計開始日期 | DATE | -
+end_date | 統計結束日期 | DATE | -
+created_at | 產出時間 | TIMESTAMP | -
+T19 service_applications（服務申請） | T19 service_applications（服務申請） | T19 service_applications（服務申請） | T19 service_applications（服務申請） | T19 service_applications（服務申請） | T19 service_applications（服務申請）
+欄位名稱 | 中文名稱 | 資料型態 | 欄位長度 | 主鍵 | 外鍵
+id | 申請識別碼 | UUID | - | ˇ
+service_id | 服務項目識別碼 | UUID | - | services(id)
+username | 申請者帳號 | VARCHAR | 255 | users(username)
+status | 審核狀態 | VARCHAR | 50
+created_at | 申請時間 | TIMESTAMP | -
+序號 | 使用工具名稱 | 使用範圍及說明 | 頁碼
+1 | gemini | 使用gemini彙整

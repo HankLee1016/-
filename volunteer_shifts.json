@@ -1,0 +1,31 @@
+{
+  "volunteer_shifts": [
+    {
+      "id": "51cb83d7-34cf-4a60-91dd-893c463ae42b",
+      "activity_id": "1d2dca38-945a-4ba1-b741-0643b9dba9eb",
+      "shift_name": "上午",
+      "start_time": "02:17",
+      "end_time": "08:12",
+      "required_count": 1,
+      "volunteers": [
+        "11156034"
+      ],
+      "status": "已滿員",
+      "created_at": "5262c2e9"
+    },
+    {
+      "id": "64883b4e-f998-432e-ba7f-85c0e93d0879",
+      "activity_id": "1d2dca38-945a-4ba1-b741-0643b9dba9eb",
+      "shift_name": "大夜班",
+      "start_time": "01:00",
+      "end_time": "06:00",
+      "required_count": 3,
+      "volunteers": [
+        "6",
+        "ba"
+      ],
+      "status": "招募中",
+      "created_at": "111dff09"
+    }
+  ]
+}

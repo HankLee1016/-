@@ -1,0 +1,143 @@
+{% extends 'base.html' %}
+
+{% block title %}申請審核 — 管理後台{% endblock %}
+
+{% block content %}
+    <div class="page-bg"></div>
+    <header class="hero-card">
+        <div class="hero-copy">
+            <span class="eyebrow">管理者審核</span>
+            <h1>📝 補助申請審核</h1>
+            <p>查看所有使用者申請並執行批准或拒絕。可先同步舊 JSON 資料到資料庫，再進行審核。</p>
+        </div>
+        <div class="hero-actions">
+            <a class="button" href="/admin">回到管理後台</a>
+            <a class="button button-secondary" href="/admin/members">成員管理</a>
+            <form method="post" action="/admin/applications/refresh" style="display:inline;">
+                <button type="submit" class="button button-secondary">同步申請資料</button>
+            </form>
+        </div>
+    </header>
+
+    <section class="card">
+        <div class="card-title">
+            <h2 class="section-title">📋 審核列表</h2>
+            <p class="text-muted">顯示所有補助申請的最新狀態</p>
+        </div>
+
+        {% if applications %}
+            <div class="admin-applications-list">
+                {% for app in applications %}
+                <div class="admin-app-card">
+                    <div class="app-status-header">
+                        <div class="app-basic-info">
+                            <h3>{{ app.case_title }}</h3>
+                            <p class="app-user">申請者：<strong>{{ app.username }}</strong></p>
+                            <p class="app-date">申請時間：{{ app.created_at[:19].replace('T', ' ') }}</p>
+                        </div>
+                        <div class="status-badge {% if app.status == 'pending' %}status-pending{% elif app.status == 'approved' %}status-approved{% elif app.status == 'rejected' %}status-rejected{% endif %}">
+                            {% if app.status == 'pending' %}⏳ 待審核{% elif app.status == 'approved' %}✓ 已批准{% elif app.status == 'rejected' %}✗ 已拒絕{% else %}{{ app.status }}{% endif %}
+                        </div>
+                    </div>
+
+                    <div class="app-details">
+                        <div class="detail-row">
+                            <label>補助信息</label>
+                            <p>{{ app.subsidy_summary or '—' }}</p>
+                        </div>
+                        <div class="detail-row">
+                            <label>計畫背景</label>
+                            <p>{{ app.background }}</p>
+                        </div>
+                        <div class="detail-row">
+                            <label>主要問題/目標族群</label>
+                            <p>{{ app.issues or '無' }}</p>
+                        </div>
+                        <div class="detail-row">
+                            <label>計畫目標</label>
+                            <p>{{ app.goals or '無' }}</p>
+                        </div>
+
+                        <div class="detail-section">
+                            <label>企劃書內容</label>
+                            <button type="button" class="btn-secondary" onclick="toggleProposalPreview(this)">查看企劃書</button>
+                            <div class="proposal-preview" hidden>
+                                {{ app.proposal | safe }}
+                            </div>
+                        </div>
+
+                        {% if app.admin_note %}
+                        <div class="detail-row admin-feedback">
+                            <label>✉️ 審核意見</label>
+                            <p>{{ app.admin_note }}</p>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    {% if app.status == 'pending' %}
+                    <div class="app-actions">
+                        <form method="post" action="/admin/applications/{{ app.id }}/approve" class="inline-form">
+                            <textarea name="admin_note" placeholder="（選填）可將審核意見填入此欄位，使用者將收到通知。" style="width: 100%; min-height: 60px; margin-bottom: 8px; padding: 8px; border: 1px solid #dee2e6; border-radius: 6px;"></textarea>
+                            <button type="submit" class="btn-approve">✓ 批准此申請</button>
+                        </form>
+                        <form method="post" action="/admin/applications/{{ app.id }}/reject" class="inline-form">
+                            <textarea name="admin_note" placeholder="（必填）請說明拒絕理由。" style="width: 100%; min-height: 60px; margin-bottom: 8px; padding: 8px; border: 1px solid #dee2e6; border-radius: 6px;" required></textarea>
+                            <button type="submit" class="btn-reject">✗ 拒絕此申請</button>
+                        </form>
+                    </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="message info">目前尚無任何補助申請。</div>
+        {% endif %}
+    </section>
+
+    <style>
+    .admin-applications-list { display: grid; gap: 16px; margin-top: 16px; }
+    .admin-app-card { border: 1px solid #e6ece8; border-radius: 12px; background: #fff; overflow: hidden; }
+    .app-status-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; padding: 16px; border-bottom: 1px solid #edf1ee; background: #fafcfb; }
+    .app-basic-info h3 { margin: 0 0 8px; font-size: 16px; color: #212529; }
+    .app-user, .app-date { margin: 0 0 4px; font-size: 13px; color: #66756f; }
+    .status-badge { display: inline-flex; align-items: center; padding: 8px 14px; border-radius: 999px; font-size: 13px; font-weight: 600; white-space: nowrap; }
+    .status-pending { background: #fff3cd; color: #856404; }
+    .status-approved { background: #d4edda; color: #155724; }
+    .status-rejected { background: #f8d7da; color: #721c24; }
+    .app-details { padding: 16px; }
+    .detail-row { margin-bottom: 12px; }
+    .detail-row label { display: block; font-size: 12px; font-weight: 600; color: #495057; margin-bottom: 4px; text-transform: uppercase; }
+    .detail-row p { margin: 0; font-size: 13px; line-height: 1.6; color: #212529; }
+    .detail-section { margin-bottom: 12px; }
+    .detail-section label { display: block; font-size: 12px; font-weight: 600; color: #495057; margin-bottom: 8px; text-transform: uppercase; }
+    .admin-feedback { background: #f8fbf9; border-left: 3px solid #0d4f3c; padding: 12px; margin: 12px -16px -12px -16px; border-radius: 0; }
+    .proposal-preview { background: #f8fbf9; border: 1px solid #e6ece8; border-radius: 8px; padding: 12px; margin-top: 8px; max-height: 400px; overflow-y: auto; }
+    .proposal-preview h1, .proposal-preview h2, .proposal-preview h3 { color: #0d4f3c; margin-top: 12px; margin-bottom: 6px; font-size: 14px; }
+    .proposal-preview p { line-height: 1.6; margin: 6px 0; font-size: 12px; }
+    .proposal-preview table { width: 100%; border-collapse: collapse; margin: 8px 0; font-size: 12px; }
+    .proposal-preview th { background: #e8f5f0; text-align: left; padding: 6px; border: 1px solid #ddd; }
+    .proposal-preview td { padding: 6px; border: 1px solid #ddd; }
+    .app-actions { padding: 16px; border-top: 1px solid #edf1ee; background: #f8fbf9; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .inline-form { display: grid; gap: 8px; }
+    .btn-approve, .btn-reject { padding: 10px 16px; border: 0; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; transition: 0.2s; }
+    .btn-approve { background: #d4edda; color: #155724; }
+    .btn-approve:hover { background: #c3e6cb; }
+    .btn-reject { background: #f8d7da; color: #721c24; }
+    .btn-reject:hover { background: #f5c6cb; }
+    .btn-secondary { padding: 8px 12px; border: 1px solid #dee2e6; background: #fff; color: #343a40; border-radius: 6px; font-size: 12px; cursor: pointer; }
+    .btn-secondary:hover { background: #e2e6ea; }
+    @media (max-width: 768px) {
+        .app-status-header { flex-direction: column; }
+        .app-actions { grid-template-columns: 1fr; }
+    }
+    </style>
+
+    <script>
+    function toggleProposalPreview(btn) {
+        const preview = btn.nextElementSibling;
+        const isHidden = preview.hidden;
+        preview.hidden = !isHidden;
+        btn.textContent = isHidden ? '隱藏企劃書' : '查看企劃書';
+    }
+    </script>
+{% endblock %}

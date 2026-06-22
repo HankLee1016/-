@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+
+{% block title %}企劃書生成器 — {{ page_title or (subsidy.title if subsidy else '社福企劃生成器') }}{% endblock %}
+
+{% block content %}
+<div class="page-bg"></div>
+
+<header class="hero-card" style="max-width: 1100px; margin-left: auto; margin-right: auto;">
+    <div class="hero-copy">
+        <span class="eyebrow">企劃書生成器</span>
+        <h1>{{ page_title or (subsidy.title if subsidy else '社福企劃生成器') }}</h1>
+        <p>專業版社福企劃書系統，整合自訂預算、時程規劃、真實甘特圖與成果輸出。</p>
+    </div>
+    <div class="hero-actions">
+        <a class="button button-secondary" href="/user">返回使用者專區</a>
+        <a class="button button-secondary" href="/subsidies">補助列表</a>
+        <a class="button" href="/user/assistant">AI 助理</a>
+    </div>
+</header>
+
+{% include '_proposal_builder.html' %}
+{% endblock %}

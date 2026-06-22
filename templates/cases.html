@@ -1,0 +1,103 @@
+{% extends 'base.html' %}
+
+{% block title %}個案管理 — 社福資源平台{% endblock %}
+
+{% block content %}
+    <div class="page-bg"></div>
+    <header class="hero-card">
+        <div class="hero-copy">
+            <span class="eyebrow">個案管理</span>
+            <h1>📋 管理所有個案</h1>
+            <p>在這裡您可以查看、創建、編輯和刪除所有個案資訊，追蹤服務進度。</p>
+        </div>
+        <div class="hero-actions">
+            <a class="button" href="/admin/cases/create">+ 新增個案</a>
+            <a class="button button-secondary" href="/admin">返回管理首頁</a>
+            <a class="button button-secondary" href="/logout">登出</a>
+        </div>
+    </header>
+
+    <!-- 統計資訊 -->
+    {% set ongoing_cases = cases|selectattr('status', 'equalto', '進行中')|list|length %}
+    {% set closed_cases = cases|selectattr('status', 'equalto', '已結案')|list|length %}
+    {% set pending_cases = cases|selectattr('status', 'equalto', '待處理')|list|length %}
+    <div class="stats-grid">
+        <div class="stat-box">
+            <h3>個案總數</h3>
+            <div class="value">{{ cases|length }}</div>
+        </div>
+        <div class="stat-box">
+            <h3>進行中</h3>
+            <div class="value">{{ ongoing_cases }}</div>
+        </div>
+        <div class="stat-box">
+            <h3>待處理</h3>
+            <div class="value">{{ pending_cases }}</div>
+        </div>
+        <div class="stat-box">
+            <h3>已結案</h3>
+            <div class="value">{{ closed_cases }}</div>
+        </div>
+    </div>
+
+    <section class="card">
+        <div class="card-title">
+            <h2 class="section-title">📊 個案列表</h2>
+            <p class="text-muted">點選編輯按鈕查看或更新個案詳細資訊</p>
+        </div>
+        
+        {% if cases %}
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width: 5%;">#</th>
+                            <th style="width: 25%;">個案名稱</th>
+                            <th style="width: 20%;">成員名稱</th>
+                            <th style="width: 25%;">問題描述</th>
+                            <th style="width: 12%;">狀態</th>
+                            <th style="width: 13%; text-align: center;">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for case in cases %}
+                        <tr>
+                            <td class="text-muted">{{ loop.index }}</td>
+                            <td>
+                                <a href="/admin/cases/{{ case.id }}/edit" class="subsidy-link">{{ case.case_name }}</a>
+                            </td>
+                            <td>{{ case.member_name }}</td>
+                            <td class="text-muted text-sm">
+                                {{ case.issue_description[:40] }}{% if case.issue_description|length > 40 %}...{% endif %}
+                            </td>
+                            <td>
+                                {% if case.status == '進行中' %}
+                                    <span class="badge badge-info">🔵 進行中</span>
+                                {% elif case.status == '已結案' %}
+                                    <span class="badge badge-success">✅ 已結案</span>
+                                {% else %}
+                                    <span class="badge badge-warning">⏳ 待處理</span>
+                                {% endif %}
+                            </td>
+                            <td style="text-align: center;">
+                                <div style="display: flex; gap: 0.5rem; justify-content: center;">
+                                    <a class="button btn-small" href="/admin/cases/{{ case.id }}/edit" title="編輯個案">✏️ 編輯</a>
+                                    <form method="post" action="/admin/cases/{{ case.id }}/delete" style="display:inline;" onsubmit="return confirm('確認刪除此個案嗎？');">
+                                        <button type="submit" class="button button-danger btn-small" title="刪除個案">🗑️ 刪除</button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="empty-state">
+                <p style="font-size: 3rem; margin-bottom: 1rem;">📋</p>
+                <p class="text-muted">還沒有任何個案</p>
+                <a href="/admin/cases/create" class="button mt-3" style="margin-top: 1rem;">立即創建第一個個案</a>
+            </div>
+        {% endif %}
+    </section>
+{% endblock %}

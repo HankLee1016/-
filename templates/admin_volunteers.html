@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>志工管理</title>
+    <link rel="stylesheet" href="/static/css/index.css">
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="/static/css/admin-forms.css">
+    <link rel="stylesheet" href="/static/css/status-badges.css">
+    <link rel="stylesheet" href="/static/css/admin-pages.css">
+</head>
+<body>
+    <div class="page-bg"></div>
+    <div class="container">
+        <header class="hero-card">
+            <div class="hero-copy">
+                <span class="eyebrow">人員管理</span>
+                <h1>志工管理</h1>
+                <p>管理組織的志願者資訊和服務時數。</p>
+            </div>
+            <div class="hero-actions">
+                <a class="button" href="/admin/volunteers/create">+ 新增志工</a>
+                <a class="button" href="/search/volunteers">🔍 搜尋志工</a>
+                <a class="button" href="/admin">返回後台</a>
+                <a class="button" href="/logout">登出</a>
+            </div>
+        </header>
+
+        <!-- 統計卡片 -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+            <div class="card">
+                <div style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 0.5rem;">總志工人數</div>
+                <div style="font-size: 2.5rem; font-weight: bold; color: var(--primary);">{{ volunteers|length }}</div>
+            </div>
+            <div class="card">
+                <div style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 0.5rem;">活躍志工</div>
+                <div style="font-size: 2.5rem; font-weight: bold; color: #4CAF50;">{{ volunteers|selectattr('status', 'equalto', '活躍')|list|length }}</div>
+            </div>
+            <div class="card">
+                <div style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 0.5rem;">暫停服務</div>
+                <div style="font-size: 2.5rem; font-weight: bold; color: #FF9800;">{{ volunteers|selectattr('status', 'equalto', '暫停')|list|length }}</div>
+            </div>
+            <div class="card">
+                <div style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 0.5rem;">總服務時數</div>
+                <div style="font-size: 2.5rem; font-weight: bold; color: #2196F3;">{{ volunteers|map(attribute='service_hours')|sum|default(0)|int }}</div>
+            </div>
+        </div>
+
+        <!-- 志工列表 -->
+        <section class="card">
+            <div class="card-title">
+                <h2>志工列表</h2>
+                <span>共 {{ volunteers|length }} 位志工</span>
+            </div>
+
+            {% if volunteers %}
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>姓名</th>
+                            <th>聯絡電話</th>
+                            <th>電子郵件</th>
+                            <th>狀態</th>
+                            <th>服務時數</th>
+                            <th>加入日期</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for volunteer in volunteers %}
+                        <tr>
+                            <td><strong>{{ volunteer.name }}</strong></td>
+                            <td>{{ volunteer.phone or '-' }}</td>
+                            <td>{{ volunteer.email or '-' }}</td>
+                            <td>
+                                <span class="status-badge {% if volunteer.status == '活躍' %}status-active{% elif volunteer.status == '暫停' %}status-inactive{% else %}status-pending{% endif %}">
+                                    {{ volunteer.status }}
+                                </span>
+                            </td>
+                            <td>{{ volunteer.service_hours or 0 }} 小時</td>
+                            <td>{{ volunteer.joined_date or '-' }}</td>
+                            <td class="action-buttons">
+                                <a href="/admin/volunteers/{{ volunteer.id }}/edit" class="btn-small">編輯</a>
+                                <form method="POST" action="/admin/volunteers/{{ volunteer.id }}/delete" style="display: inline;">
+                                    <button class="btn-small btn-danger" onclick="return confirm('確實要刪除此志工嗎？')">刪除</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <p style="text-align: center; color: var(--text-muted); padding: 2rem;">尚無志工資料，<a href="/admin/volunteers/create">新增志工</a></p>
+            {% endif %}
+        </section>
+</div>
+</body>
+</html>

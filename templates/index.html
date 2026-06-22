@@ -1,0 +1,45 @@
+﻿{% extends 'base.html' %}
+
+{% block title %}首頁 — 社福資源平台{% endblock %}
+
+{% block content %}
+    <div class="page-bg"></div>
+    <header class="hero-card">
+        <div class="hero-copy">
+            <span class="eyebrow">社會輔助團體</span>
+            <h1>🌱 歡迎來到社福資源平台</h1>
+            <p>一站式社福企劃和資源媒合平台，幫助您更好地服務社區。</p>
+        </div>
+        <div class="hero-actions">
+            <a class="button" href="/login">🔓 登入帳號</a>
+            <a class="button button-secondary" href="/register">📝 建立帳號</a>
+        </div>
+    </header>
+
+    <section class="card">
+        <div class="card-title">
+            <h2 class="section-title">💡 核心特色</h2>
+            <p class="text-muted">為社福機構提供完整的digital solution</p>
+        </div>
+        
+        <div class="feature-cards-grid">
+            <div class="feature-card blue">
+                <span class="icon">📋</span>
+                <h3>企劃協助</h3>
+                <p>AI 驅動的企劃書生成</p>
+            </div>
+
+            <div class="feature-card yellow">
+                <span class="icon">💰</span>
+                <h3>補助查詢</h3>
+                <p>整合各項補助資訊</p>
+            </div>
+
+            <div class="feature-card green">
+                <span class="icon">🎯</span>
+                <h3>營運管理</h3>
+                <p>活動、志工、成員管理</p>
+            </div>
+        </div>
+    </section>
+{% endblock %}

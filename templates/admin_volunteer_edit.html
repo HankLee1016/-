@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>編輯志工</title>
+    <link rel="stylesheet" href="/static/css/index.css">
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="/static/css/admin-forms.css">
+</head>
+<body>
+    <div class="page-bg"></div>
+    <div class="container">
+        <header class="hero-card">
+            <div class="hero-copy">
+                <span class="eyebrow">志工管理</span>
+                <h1>編輯志工 - {{ volunteer.name }}</h1>
+                <p>更新志願者的基本資訊</p>
+            </div>
+        </header>
+
+        <section class="card" style="max-width: 600px; margin: 0 auto;">
+            {% if error %}
+                <div class="alert alert-error">{{ error }}</div>
+            {% endif %}
+
+            <form method="POST" class="form-group">
+                <div style="margin-bottom: 1.5rem;">
+                    <label for="name" class="form-label">姓名 *</label>
+                    <input type="text" id="name" name="name" class="form-input" value="{{ volunteer.name }}" required>
+                </div>
+
+                <div style="margin-bottom: 1.5rem;">
+                    <label for="phone" class="form-label">聯絡電話</label>
+                    <input type="tel" id="phone" name="phone" class="form-input" value="{{ volunteer.phone or '' }}">
+                </div>
+
+                <div style="margin-bottom: 1.5rem;">
+                    <label for="email" class="form-label">電子郵件</label>
+                    <input type="email" id="email" name="email" class="form-input" value="{{ volunteer.email or '' }}">
+                </div>
+
+                <div style="margin-bottom: 1.5rem;">
+                    <label for="address" class="form-label">住址</label>
+                    <input type="text" id="address" name="address" class="form-input" value="{{ volunteer.address or '' }}">
+                </div>
+
+                <div style="margin-bottom: 1.5rem;">
+                    <label for="skills" class="form-label">專長技能</label>
+                    <textarea id="skills" name="skills" class="form-input" rows="3">{{ volunteer.skills or '' }}</textarea>
+                </div>
+
+                <div style="margin-bottom: 1.5rem;">
+                    <label for="status" class="form-label">狀態</label>
+                    <select id="status" name="status" class="form-input">
+                        <option value="活躍" {% if volunteer.status == '活躍' %}selected{% endif %}>活躍</option>
+                        <option value="暫停" {% if volunteer.status == '暫停' %}selected{% endif %}>暫停</option>
+                        <option value="待審核" {% if volunteer.status == '待審核' %}selected{% endif %}>待審核</option>
+                    </select>
+                </div>
+
+                <div style="margin-bottom: 1.5rem;">
+                    <label for="service_hours" class="form-label">已服務時數</label>
+                    <input type="number" id="service_hours" name="service_hours" class="form-input" value="{{ volunteer.service_hours or 0 }}" min="0">
+                </div>
+
+                <div style="margin-bottom: 1.5rem;">
+                    <label for="joined_date" class="form-label">加入日期</label>
+                    <input type="date" id="joined_date" name="joined_date" class="form-input" value="{{ volunteer.joined_date or '' }}">
+                </div>
+
+                <div style="display: flex; gap: 1rem;">
+                    <button type="submit" class="button" style="flex: 1;">更新志工</button>
+                    <a href="/admin/volunteers" class="button" style="flex: 1; text-align: center; text-decoration: none;">返回</a>
+                </div>
+            </form>
+
+            <hr style="margin: 2rem 0; border: none; border-top: 2px solid var(--border);">
+
+            <div style="padding-top: 1rem;">
+                <h3>加入日期：{{ volunteer.joined_date or '未設定' }}</h3>
+                <p style="color: var(--text-muted); margin: 0.5rem 0 1.5rem 0;">ID: {{ volunteer.id }}</p>
+            </div>
+        </section>
+</div>
+</body>
+</html>

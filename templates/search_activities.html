@@ -1,0 +1,129 @@
+{% extends 'base.html' %}
+
+{% block title %}搜尋活動 - 系統{% endblock %}
+
+{% block head_extra %}
+    <link rel='stylesheet' href='{{ url_for('static', filename='css/search_activities.css') }}'>
+{% endblock %}
+
+
+{% block content %}
+<div class="main-container">
+    <div class="page-header">
+        <h1>搜尋活動</h1>
+    </div>
+
+    <!-- 搜尋表單 -->
+    <div class="card search-card">
+        <div class="form-group">
+            <label>搜尋關鍵詞</label>
+            <input type="text" id="searchQuery" placeholder="輸入活動名稱或描述..." class="form-control">
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+            <div class="form-group">
+                <label>分類</label>
+                <select id="categoryFilter" class="form-control">
+                    <option value="">全部分類</option>
+                    <option value="教育">教育</option>
+                    <option value="健康">健康</option>
+                    <option value="社區">社區</option>
+                    <option value="環保">環保</option>
+                    <option value="文化">文化</option>
+                    <option value="其他">其他</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>狀態</label>
+                <select id="statusFilter" class="form-control">
+                    <option value="">全部狀態</option>
+                    <option value="計劃中">計劃中</option>
+                    <option value="進行中">進行中</option>
+                    <option value="已完成">已完成</option>
+                </select>
+            </div>
+        </div>
+
+        <div style="display: flex; gap: 1rem; margin-top: 1rem;">
+            <button onclick="searchActivities()" class="btn btn-primary">搜尋</button>
+            <button onclick="resetFilters()" class="btn btn-secondary">重設</button>
+        </div>
+    </div>
+
+    <!-- 搜尋結果 -->
+    <div id="searchResults" style="margin-top: 2rem;">
+        <div style="text-align: center; padding: 2rem; color: var(--text-secondary);">
+            輸入搜尋條件後點擊搜尋
+        </div>
+    </div>
+</div>
+<script>
+async function searchActivities() {
+    const query = document.getElementById('searchQuery').value;
+    const category = document.getElementById('categoryFilter').value;
+    const status = document.getElementById('statusFilter').value;
+
+    if (!query) {
+        alert('請輸入搜尋關鍵詞');
+        return;
+    }
+
+    try {
+        const params = new URLSearchParams({
+            query,
+            ...(category && {category}),
+            ...(status && {status})
+        });
+
+        const response = await fetch(`/api/search/activities?${params}`);
+        const data = await response.json();
+        
+        displayResults(data.results || []);
+    } catch (error) {
+        console.error('搜尋失敗:', error);
+        document.getElementById('searchResults').innerHTML = 
+            '<div class="no-results" style="color: var(--error-color);">搜尋失敗，請稍後重試</div>';
+    }
+}
+
+function displayResults(results) {
+    const container = document.getElementById('searchResults');
+    
+    if (results.length === 0) {
+        container.innerHTML = '<div class="no-results">未找到符合條件的活動</div>';
+        return;
+    }
+
+    const html = `
+        <div class="results-count">找到 <strong>${results.length}</strong> 個符合條件的活動</div>
+        <div class="activity-grid">
+            ${results.map(activity => `
+                <div class="activity-card">
+                    <span class="activity-category">${activity.category || '未分類'}</span>
+                    <div class="activity-title">${activity.name || '活動'}</div>
+                    <div class="activity-desc">${(activity.description || '暫無描述').substring(0, 100)}...</div>
+                    <div class="activity-meta">
+                        <span>參與者: ${activity.participant_count || 0}</span>
+                        <span class="status-badge status-${activity.status}">${activity.status || '未知'}</span>
+                    </div>
+                    <div class="activity-actions">
+                        <a href="/activities/${activity.id}">查看詳情</a>
+                    </div>
+                </div>
+            `).join('')}
+        </div>
+    `;
+    
+    container.innerHTML = html;
+}
+
+function resetFilters() {
+    document.getElementById('searchQuery').value = '';
+    document.getElementById('categoryFilter').value = '';
+    document.getElementById('statusFilter').value = '';
+    document.getElementById('searchResults').innerHTML = 
+        '<div style="text-align: center; padding: 2rem; color: var(--text-secondary);">輸入搜尋條件後點擊搜尋</div>';
+}
+</script>
+{% endblock %}

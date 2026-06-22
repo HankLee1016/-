@@ -1,0 +1,174 @@
+{% extends 'base.html' %}
+
+{% block title %}報告 - 系統{% endblock %}
+
+{% block head_extra %}
+    <link rel='stylesheet' href='{{ url_for('static', filename='css/reports_list.css') }}'>
+{% endblock %}
+
+
+{% block content %}
+<div class="main-container">
+    <div class="page-header">
+        <h1>系統報告</h1>
+        <a href="{{ url_for('features.analytics_dashboard') }}" class="btn btn-secondary">返回儀表板</a>
+    </div>
+
+    <!-- 報告篩選 -->
+    <div class="card" style="margin-bottom: 2rem;">
+        <div style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: flex-end;">
+            <div class="form-group" style="flex: 1;">
+                <label>時間範圍</label>
+                <select id="timeRange" class="form-control" onchange="filterReports()">
+                    <option value="">全部</option>
+                    <option value="7">最近 7 天</option>
+                    <option value="30">最近 30 天</option>
+                    <option value="90">最近 90 天</option>
+                </select>
+            </div>
+            <button onclick="deleteAllReports()" class="btn btn-danger">清除所有報告</button>
+        </div>
+    </div>
+
+    <!-- 報告列表 -->
+    <div id="reportsList" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 1.5rem;">
+        <div style="text-align: center; padding: 2rem; color: var(--text-secondary); grid-column: 1/-1;">
+            載入中...
+        </div>
+    </div>
+</div>
+<script>
+let allReports = [];
+
+async function loadReports() {
+    try {
+        const response = await fetch('/analytics/reports/list');
+        const data = await response.json();
+        
+        allReports = data.reports || [];
+        filterReports();
+    } catch (error) {
+        console.error('載入報告失敗:', error);
+        document.getElementById('reportsList').innerHTML = 
+            '<div class="no-reports" style="color: var(--error-color); grid-column: 1/-1;">載入失敗</div>';
+    }
+}
+
+function filterReports() {
+    const timeRange = document.getElementById('timeRange').value;
+    let filtered = allReports;
+
+    if (timeRange) {
+        const days = parseInt(timeRange);
+        const cutoffDate = new Date();
+        cutoffDate.setDate(cutoffDate.getDate() - days);
+        
+        filtered = allReports.filter(report => 
+            new Date(report.created_at) >= cutoffDate
+        );
+    }
+
+    displayReports(filtered);
+}
+
+function displayReports(reports) {
+    const container = document.getElementById('reportsList');
+    
+    if (reports.length === 0) {
+        container.innerHTML = '<div class="no-reports">暫無報告</div>';
+        return;
+    }
+
+    const html = reports.map(report => `
+        <div class="report-card" id="report-${report.id}">
+            <div class="report-header">
+                <div>
+                    <h3 class="report-title">${report.title || '報告'}</h3>
+                    <div class="report-date">${formatDate(report.created_at)}</div>
+                </div>
+            </div>
+
+            <div class="report-meta">
+                <div class="report-meta-item">
+                    <span>類型</span>
+                    <span class="report-meta-value">${report.report_type || '統計'}</span>
+                </div>
+                <div class="report-meta-item">
+                    <span>資料行數</span>
+                    <span class="report-meta-value">${report.data_count || 0}</span>
+                </div>
+                ${report.file_path ? `
+                    <div class="report-meta-item">
+                        <span>檔案大小</span>
+                        <span class="report-meta-value">${formatFileSize(report.file_size)}</span>
+                    </div>
+                ` : ''}
+            </div>
+
+            <div class="report-actions">
+                <a href="/analytics/reports/${report.id}" class="report-action-btn">查看</a>
+                ${report.file_path ? `
+                    <a href="/analytics/reports/${report.id}/download" class="report-action-btn">下載</a>
+                ` : ''}
+                <button onclick="deleteReport('${report.id}')" class="report-action-btn" style="color: #f44336; border-color: #f44336;">刪除</button>
+            </div>
+        </div>
+    `).join('');
+
+    container.innerHTML = html;
+}
+
+async function deleteReport(reportId) {
+    if (!confirm('確認刪除此報告嗎？')) return;
+    
+    try {
+        const response = await fetch(`/analytics/reports/${reportId}`, { method: 'DELETE' });
+        if (response.ok) {
+            allReports = allReports.filter(r => r.id != reportId);
+            filterReports();
+        } else {
+            alert('刪除失敗');
+        }
+    } catch (error) {
+        console.error('刪除失敗:', error);
+    }
+}
+
+async function deleteAllReports() {
+    if (!confirm('確認刪除所有報告嗎？此操作無法撤銷。')) return;
+    
+    try {
+        const response = await fetch('/analytics/reports/delete-all', { method: 'POST' });
+        if (response.ok) {
+            allReports = [];
+            filterReports();
+            alert('所有報告已刪除');
+        } else {
+            alert('刪除失敗');
+        }
+    } catch (error) {
+        console.error('刪除失敗:', error);
+    }
+}
+
+function formatDate(dateString) {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('zh-HK', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+}
+
+function formatFileSize(bytes) {
+    if (!bytes) return '-';
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(2) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+}
+
+document.addEventListener('DOMContentLoaded', loadReports);
+</script>
+{% endblock %}

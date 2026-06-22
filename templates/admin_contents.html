@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>內容管理</title>
+    <link rel="stylesheet" href="/static/css/index.css">
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="/static/css/admin-forms.css">
+    <link rel="stylesheet" href="/static/css/status-badges.css">
+    <link rel="stylesheet" href="/static/css/admin-pages.css">
+</head>
+<body>
+    <div class="page-bg"></div>
+    <div class="container">
+        <header class="hero-card">
+            <div class="hero-copy">
+                <span class="eyebrow">內容管理</span>
+                <h1>系統內容管理</h1>
+                <p>發佈和管理所有系統內容。</p>
+            </div>
+            <div class="hero-actions">
+                <a class="button" href="/admin/contents/create">+ 新增內容</a>
+                <a class="button" href="/admin">返回管理首頁</a>
+                <a class="button" href="/logout">登出</a>
+            </div>
+        </header>
+
+        <section class="card">
+            <div class="card-title">
+                <h2>內容列表</h2>
+                <span>共 {{ contents|length }} 項內容</span>
+            </div>
+            
+            {% if contents %}
+            {% for content in contents %}
+            <div class="content-card">
+                <div>
+                    <h3>{{ content.title }}</h3>
+                    <div class="content-meta">
+                        <strong>分類：</strong> {{ content.category }} 
+                        <strong>|作者：</strong> {{ content.author }}
+                    </div>
+                    <div class="content-description">{{ content.content[:100] }}{% if content.content|length > 100 %}...{% endif %}</div>
+                    <span class="content-status {{ content.status }}">{{ content.status }}</span>
+                </div>
+                <div class="content-actions">
+                    <a class="button" href="/admin/contents/{{ content.id }}/edit">編輯</a>
+                    <form method="post" action="/admin/contents/{{ content.id }}/delete" style="display:inline;">
+                        <button type="submit" class="button" onclick="return confirm('確認刪除此內容嗎？');">刪除</button>
+                    </form>
+                </div>
+            </div>
+            {% endfor %}
+            {% else %}
+            <div class="empty-state">
+                <div class="empty-state-icon">📄</div>
+                <p>還沒有任何內容。<a href="/admin/contents/create">立即創建第一項內容</a></p>
+            </div>
+            {% endif %}
+        </section>
+    </div>
+</body>
+</html>

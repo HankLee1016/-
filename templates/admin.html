@@ -1,0 +1,132 @@
+{% extends 'base.html' %}
+
+{% block title %}管理者後台 — 社福資源平台{% endblock %}
+
+{% block head_extra %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin-dashboard.css') }}">
+{% endblock %}
+
+{% block content %}
+
+<div class="page-bg"></div>
+
+<header class="hero-card">
+    <div class="hero-copy">
+        <span class="eyebrow">管理者後台</span>
+        <h1>👋 歡迎，{{ username or '管理者' }}</h1>
+        <p>您可以查看系統數據、管理內容，並進行後台操作。讓我們一起維護這個幫助他人的平台。</p>
+    </div>
+    <div class="hero-actions">
+        <a class="button" href="/donations">💳 查看捐款資料</a>
+        <a class="button button-secondary" href="/admin/members">👥 成員管理</a>
+        <a class="button button-secondary" href="/logout">🚪 登出</a>
+    </div>
+</header>
+
+<div class="stats-grid">
+    <div class="stat-box">
+        <h3>活動總數</h3>
+        <div class="value">{{ activities_count }}</div>
+    </div>
+    <div class="stat-box">
+        <h3>註冊成員</h3>
+        <div class="value">{{ members_count }}</div>
+    </div>
+    <div class="stat-box">
+        <h3>待處理個案</h3>
+        <div class="value">{{ pending_cases_count }}</div>
+    </div>
+    <div class="stat-box">
+        <h3>系統公告</h3>
+        <div class="value">{{ announcements_count }}</div>
+    </div>
+    <div class="stat-box">
+        <h3>補助資料</h3>
+        <div class="value">{{ subsidy_total }}</div>
+    </div>
+</div>
+
+<section class="card">
+    <div class="card-title">
+        <h2 class="section-title">⚙️ 管理者功能</h2>
+        <p class="text-muted">快速進入各管理模組</p>
+    </div>
+
+    <div class="features-grid">
+        <div class="feature-card">
+            <h3>👥 成員管理</h3>
+            <p>查看、編輯和刪除系統中的註冊成員，管理使用者權限。</p>
+            <a class="button" href="/admin/members">進入成員管理</a>
+        </div>
+
+        <div class="feature-card">
+            <h3>📋 個案管理</h3>
+            <p>管理並追蹤所有個案資料，記錄服務進度。</p>
+            <a class="button" href="/admin/cases">進入個案管理</a>
+        </div>
+
+        <div class="feature-card">
+            <h3>🎯 活動管理</h3>
+            <p>建立與管理社區活動、志願者排班。</p>
+            <a class="button" href="/admin/activities">進入活動管理</a>
+        </div>
+
+        <div class="feature-card">
+            <h3>🤝 服務管理</h3>
+            <p>管理社會福利服務項目及詳細資訊。</p>
+            <a class="button" href="/admin/services">進入服務管理</a>
+        </div>
+
+        <div class="feature-card">
+            <h3>📝 內容管理</h3>
+            <p>管理新聞、文章與系統內容，保持資訊新鮮。</p>
+            <a class="button" href="/admin/contents">進入內容管理</a>
+        </div>
+
+        <div class="feature-card">
+            <h3>📢 公告管理</h3>
+            <p>發布與管理重要公告及系統升級訊息。</p>
+            <a class="button" href="/admin/announcements">進入公告管理</a>
+        </div>
+
+        <div class="feature-card">
+            <h3>💠 補助資料同步</h3>
+            <p>將補助種子資料同步至資料庫，確保 /subsidies 內容可持續更新。</p>
+            <form method="post" action="/admin/subsidies/refresh">
+                <button type="submit" class="button">立即同步補助資料</button>
+            </form>
+        </div>
+
+        <div class="feature-card">
+            <h3>📄 補助申請審核</h3>
+            <p>查看使用者申請案件，進行批准或拒絕。</p>
+            <a class="button" href="/admin/applications">進入申請審核</a>
+        </div>
+
+        <div class="feature-card">
+            <h3>💳 捐款資料</h3>
+            <p>查看所有捐款紀錄、統計及捐獻者資訊。</p>
+            <a class="button" href="/donations">查看捐款資料</a>
+        </div>
+
+        <div class="feature-card">
+            <h3>👨‍💼 志願者管理</h3>
+            <p>管理志願者資料、聯絡方式及服務時數。</p>
+            <a class="button" href="/admin/volunteers">進入志願者管理</a>
+        </div>
+
+        <div class="feature-card">
+            <h3>📈 分析儀表板</h3>
+            <p>查看系統統計數據、生成報告和分析。</p>
+            <a class="button" href="/analytics/dashboard">進入分析</a>
+        </div>
+
+        <div class="feature-card">
+            <h3>🔎 進階搜尋</h3>
+            <p>搜尋個案和活動，使用篩選器快速查找。</p>
+            <a class="button" href="/search/cases">搜尋個案</a>
+        </div>
+    </div>
+</section>
+
+{% endblock %}

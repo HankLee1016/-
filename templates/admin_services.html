@@ -1,0 +1,95 @@
+{% extends 'base.html' %}
+
+{% block title %}服務管理 — 社福資源平台{% endblock %}
+
+{% block content %}
+    <div class="page-bg"></div>
+    <header class="hero-card">
+        <div class="hero-copy">
+            <span class="eyebrow">服務管理</span>
+            <h1>🤝 系統服務管理</h1>
+            <p>管理和推廣所有社福服務，讓社福機構更好地服務受眾。</p>
+        </div>
+        <div class="hero-actions">
+            <a class="button" href="/admin/services/create">+ 新增服務</a>
+            <a class="button button-secondary" href="/admin">返回管理首頁</a>
+            <a class="button button-secondary" href="/logout">登出</a>
+        </div>
+    </header>
+
+    <!-- 統計資訊 -->
+    {% set open_count = services|selectattr('status', 'equalto', '開放申請')|list|length %}
+    {% set full_count = services|selectattr('status', 'equalto', '額滿')|list|length %}
+    <div class="stats-grid">
+        <div class="stat-box">
+            <h3>服務總數</h3>
+            <div class="value">{{ services|length }}</div>
+        </div>
+        <div class="stat-box">
+            <h3>開放申請</h3>
+            <div class="value">{{ open_count }}</div>
+        </div>
+        <div class="stat-box">
+            <h3>額滿服務</h3>
+            <div class="value">{{ full_count }}</div>
+        </div>
+    </div>
+
+    <section class="card">
+        <div class="card-title">
+            <h2 class="section-title">📋 服務列表</h2>
+            <p class="text-muted">管理所有社福服務項目</p>
+        </div>
+        
+        {% if services %}
+            {% for service in services %}
+            <div class="service-card">
+                <div class="service-container">
+                    <div class="service-content">
+                        <h3>{{ service.service_name }}</h3>
+                        <div class="service-meta">
+                            <div>
+                                <span class="font-semibold">📂 類型：</span> {{ service.service_type }}
+                            </div>
+                            {% if service.target_group %}
+                            <div>
+                                <span class="font-semibold">👥 服務對象：</span> {{ service.target_group }}
+                            </div>
+                            {% endif %}
+                            {% if service.contact %}
+                            <div>
+                                <span class="font-semibold">📞 聯絡方式：</span> {{ service.contact }}
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% if service.description %}
+                        <div class="service-description">{{ service.description }}</div>
+                        {% endif %}
+                        <div>
+                            {% if service.status == '開放申請' %}
+                                <span class="badge badge-success">✅ 開放申請</span>
+                            {% elif service.status == '額滿' %}
+                                <span class="badge badge-warning">⚠️ 額滿</span>
+                            {% else %}
+                                <span class="badge badge-danger">❌ 停止申請</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="service-buttons">
+                        <a class="button btn-small" href="/admin/services/{{ service.id }}/edit" title="編輯服務">✏️ 編輯</a>
+                        <form method="post" action="/admin/services/{{ service.id }}/delete" style="display:inline;" onsubmit="return confirm('確認刪除此服務嗎？');">
+                            <button type="submit" class="button button-danger btn-small" style="width: 100%;">🗑️ 刪除</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="empty-state">
+                <p>🛠️</p>
+                <p class="text-muted">還沒有任何服務</p>
+                <a href="/admin/services/create" class="button mt-3">立即創建第一個服務</a>
+            </div>
+        {% endif %}
+    </section>
+{% endblock %}

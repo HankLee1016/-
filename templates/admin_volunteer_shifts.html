@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>志工排班管理</title>
+    <link rel="stylesheet" href="/static/css/index.css">
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="/static/css/admin-forms.css">
+    <link rel="stylesheet" href="/static/css/status-badges.css">
+    <link rel="stylesheet" href="/static/css/admin-pages.css">
+</head>
+<body>
+    <div class="page-bg"></div>
+    <div class="container">
+        <header class="hero-card">
+            <div class="hero-copy">
+                <span class="eyebrow">活動管理</span>
+                <h1>志工排班 - {{ activity.activity_name }}</h1>
+                <p>管理活動志工排班和人員分配。</p>
+            </div>
+            <div class="hero-actions">
+                <a class="button" href="/admin/activities/{{ activity.id }}/volunteer-shifts/create">+ 新增排班</a>
+                <a class="button" href="/search/volunteer-shifts">🔍 搜尋排班</a>
+                <a class="button" href="/admin/activities">返回活動列表</a>
+                <a class="button" href="/logout">登出</a>
+            </div>
+        </header>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="card" style="margin-bottom: 1.5rem;">
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ 'error' if category == 'error' else 'success' }}" style="padding: 1rem; border-radius: 4px; {% if category == 'error' %}background: #fee; color: #c00;{% else %}background: #efe; color: #060;{% endif %}">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        <section class="card">
+            <div class="card-title">
+                <h2>排班清單</h2>
+                <span>共 {{ shifts|length }} 班次</span>
+            </div>
+
+            {% if shifts %}
+                {% for shift in shifts %}
+                <div class="shift-card">
+                    <h3>{{ shift.shift_name }}</h3>
+                    <div class="shift-meta">
+                        <strong>時間:</strong> {{ shift.start_time }} - {{ shift.end_time }}<br>
+                        <strong>需求人數:</strong> {{ shift.required_count }} 人<br>
+                        <strong>目前人數:</strong> {{ shift.volunteers|length }} / {{ shift.required_count }}<br>
+                        <strong>狀態:</strong> <span class="shift-status {% if shift.status == '招募中' %}招募中{% else %}已滿員{% endif %}">{{ shift.status }}</span>
+                    </div>
+                    <div class="shift-volunteers">
+                        <strong>志工名單:</strong>
+                        {% if shift.volunteers %}
+                        <ul class="volunteer-list">
+                            {% for volunteer in shift.volunteers %}
+                            <li>✓ {{ volunteer }}</li>
+                            {% endfor %}
+                        </ul>
+                        {% else %}
+                        <span style="color: var(--text-secondary);">尚無志工報名</span>
+                        {% endif %}
+                    </div>
+                    {% if shift.status == '招募中' %}
+                    <div class="add-volunteer-form">
+                        <form method="post" action="/admin/volunteer-shifts/{{ shift.id }}/add-volunteer" style="display: flex; gap: 8px; width: 100%;">
+                            <select name="username" required style="flex: 1; padding: 8px; border: 1px solid var(--border); border-radius: 4px;">
+                                <option value="">-- 選擇志工 --</option>
+                                {% for v in volunteers %}
+                                    {% if v.status == '活躍' and v.name not in shift.volunteers %}
+                                    <option value="{{ v.name }}">{{ v.name }}</option>
+                                    {% endif %}
+                                {% endfor %}
+                            </select>
+                            <button type="submit" style="background-color: #28a745; color: white; padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer;">添加</button>
+                        </form>
+                    </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            {% else %}
+            <div class="empty-state">
+                <div class="empty-state-icon">👥</div>
+                <p>目前沒有排班。点擊上方「新增排班」來創建新班次。</p>
+            </div>
+            {% endif %}
+        </section>
+    </div>
+</body>
+</html>

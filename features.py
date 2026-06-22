@@ -1,0 +1,717 @@
+"""
+功能模塊：統計報表、通知、搜尋、檔案、工作流、備份、權限
+"""
+
+import os
+import json
+import uuid
+import datetime
+from pathlib import Path
+from db_config import get_db_connection
+import psycopg2
+from psycopg2.extras import RealDictCursor
+
+
+class StatsReportManager:
+    """統計與報表系統"""
+    
+    @staticmethod
+    def get_dashboard_stats(start_date=None, end_date=None):
+        """取得儀表板統計"""
+        try:
+            conn = get_db_connection()
+            cursor = conn.cursor(cursor_factory=RealDictCursor)
+            
+            # 活動統計
+            cursor.execute("""
+                SELECT 
+                    COUNT(*) as total,
+                    SUM(CASE WHEN status = '進行中' THEN 1 ELSE 0 END) as ongoing,
+                    SUM(CASE WHEN status = '已結束' THEN 1 ELSE 0 END) as completed
+                FROM activities
+            """)
+            activity_stats = cursor.fetchone()
+            
+            # 個案統計
+            cursor.execute("""
+                SELECT 
+                    COUNT(*) as total,
+                    SUM(CASE WHEN status = '待處理' THEN 1 ELSE 0 END) as pending,
+                    SUM(CASE WHEN status = '進行中' THEN 1 ELSE 0 END) as ongoing,
+                    SUM(CASE WHEN status = '已結案' THEN 1 ELSE 0 END) as closed
+                FROM cases
+            """)
+            case_stats = cursor.fetchone()
+            
+            # 成員統計
+            cursor.execute("""
+                SELECT 
+                    COUNT(*) as total,
+                    SUM(CASE WHEN role = 'admin' THEN 1 ELSE 0 END) as admins,
+                    SUM(CASE WHEN role = 'user' THEN 1 ELSE 0 END) as users
+                FROM users
+            """)
+            user_stats = cursor.fetchone()
+            
+            # 活動報名統計
+            cursor.execute("""
+                SELECT 
+                    COUNT(*) as total,
+                    SUM(CASE WHEN status = '待審核' THEN 1 ELSE 0 END) as pending,
+                    SUM(CASE WHEN status = '已通過' THEN 1 ELSE 0 END) as approved
+                FROM registrations
+            """)
+            registration_stats = cursor.fetchone()
+
+            # 公告統計
+            cursor.execute("SELECT COUNT(*) as total FROM announcements")
+            announcement_stats = cursor.fetchone()
+
+            # 活動類型分佈
+            cursor.execute("SELECT category, COUNT(*) as count FROM activities GROUP BY category ORDER BY count DESC")
+            activity_distribution_rows = cursor.fetchall()
+            activity_distribution = {row['category'] or '未分類': row['count'] for row in activity_distribution_rows}
+
+            # 個案狀態分佈
+            cursor.execute("SELECT status, COUNT(*) as count FROM cases GROUP BY status ORDER BY count DESC")
+            case_distribution_rows = cursor.fetchall()
+            case_distribution = {row['status'] or '未知': row['count'] for row in case_distribution_rows}
+
+            # 捐款統計
+            cursor.execute("SELECT COUNT(*) as total, SUM(amount) as total_amount FROM donations")
+            donation_stats = cursor.fetchone()
+            cursor.execute("SELECT TO_CHAR(donation_date, 'YYYY-MM') as month, COUNT(*) as count, SUM(amount) as total_amount FROM donations GROUP BY month ORDER BY month")
+            donation_distribution_rows = cursor.fetchall()
+            donation_distribution = {row['month'] or '未知': row['count'] for row in donation_distribution_rows}
+            donation_amount_trend = {row['month'] or '未知': float(row['total_amount'] or 0) for row in donation_distribution_rows}
+
+            # 最近報告
+            cursor.execute("SELECT id, report_name, created_at FROM reports ORDER BY created_at DESC LIMIT 5")
+            recent_report_rows = cursor.fetchall()
+            recent_reports = [
+                {
+                    'id': row['id'],
+                    'title': row['report_name'] or '報告',
+                    'created_at': row['created_at'].isoformat() if row['created_at'] else None
+                }
+                for row in recent_report_rows
+            ]
+            
+            cursor.close()
+            conn.close()
+            
+            return {
+                'activities_count': int(activity_stats['total'] or 0) if activity_stats else 0,
+                'members_count': int(user_stats['total'] or 0) if user_stats else 0,
+                'pending_cases_count': int(case_stats['pending'] or 0) if case_stats else 0,
+                'announcements_count': int(announcement_stats['total'] or 0) if announcement_stats else 0,
+                'donations_count': int(donation_stats['total'] or 0) if donation_stats else 0,
+                'donations_total': float(donation_stats['total_amount']) if donation_stats and donation_stats['total_amount'] is not None else 0,
+                'activity_distribution': activity_distribution,
+                'case_distribution': case_distribution,
+                'donation_distribution': donation_distribution,
+                'donation_amount_trend': donation_amount_trend,
+                'recent_reports': recent_reports,
+                'timestamp': datetime.datetime.now().isoformat()
+            }
+        except Exception as e:
+            print(f"統計取得失敗: {e}")
+            return None
+    
+    @staticmethod
+    def _parse_report_type(report_type):
+        if not report_type:
+            return 'summary'
+        text = str(report_type).strip().lower()
+        if '活動' in text or 'activity' in text:
+            return 'activities'
+        if '個案' in text or 'case' in text:
+            return 'cases'
+        if '捐款' in text or 'donation' in text:
+            return 'donations'
+        if '成員' in text or '會員' in text or 'user' in text:
+            return 'users'
+        if '報名' in text or 'registration' in text:
+            return 'registrations'
+        if '公告' in text or 'announcement' in text:
+            return 'announcements'
+        if '摘要' in text or '總結' in text or 'summary' in text:
+            return 'summary'
+        return 'summary'
+
+    @staticmethod
+    def _normalize_date_range(start_date, end_date):
+        if start_date:
+            try:
+                start = datetime.datetime.strptime(start_date, '%Y-%m-%d').date()
+            except Exception:
+                start = datetime.date.today() - datetime.timedelta(days=30)
+        else:
+            start = datetime.date.today() - datetime.timedelta(days=30)
+
+        if end_date:
+            try:
+                end = datetime.datetime.strptime(end_date, '%Y-%m-%d').date()
+            except Exception:
+                end = datetime.date.today()
+        else:
+            end = datetime.date.today()
+
+        return start, end
+
+    @staticmethod
+    def generate_report(report_name, report_type, start_date, end_date, user_id):
+        """生成報表"""
+        try:
+            conn = get_db_connection()
+            cursor = conn.cursor(cursor_factory=RealDictCursor)
+            
+            if not report_name:
+                report_name = '系統報告'
+
+            resolved_type = StatsReportManager._parse_report_type(report_type)
+            report_data = {}
+            
+            if resolved_type in ['activities', 'cases', 'donations']:
+                start_date, end_date = StatsReportManager._normalize_date_range(start_date, end_date)
+
+            if resolved_type == 'activities':
+                cursor.execute("""
+                    SELECT 
+                        a.activity_name, a.status, 
+                        COUNT(DISTINCT r.username) AS participants,
+                        a.created_at
+                    FROM activities a
+                    LEFT JOIN registrations r ON a.id = r.activity_id
+                    WHERE a.created_at >= %s AND a.created_at <= %s
+                    GROUP BY a.id, a.activity_name, a.status
+                    ORDER BY a.created_at DESC
+                """, (start_date, end_date))
+                report_data = [dict(row) for row in cursor.fetchall()]
+            elif resolved_type == 'cases':
+                cursor.execute("""
+                    SELECT 
+                        case_name, status, priority, assigned_to,
+                        created_at, closed_at
+                    FROM cases
+                    WHERE created_at >= %s AND created_at <= %s
+                    ORDER BY created_at DESC
+                """, (start_date, end_date))
+                report_data = [dict(row) for row in cursor.fetchall()]
+            elif resolved_type == 'donations':
+                cursor.execute("""
+                    SELECT 
+                        id, donor, amount, donation_date, note, category, created_at
+                    FROM donations
+                    WHERE donation_date >= %s AND donation_date <= %s
+                    ORDER BY donation_date DESC
+                """, (start_date, end_date))
+                report_data = [dict(row) for row in cursor.fetchall()]
+            elif resolved_type == 'users':
+                cursor.execute("SELECT username, role, created_at FROM users ORDER BY created_at DESC")
+                report_data = [dict(row) for row in cursor.fetchall()]
+            elif resolved_type == 'registrations':
+                cursor.execute("SELECT id, activity_id, username, status, created_at FROM registrations ORDER BY created_at DESC")
+                report_data = [dict(row) for row in cursor.fetchall()]
+            elif resolved_type == 'announcements':
+                cursor.execute("SELECT id, title, status, created_at FROM announcements ORDER BY created_at DESC")
+                report_data = [dict(row) for row in cursor.fetchall()]
+            else:
+                cursor.execute("SELECT COUNT(*) AS total FROM activities")
+                activity_count = cursor.fetchone()['total']
+                cursor.execute("SELECT COUNT(*) AS total FROM cases")
+                case_count = cursor.fetchone()['total']
+                cursor.execute("SELECT COUNT(*) AS total FROM users")
+                user_count = cursor.fetchone()['total']
+                cursor.execute("SELECT COUNT(*) AS total FROM registrations")
+                registration_count = cursor.fetchone()['total']
+                cursor.execute("SELECT COUNT(*) AS total FROM announcements")
+                announcement_count = cursor.fetchone()['total']
+                cursor.execute("SELECT COUNT(*) AS total, SUM(amount) AS total_amount FROM donations")
+                donation_summary = cursor.fetchone()
+                donation_total = float(donation_summary['total_amount'] or 0)
+                donation_count = donation_summary['total']
+
+                cursor.execute("SELECT category, COUNT(*) AS count FROM activities GROUP BY category ORDER BY count DESC")
+                activity_distribution_rows = cursor.fetchall()
+                activity_distribution = [{
+                    'category': row['category'] or '未分類',
+                    'count': row['count']
+                } for row in activity_distribution_rows]
+
+                cursor.execute("SELECT status, COUNT(*) AS count FROM cases GROUP BY status ORDER BY count DESC")
+                case_distribution_rows = cursor.fetchall()
+                case_distribution = [{
+                    'status': row['status'] or '未知',
+                    'count': row['count']
+                } for row in case_distribution_rows]
+
+                report_data = {
+                    'summary': {
+                        'activities_count': activity_count,
+                        'cases_count': case_count,
+                        'members_count': user_count,
+                        'registrations_count': registration_count,
+                        'announcements_count': announcement_count,
+                        'donations_count': donation_count,
+                        'donations_total': donation_total
+                    },
+                    'activity_distribution': activity_distribution,
+                    'case_distribution': case_distribution
+                }
+
+            cursor.execute("""
+                INSERT INTO reports (report_name, report_type, report_data, generated_by, start_date, end_date)
+                VALUES (%s, %s, %s, %s, %s, %s)
+                RETURNING id
+            """, (
+                report_name,
+                resolved_type,
+                json.dumps(report_data, default=str),
+                user_id,
+                start_date if isinstance(start_date, datetime.date) else start_date,
+                end_date if isinstance(end_date, datetime.date) else end_date
+            ))
+            
+            report_id = cursor.fetchone()['id']
+            conn.commit()
+            cursor.close()
+            conn.close()
+            
+            return {'id': report_id, 'data': report_data}
+        except Exception as e:
+            print(f"報表生成失敗: {e}")
+            return None
+
+
+class NotificationManager:
+    """通知與提醒系統"""
+    
+    @staticmethod
+    def create_notification(user_id, title, message, notification_type, resource_type=None, resource_id=None):
+        """建立通知"""
+        try:
+            conn = get_db_connection()
+            cursor = conn.cursor()
+            
+            cursor.execute("""
+                INSERT INTO notifications (user_id, title, message, type, related_resource_type, related_resource_id)
+                VALUES (%s, %s, %s, %s, %s, %s)
+                RETURNING id
+            """, (user_id, title, message, notification_type, resource_type, resource_id))
+            
+            notification_id = cursor.fetchone()[0]
+            conn.commit()
+            cursor.close()
+            conn.close()
+            
+            return notification_id
+        except Exception as e:
+            print(f"通知建立失敗: {e}")
+            return None
+    
+    @staticmethod
+    def get_user_notifications(user_identifier, limit=20):
+        """取得用戶通知"""
+        try:
+            conn = get_db_connection()
+            cursor = conn.cursor(cursor_factory=RealDictCursor)
+            
+            cursor.execute("""
+                SELECT * FROM notifications
+                WHERE user_id = %s
+                ORDER BY created_at DESC
+                LIMIT %s
+            """, (user_identifier, limit))
+            
+            notifications = cursor.fetchall()
+            cursor.close()
+            conn.close()
+            
+            return notifications if notifications else []
+        except Exception as e:
+            print(f"通知取得失敗: {e}")
+            return []
+    
+    @staticmethod
+    def mark_as_read(notification_id):
+        """標記為已讀"""
+        try:
+            conn = get_db_connection()
+            cursor = conn.cursor()
+            
+            cursor.execute("""
+                UPDATE notifications
+                SET status = '已讀', read_at = CURRENT_TIMESTAMP
+                WHERE id = %s
+            """, (notification_id,))
+            
+            conn.commit()
+            cursor.close()
+            conn.close()
+            
+            return True
+        except Exception as e:
+            print(f"標記失敗: {e}")
+            return False
+
+
+class SearchFilterManager:
+    """進階搜尋與篩選"""
+    
+    @staticmethod
+    def search_cases(query, status=None, priority=None, assigned_to=None):
+        """搜尋個案"""
+        try:
+            conn = get_db_connection()
+            cursor = conn.cursor(cursor_factory=RealDictCursor)
+            
+            sql = "SELECT * FROM cases WHERE 1=1"
+            params = []
+            
+            if query:
+                sql += " AND (case_name ILIKE %s OR issue_description ILIKE %s)"
+                params.extend([f"%{query}%", f"%{query}%"])
+            
+            if status:
+                sql += " AND status = %s"
+                params.append(status)
+            
+            if priority:
+                sql += " AND priority = %s"
+                params.append(priority)
+            
+            if assigned_to:
+                sql += " AND assigned_to = %s"
+                params.append(assigned_to)
+            
+            sql += " ORDER BY created_at DESC"
+            cursor.execute(sql, params)
+            results = cursor.fetchall()
+            cursor.close()
+            conn.close()
+            
+            return results
+        except Exception as e:
+            print(f"搜尋失敗: {e}")
+            return []
+    
+    @staticmethod
+    def search_activities(query, category=None, status=None):
+        """搜尋活動"""
+        try:
+            conn = get_db_connection()
+            cursor = conn.cursor(cursor_factory=RealDictCursor)
+            
+            sql = "SELECT * FROM activities WHERE 1=1"
+            params = []
+            
+            if query:
+                sql += " AND (activity_name ILIKE %s OR description ILIKE %s)"
+                params.extend([f"%{query}%", f"%{query}%"])
+            
+            if category:
+                sql += " AND category = %s"
+                params.append(category)
+            
+            if status:
+                sql += " AND status = %s"
+                params.append(status)
+            
+            sql += " ORDER BY created_at DESC"
+            cursor.execute(sql, params)
+            results = cursor.fetchall()
+            cursor.close()
+            conn.close()
+            
+            return results
+        except Exception as e:
+            print(f"搜尋失敗: {e}")
+            return []
+
+    @staticmethod
+    def search_volunteers(query, status=None):
+        """搜尋志工"""
+        try:
+            import json
+            from pathlib import Path
+            
+            volunteers_file = Path(__file__).parent / "volunteers.json"
+            if not volunteers_file.exists():
+                return []
+            
+            with open(volunteers_file, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                volunteers = data.get("volunteers", [])
+            
+            # 篩選
+            results = volunteers
+            if query:
+                query = query.lower()
+                results = [v for v in results if 
+                    query in v.get("name", "").lower() or
+                    query in v.get("phone", "").lower() or
+                    query in v.get("email", "").lower() or
+                    query in v.get("skills", "").lower()]
+            
+            if status:
+                results = [v for v in results if v.get("status") == status]
+            
+            return results
+        except Exception as e:
+            print(f"搜尋失敗: {e}")
+            return []
+
+    @staticmethod
+    def search_volunteer_shifts(query, activity_id=None, status=None):
+        """搜尋志工排班"""
+        try:
+            import json
+            from pathlib import Path
+            
+            shifts_file = Path(__file__).parent / "volunteer_shifts.json"
+            if not shifts_file.exists():
+                return []
+            
+            with open(shifts_file, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                shifts = data.get("volunteer_shifts", [])
+            
+            # 篩選
+            results = shifts
+            
+            if activity_id:
+                results = [s for s in results if s.get("activity_id") == activity_id]
+            
+            if status:
+                results = [s for s in results if s.get("status") == status]
+            
+            if query:
+                query = query.lower()
+                results = [s for s in results if 
+                    query in s.get("shift_name", "").lower() or
+                    any(query in v.lower() for v in s.get("volunteers", []))]
+            
+            return results
+        except Exception as e:
+            print(f"搜尋失敗: {e}")
+            return []
+
+
+class FileManager:
+    """檔案管理系統"""
+    
+    @staticmethod
+    def upload_file(uploaded_file, resource_type, resource_id, uploaded_by):
+        """上傳檔案"""
+        try:
+            from werkzeug.utils import secure_filename
+            
+            UPLOAD_FOLDER = Path(__file__).parent / "uploads"
+            UPLOAD_FOLDER.mkdir(parents=True, exist_ok=True)
+            
+            filename = secure_filename(uploaded_file.filename)
+            unique_name = f"{uuid.uuid4().hex}_{filename}"
+            file_path = UPLOAD_FOLDER / unique_name
+            uploaded_file.save(file_path)
+            
+            file_size = os.path.getsize(file_path)
+            file_type = filename.rsplit('.', 1)[1].upper() if '.' in filename else 'UNKNOWN'
+            
+            conn = get_db_connection()
+            cursor = conn.cursor()
+            
+            cursor.execute("""
+                INSERT INTO files (filename, file_path, file_size, file_type, uploaded_by, related_resource_type, related_resource_id)
+                VALUES (%s, %s, %s, %s, %s, %s, %s)
+                RETURNING id
+            """, (filename, str(file_path), file_size, file_type, uploaded_by, resource_type, resource_id))
+            
+            file_id = cursor.fetchone()[0]
+            conn.commit()
+            cursor.close()
+            conn.close()
+            
+            return file_id
+        except Exception as e:
+            print(f"檔案上傳失敗: {e}")
+            return None
+    
+    @staticmethod
+    def get_resource_files(resource_type, resource_id):
+        """取得資源相關檔案"""
+        try:
+            conn = get_db_connection()
+            cursor = conn.cursor(cursor_factory=RealDictCursor)
+            
+            cursor.execute("""
+                SELECT * FROM files
+                WHERE related_resource_type = %s AND related_resource_id = %s
+                ORDER BY created_at DESC
+            """, (resource_type, resource_id))
+            
+            files = cursor.fetchall()
+            cursor.close()
+            conn.close()
+            
+            return files
+        except Exception as e:
+            print(f"取得檔案失敗: {e}")
+            return []
+
+
+class WorkflowManager:
+    """審核工作流程"""
+    
+    @staticmethod
+    def update_case_status(case_id, new_status, changed_by, description=""):
+        """更新個案狀態"""
+        try:
+            conn = get_db_connection()
+            cursor = conn.cursor()
+            
+            # 更新個案狀態
+            cursor.execute("""
+                UPDATE cases
+                SET status = %s, updated_at = CURRENT_TIMESTAMP
+                WHERE id = %s
+            """, (new_status, case_id))
+            
+            # 記錄日誌
+            cursor.execute("""
+                INSERT INTO case_logs (case_id, action, description, changed_by)
+                VALUES (%s, %s, %s, %s)
+            """, (case_id, f"狀態已變更為: {new_status}", description, changed_by))
+            
+            conn.commit()
+            cursor.close()
+            conn.close()
+            
+            return True
+        except Exception as e:
+            print(f"狀態更新失敗: {e}")
+            return False
+    
+    @staticmethod
+    def get_case_history(case_id):
+        """取得個案歷史"""
+        try:
+            conn = get_db_connection()
+            cursor = conn.cursor(cursor_factory=RealDictCursor)
+            
+            cursor.execute("""
+                SELECT * FROM case_logs
+                WHERE case_id = %s
+                ORDER BY created_at DESC
+            """, (case_id,))
+            
+            logs = cursor.fetchall()
+            cursor.close()
+            conn.close()
+            
+            return logs
+        except Exception as e:
+            print(f"歷史取得失敗: {e}")
+            return []
+
+
+class BackupManager:
+    """數據備份與恢復"""
+    
+    @staticmethod
+    def create_backup(backup_name, backup_type, created_by):
+        """建立備份"""
+        try:
+            conn = get_db_connection()
+            cursor = conn.cursor()
+            
+            cursor.execute("""
+                INSERT INTO backups (backup_name, backup_type, status, created_by)
+                VALUES (%s, %s, %s, %s)
+                RETURNING id
+            """, (backup_name, backup_type, '已完成', created_by))
+            
+            backup_id = cursor.fetchone()[0]
+            conn.commit()
+            cursor.close()
+            conn.close()
+            
+            return backup_id
+        except Exception as e:
+            print(f"備份建立失敗: {e}")
+            return None
+    
+    @staticmethod
+    def get_backups(limit=10):
+        """取得備份清單"""
+        try:
+            conn = get_db_connection()
+            cursor = conn.cursor(cursor_factory=RealDictCursor)
+            
+            cursor.execute("""
+                SELECT * FROM backups
+                ORDER BY created_at DESC
+                LIMIT %s
+            """, (limit,))
+            
+            backups = cursor.fetchall()
+            cursor.close()
+            conn.close()
+            
+            return backups
+        except Exception as e:
+            print(f"備份清單取得失敗: {e}")
+            return []
+
+
+class PermissionManager:
+    """用戶權限管理"""
+    
+    @staticmethod
+    def grant_permission(user_id, permission, granted_by):
+        """授予權限"""
+        try:
+            conn = get_db_connection()
+            cursor = conn.cursor()
+            
+            cursor.execute("""
+                INSERT INTO user_permissions (user_id, permission, granted_by)
+                VALUES (%s, %s, %s)
+                ON CONFLICT (user_id, permission) DO NOTHING
+            """, (user_id, permission, granted_by))
+            
+            conn.commit()
+            cursor.close()
+            conn.close()
+            
+            return True
+        except Exception as e:
+            print(f"權限授予失敗: {e}")
+            return False
+    
+    @staticmethod
+    def get_user_permissions(user_id):
+        """取得用戶權限"""
+        try:
+            conn = get_db_connection()
+            cursor = conn.cursor(cursor_factory=RealDictCursor)
+            
+            cursor.execute("""
+                SELECT permission FROM user_permissions
+                WHERE user_id = %s
+            """, (user_id,))
+            
+            permissions = [row['permission'] for row in cursor.fetchall()]
+            cursor.close()
+            conn.close()
+            
+            return permissions
+        except Exception as e:
+            print(f"權限取得失敗: {e}")
+            return []
+    
+    @staticmethod
+    def has_permission(user_id, required_permission):
+        """檢查是否有權限"""
+        permissions = PermissionManager.get_user_permissions(user_id)
+        return required_permission in permissions or 'admin' in permissions
