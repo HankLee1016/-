@@ -1,15 +1,56 @@
 {
   "services": [
     {
-      "id": "30d66f3f-4724-430b-bd3b-f66cb6ea8a74",
+      "id": "svc-001",
       "username": "admin",
-      "service_name": "養老院",
-      "description": "",
-      "service_type": "心理支持",
-      "target_group": "獨居老人",
-      "contact": "",
-      "status": "停止申請",
-      "created_at": "b3530a9d"
+      "service_name": "餐食配送服務",
+      "description": "為獨居長者提供每週三次營養餐配送與關懷問候。",
+      "service_type": "餐食協助",
+      "target_group": "獨居長者",
+      "contact": "02-2365-8840",
+      "status": "開放申請",
+      "district": "中山區",
+      "service_scope": "中山區",
+      "created_at": "2026-09-14"
+    },
+    {
+      "id": "svc-002",
+      "username": "admin",
+      "service_name": "居家照顧陪伴",
+      "description": "由社工與志工提供日常陪伴、健康觀察與家務協助。",
+      "service_type": "居家照顧",
+      "target_group": "行動不便長者",
+      "contact": "02-2365-8841",
+      "status": "開放申請",
+      "district": "中山區",
+      "service_scope": "中山區",
+      "created_at": "2026-09-14"
+    },
+    {
+      "id": "svc-003",
+      "username": "admin",
+      "service_name": "就醫接送服務",
+      "description": "協助長者前往門診、檢查與回家接送。",
+      "service_type": "交通接送",
+      "target_group": "就醫需求長者",
+      "contact": "02-2365-8842",
+      "status": "開放申請",
+      "district": "大安區",
+      "service_scope": "大安區",
+      "created_at": "2026-09-14"
+    },
+    {
+      "id": "svc-004",
+      "username": "admin",
+      "service_name": "數位協助班",
+      "description": "教導長者使用手機、Line、支付與簡易數位工具。",
+      "service_type": "3C／數位協助",
+      "target_group": "數位弱勢長者",
+      "contact": "02-2365-8843",
+      "status": "開放申請",
+      "district": "信義區",
+      "service_scope": "信義區",
+      "created_at": "2026-09-14"
     }
   ]
 }

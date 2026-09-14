@@ -1,55 +1,38 @@
 {
   "help_requests": [
     {
-      "id": "7d05f52e-208e-4383-9bf9-f858c791bf0b",
-      "username": "demo_user",
-      "elder_name": "???",
+      "id": "req-demo-001",
+      "username": "user",
+      "elder_name": "王阿嬤",
       "age_group": "75-84",
-      "district": "???",
-      "urgency": "??",
-      "household_status": "??",
-      "care_level": "????",
-      "need_type": "????",
-      "need_when": "????",
-      "location": "??",
-      "duration": "1-2??",
-      "details": "????????????",
-      "contact_name": "???",
+      "district": "中山區",
+      "urgency": "高",
+      "household_status": "獨居",
+      "care_level": "中度",
+      "need_type": "餐食協助",
+      "need_when": "2026-09-15",
+      "location": "中山區民生東路",
+      "duration": "每週2次",
+      "details": "最近左腿有點不舒服，想要固定週二和週四送餐與關懷。",
+      "contact_name": "王先生",
       "contact_phone": "0912345678",
-      "status": "???",
-      "matched_service": "????",
-      "service_id": "",
-      "service_contact": "",
-      "assigned_unit": "?????",
-      "admin_note": "???????",
+      "status": "待處理",
+      "matched_service": "餐食配送服務",
+      "service_id": "svc-001",
+      "service_contact": "02-2365-8840",
+      "assigned_unit": "餐食配送服務",
+      "admin_note": "已受理，待社工聯絡",
       "history": [
         {
-          "time": "2026-09-14 19:36:52",
-          "message": "管理者更新狀態為 ???；指派服務：????；服務單位：?????；備註：???????"
+          "time": "2026-09-14 19:00:00",
+          "message": "需求已送出，等待社福單位確認"
         },
         {
-          "time": "2026-09-14 19:36:52",
-          "message": "需求已送出，等待社福單位確認"
+          "time": "2026-09-14 19:10:00",
+          "message": "管理者更新狀態為 待處理；指派服務：餐食配送服務；服務單位：餐食配送服務；備註：已受理，待社工聯絡"
         }
       ],
-      "created_at": "2026-09-14 19:36:52"
-    },
-    {
-      "id": "dac7cb84-8830-4ab7-bef8-f2844ff3f680",
-      "username": "demo_user",
-      "need_type": "??",
-      "need_when": "????",
-      "location": "??????",
-      "duration": "1??",
-      "details": "??????",
-      "contact_name": "???",
-      "contact_phone": "0912345678",
-      "status": "???",
-      "matched_service": "",
-      "service_id": "",
-      "service_contact": "",
-      "admin_note": "???????",
-      "created_at": "2026-09-14 19:30:50"
+      "created_at": "2026-09-14 19:00:00"
     }
   ]
 }
