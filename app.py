@@ -43,6 +43,7 @@ ATTENDANCES_FILE = Path(app.root_path) / "attendances.json"
 VOLUNTEER_SHIFTS_FILE = Path(app.root_path) / "volunteer_shifts.json"
 VOLUNTEERS_FILE = Path(app.root_path) / "volunteers.json"
 APPLICATIONS_FILE = Path(app.root_path) / "applications.json"
+HELP_REQUESTS_FILE = Path(app.root_path) / "help_requests.json"
 
 UPLOAD_FOLDER = Path(app.root_path) / "uploads"
 UPLOAD_FOLDER.mkdir(parents=True, exist_ok=True)
@@ -223,6 +224,184 @@ def update_application_status(application_id, status, admin_note=""):
             save_applications(applications)
             return app_item
     return None
+
+# --- Help Requests / Elderly Service Needs ---
+def load_help_requests():
+    if not HELP_REQUESTS_FILE.exists():
+        save_help_requests([])
+        return []
+    try:
+        with HELP_REQUESTS_FILE.open("r", encoding="utf-8") as f:
+            return json.load(f).get("help_requests", [])
+    except json.JSONDecodeError:
+        return []
+
+
+def save_help_requests(help_requests):
+    with HELP_REQUESTS_FILE.open("w", encoding="utf-8") as f:
+        json.dump({"help_requests": help_requests}, f, ensure_ascii=False, indent=2)
+
+
+def create_help_request(username, need_type, need_when, location, duration, details="", status="待處理", contact_name="", contact_phone="", elder_name="", age_group="", district="", urgency="一般", household_status="", care_level="", assigned_unit="", assigned_service=""):
+    help_requests = load_help_requests()
+    new_request = {
+        "id": str(uuid.uuid4()),
+        "username": username,
+        "elder_name": elder_name,
+        "age_group": age_group,
+        "district": district,
+        "urgency": urgency,
+        "household_status": household_status,
+        "care_level": care_level,
+        "need_type": need_type,
+        "need_when": need_when,
+        "location": location,
+        "duration": duration,
+        "details": details,
+        "contact_name": contact_name,
+        "contact_phone": contact_phone,
+        "status": status,
+        "matched_service": assigned_service,
+        "service_id": "",
+        "service_contact": "",
+        "assigned_unit": assigned_unit,
+        "admin_note": "",
+        "history": [{
+            "time": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "message": "需求已送出，等待社福單位確認"
+        }],
+        "created_at": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    }
+    help_requests.insert(0, new_request)
+    save_help_requests(help_requests)
+    return new_request
+
+
+def get_help_request(request_id):
+    for request in load_help_requests():
+        if request.get("id") == request_id:
+            return request
+    return None
+
+
+def get_user_help_requests(username):
+    requests = load_help_requests()
+    return [req for req in requests if req.get("username") == username]
+
+
+def update_help_request_status(request_id, status, admin_note="", assigned_service="", assigned_unit=""):
+    requests = load_help_requests()
+    for request in requests:
+        if request.get("id") == request_id:
+            request["status"] = status
+            if assigned_service:
+                request["matched_service"] = assigned_service
+            if assigned_unit:
+                request["assigned_unit"] = assigned_unit
+            if admin_note:
+                request["admin_note"] = admin_note
+
+            history = request.setdefault("history", [])
+            message = f"管理者更新狀態為 {status}"
+            if assigned_service:
+                message += f"；指派服務：{assigned_service}"
+            if assigned_unit:
+                message += f"；服務單位：{assigned_unit}"
+            if admin_note:
+                message += f"；備註：{admin_note}"
+            history.insert(0, {
+                "time": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                "message": message
+            })
+            if len(history) > 10:
+                history = history[:10]
+            request["history"] = history
+            save_help_requests(requests)
+            return request
+    return None
+
+
+def apply_help_request_service(request_id, service_id):
+    request_item = get_help_request(request_id)
+    service = get_service(service_id)
+    if not request_item or not service:
+        return None
+    requests = load_help_requests()
+    for req in requests:
+        if req.get("id") == request_id:
+            req["matched_service"] = service.get("service_name", "")
+            req["service_id"] = service_id
+            req["service_contact"] = service.get("contact", "")
+            req["assigned_unit"] = service.get("service_name", "")
+            req["status"] = "已申請"
+            history = req.setdefault("history", [])
+            history.insert(0, {
+                "time": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                "message": f"已選擇服務：{service.get('service_name', '')}，請等待管理者確認"
+            })
+            req["history"] = history[:10]
+            break
+    save_help_requests(requests)
+    return request_item
+
+
+def get_help_request_matches(request_item):
+    if not request_item:
+        return []
+    need_type = str(request_item.get("need_type", "")).strip()
+    district = str(request_item.get("district", "")).strip()
+    urgency = str(request_item.get("urgency", "一般")).strip()
+    services = load_services()
+    if not services:
+        return []
+
+    matches = []
+    for service in services:
+        service_name = str(service.get("service_name", ""))
+        service_type = str(service.get("service_type", ""))
+        target_group = str(service.get("target_group", ""))
+        service_district = str(service.get("district", "")).strip()
+        service_scope = str(service.get("service_scope", "")).strip()
+        combined = f"{service_name} {service_type} {target_group} {service.get('description','')} {service_scope} {service_district}"
+        score = 0
+
+        if need_type and need_type in combined:
+            score += 7
+        if district and (district in service_district or service_district in district or service_scope == '全區' or service_scope == '全縣市'):
+            score += 8
+        elif district:
+            score += 2
+
+        if urgency == '緊急' and any(keyword in combined for keyword in ['緊急', '居家', '送餐', '陪伴', '就醫', '交通']):
+            score += 5
+
+        for keyword, value in {
+            '餐食': 4, '就醫': 4, '交通': 4, '陪伴': 4, '居家': 3, '照顧': 4, '活動': 2, '數位': 2, '社會福利': 2
+        }.items():
+            if keyword in need_type and keyword in combined:
+                score += value
+
+        if service.get("status") == "開放申請":
+            score += 3
+        if service.get("status") == "額滿":
+            score -= 5
+
+        if score > 0:
+            reason = []
+            if district and (district in service_district or service_scope in ('全區', '全縣市', '全國')):
+                reason.append('地區適配')
+            if need_type and need_type in combined:
+                reason.append('需求類型符合')
+            if service.get("status") == "開放申請":
+                reason.append('開放接案')
+            matches.append({
+                "service": service,
+                "score": score,
+                "reason": '、'.join(reason) if reason else '可提供相關協助'
+            })
+
+    matches.sort(key=lambda m: m["score"], reverse=True)
+    return matches[:6]
 
 
 def create_case(case_name, member_name, issue_description, status="進行中"):
@@ -468,12 +647,13 @@ def save_services(services):
     with SERVICES_FILE.open("w", encoding="utf-8") as f:
         json.dump({"services": services}, f, ensure_ascii=False, indent=2)
 
-def create_service(username, service_name, description, service_type, target_group="", contact="", status="開放申請"):
+def create_service(username, service_name, description, service_type, target_group="", contact="", status="開放申請", district="", service_scope="全區"):
     services = load_services()
     new_service = {
         "id": str(uuid.uuid4()), "username": username, "service_name": service_name,
         "description": description, "service_type": service_type, "target_group": target_group,
-        "contact": contact, "status": status, "created_at": str(uuid.uuid4().hex[:8])
+        "contact": contact, "status": status, "district": district, "service_scope": service_scope,
+        "created_at": str(uuid.uuid4().hex[:8])
     }
     services.append(new_service)
     save_services(services)
@@ -488,7 +668,7 @@ def get_service(service_id):
         if service["id"] == service_id: return service
     return None
 
-def update_service(service_id, service_name=None, description=None, service_type=None, target_group=None, contact=None, status=None):
+def update_service(service_id, service_name=None, description=None, service_type=None, target_group=None, contact=None, status=None, district=None, service_scope=None):
     services = load_services()
     for service in services:
         if service["id"] == service_id:
@@ -498,6 +678,8 @@ def update_service(service_id, service_name=None, description=None, service_type
             if target_group is not None: service["target_group"] = target_group
             if contact is not None: service["contact"] = contact
             if status is not None: service["status"] = status
+            if district is not None: service["district"] = district
+            if service_scope is not None: service["service_scope"] = service_scope
             break
     save_services(services)
 
@@ -860,6 +1042,117 @@ def user_dashboard():
         issues=issues, goals=goals, subsidy_summary=subsidy_summary, submitted_applications=len(get_user_applications(session.get("username"))),
         page_title="社福企劃生成器", budget_reference=WELFARE_BUDGET_REFERENCE
     )
+
+
+@app.route("/user/help-request", methods=["GET", "POST"])
+def user_help_request():
+    if session.get("role") != "user":
+        return redirect(url_for("home"))
+
+    error = None
+    if request.method == "POST":
+        need_type = request.form.get("need_type", "").strip()
+        need_when = request.form.get("need_when", "").strip()
+        location = request.form.get("location", "").strip()
+        duration = request.form.get("duration", "").strip()
+        details = request.form.get("details", "").strip()
+        contact_name = request.form.get("contact_name", "").strip()
+        contact_phone = request.form.get("contact_phone", "").strip()
+        elder_name = request.form.get("elder_name", "").strip()
+        age_group = request.form.get("age_group", "").strip()
+        district = request.form.get("district", "").strip()
+        urgency = request.form.get("urgency", "一般").strip()
+        household_status = request.form.get("household_status", "").strip()
+        care_level = request.form.get("care_level", "").strip()
+
+        if not need_type or not need_when or not location or not district:
+            error = "請填寫需求類型、時間、地點與所在區域，才能提交需求。"
+        else:
+            created = create_help_request(
+                username=session.get("username"),
+                need_type=need_type,
+                need_when=need_when,
+                location=location,
+                duration=duration or "依需求安排",
+                details=details,
+                contact_name=contact_name or elder_name or "家屬",
+                contact_phone=contact_phone,
+                elder_name=elder_name,
+                age_group=age_group,
+                district=district,
+                urgency=urgency,
+                household_status=household_status,
+                care_level=care_level,
+            )
+            return redirect(url_for("user_service_matches") + f"?request_id={created['id']}")
+
+    choices = [
+        "餐食協助", "居家照顧", "交通接送", "就醫陪伴", "陪伴聊天", "3C／數位協助",
+        "社會福利申請", "活動／社交參與", "居家整理", "緊急協助"
+    ]
+    return render_template("user_help_request_form.html", username=session.get("username"), choices=choices, error=error)
+
+
+@app.route("/user/service-matches")
+def user_service_matches():
+    if session.get("role") != "user":
+        return redirect(url_for("home"))
+
+    username = session.get("username")
+    requests = get_user_help_requests(username)
+    selected_request_id = request.args.get("request_id") or (requests[0]["id"] if requests else "")
+    selected_request = get_help_request(selected_request_id) if selected_request_id else None
+    matches = get_help_request_matches(selected_request) if selected_request else []
+    return render_template(
+        "user_service_matches.html",
+        username=username,
+        requests=requests,
+        selected_request=selected_request,
+        matches=matches,
+    )
+
+
+@app.route("/user/help-requests")
+def user_help_requests():
+    if session.get("role") != "user":
+        return redirect(url_for("home"))
+
+    requests = get_user_help_requests(session.get("username"))
+    return render_template("user_help_requests.html", username=session.get("username"), requests=requests)
+
+
+@app.route("/user/help-requests/<request_id>/apply/<service_id>", methods=["POST"])
+def user_apply_service(request_id, service_id):
+    if session.get("role") != "user":
+        return redirect(url_for("home"))
+
+    request_item = get_help_request(request_id)
+    if request_item and request_item.get("username") == session.get("username"):
+        apply_help_request_service(request_id, service_id)
+    return redirect(url_for("user_help_requests"))
+
+
+@app.route("/admin/help-requests")
+def admin_help_requests():
+    if session.get("role") != "admin":
+        return redirect(url_for("home"))
+
+    requests = load_help_requests()
+    service_options = load_services()
+    return render_template("admin_help_requests.html", username=session.get("username"), requests=requests, service_options=service_options)
+
+
+@app.route("/admin/help-requests/<request_id>/status", methods=["POST"])
+def admin_update_help_request_status(request_id):
+    if session.get("role") != "admin":
+        return redirect(url_for("home"))
+
+    status = request.form.get("status", "待處理").strip()
+    admin_note = request.form.get("admin_note", "").strip()
+    assigned_service = request.form.get("assigned_service", "").strip()
+    assigned_unit = request.form.get("assigned_unit", "").strip()
+    update_help_request_status(request_id, status, admin_note, assigned_service, assigned_unit)
+    return redirect(url_for("admin_help_requests"))
 
 @app.route("/donate", methods=["GET", "POST"])
 def donate():
@@ -1730,9 +2023,11 @@ def admin_create_service():
         target_group = request.form.get("target_group", "").strip()
         contact = request.form.get("contact", "").strip()
         status = request.form.get("status", "開放申請")
+        district = request.form.get("district", "").strip()
+        service_scope = request.form.get("service_scope", "全區").strip()
         if not service_name: error = "請輸入服務名稱。"
         else:
-            create_service("admin", service_name, description, service_type, target_group, contact, status)
+            create_service("admin", service_name, description, service_type, target_group, contact, status, district, service_scope)
             return redirect(url_for("admin_services"))
     return render_template("admin_service_create.html", username=session.get("username"), error=error)
 
@@ -1749,9 +2044,11 @@ def admin_edit_service(service_id):
         target_group = request.form.get("target_group", "").strip()
         contact = request.form.get("contact", "").strip()
         status = request.form.get("status", "開放申請")
+        district = request.form.get("district", "").strip()
+        service_scope = request.form.get("service_scope", "全區").strip()
         if not service_name: error = "請輸入服務名稱。"
         else:
-            update_service(service_id, service_name, description, service_type, target_group, contact, status)
+            update_service(service_id, service_name, description, service_type, target_group, contact, status, district, service_scope)
             return redirect(url_for("admin_services"))
     return render_template("admin_service_edit.html", service=service, username=session.get("username"), error=error)
 

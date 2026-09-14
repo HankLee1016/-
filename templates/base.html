@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}社福資源平台{% endblock %}</title>
+    <title>{% block title %}長者安心服務平台｜社福資源管理{% endblock %}</title>
 
     <!-- CSS -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
@@ -24,35 +24,37 @@
     <!-- Navbar -->
     <nav class="navbar">
         <div class="nav-container">
-            <a href="/" class="nav-brand">🌱 社福資源平台</a>
+            <a href="/" class="nav-brand">
+                <span class="brand-mark">👴</span>
+                <span class="brand-text">長者安心服務平台</span>
+            </a>
 
             <div class="nav-links">
                 {% if session.get('username') %}
                     <span class="nav-user">{{ session.get('username') }}</span>
 
                     {% if session.get('role') == 'admin' %}
-                        <a href="/admin">管理後台</a>
-                        <a href="/admin/members">成員管理</a>
-                        <a href="/admin/activities">活動管理</a>
+                        <a href="/admin">總覽</a>
+                        <a href="/admin/help-requests">需求狀態</a>
                         <a href="/admin/services">服務管理</a>
-                        <a href="/admin/contents">內容管理</a>
-                        <a href="/admin/announcements">公告管理</a>
+                        <a href="/admin/activities">需求管理</a>
                         <a href="/admin/applications">申請審核</a>
                         <a href="/donations">捐款資料</a>
-                        <a href="/donate">我要捐款</a>
                     {% else %}
-                        <a href="/user">個案企劃</a>
-                        <a href="/subsidies">補助資源</a>
-                        <a href="/donate">我要捐款</a>
-                        <a href="/user/profile">編輯資料</a>
-                        <a href="/user/assistant">AI助理</a>
+                        <a href="/user">我的需求</a>
+                        <a href="/user/help-request">我需要幫助</a>
+                        <a href="/user/service-matches">服務媒合</a>
+                        <a href="/user/help-requests">申請進度</a>
+                        <a href="/subsidies">找服務</a>
+                        <a href="/user/profile">我的資料</a>
                     {% endif %}
 
-                    <a href="/logout">登出</a>
+                    <a href="/logout" class="nav-logout">登出</a>
                 {% else %}
-                    <a href="/donate">我要捐款</a>
+                    <a href="/">平台介紹</a>
                     <a href="/login">登入</a>
                     <a href="/register">註冊</a>
+                    <a href="/donate">捐款支持</a>
                 {% endif %}
             </div>
         </div>
@@ -66,7 +68,7 @@
     <!-- Footer -->
     <footer class="footer">
         <div class="footer-content">
-            <p>&copy; 2026 社福資源平台</p>
+            <p>&copy; 2026 長者安心服務平台｜社福資源管理系統</p>
         </div>
     </footer>
 

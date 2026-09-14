@@ -1,44 +1,83 @@
 ﻿{% extends 'base.html' %}
 
-{% block title %}首頁 — 社福資源平台{% endblock %}
+{% block title %}首頁 — 長者安心服務平台{% endblock %}
 
 {% block content %}
     <div class="page-bg"></div>
-    <header class="hero-card">
+
+    <header class="hero-card main-hero">
         <div class="hero-copy">
-            <span class="eyebrow">社會輔助團體</span>
-            <h1>🌱 歡迎來到社福資源平台</h1>
-            <p>一站式社福企劃和資源媒合平台，幫助您更好地服務社區。</p>
+            <span class="eyebrow">長者服務 × 社福資源管理</span>
+            <h1>讓長者在需要時，能及時找到適合的服務，也讓社福單位能有效管理需求與進度。</h1>
+            <p>這個平台幫助長者與家屬快速提交需求，系統會依照地區、需求類型與服務狀況推薦合適資源；同時也讓社福機構可以追蹤需求、安排服務與管理進度。</p>
+            <div class="hero-actions">
+                <a class="button" href="/login">🔓 立即登入</a>
+                <a class="button button-secondary" href="/register">📝 建立帳號</a>
+            </div>
         </div>
-        <div class="hero-actions">
-            <a class="button" href="/login">🔓 登入帳號</a>
-            <a class="button button-secondary" href="/register">📝 建立帳號</a>
+
+        <div class="hero-panel">
+            <div class="mini-stat">
+                <span>需求申請</span>
+                <strong>長者協助</strong>
+            </div>
+            <div class="mini-stat">
+                <span>服務媒合</span>
+                <strong>地區推薦</strong>
+            </div>
+            <div class="mini-stat">
+                <span>進度追蹤</span>
+                <strong>狀態管理</strong>
+            </div>
         </div>
     </header>
 
+    <section class="card landing-clarity">
+        <div class="card-title">
+            <h2 class="section-title">這個平台做什麼？</h2>
+        </div>
+
+        <div class="clarity-grid">
+            <div class="clarity-box">
+                <div class="icon-badge">👵</div>
+                <h3>長者／家屬</h3>
+                <p>可快速提出餐食、就醫、交通、陪伴、照顧等需求，讓協助從「找不到人」變成「有人可以幫忙」。</p>
+            </div>
+            <div class="clarity-box">
+                <div class="icon-badge">🎯</div>
+                <h3>服務媒合</h3>
+                <p>依照需求類型與所在區域，自動推薦最適合的社福服務與資源，減少資訊落差與搜尋時間。</p>
+            </div>
+            <div class="clarity-box">
+                <div class="icon-badge">🏢</div>
+                <h3>社福單位</h3>
+                <p>能查看長者需求、安排服務、更新處理狀態，維持現有社福資源管理與進度追蹤。</p>
+            </div>
+        </div>
+    </section>
+
     <section class="card">
         <div class="card-title">
-            <h2 class="section-title">💡 核心特色</h2>
-            <p class="text-muted">為社福機構提供完整的digital solution</p>
+            <h2 class="section-title">三個主要流程</h2>
         </div>
-        
+
         <div class="feature-cards-grid">
             <div class="feature-card blue">
-                <span class="icon">📋</span>
-                <h3>企劃協助</h3>
-                <p>AI 驅動的企劃書生成</p>
+                <span class="icon">1</span>
+                <h3>提出需求</h3>
+                <p>長者或家屬填寫需求表單，包含需求類型、時間、地點、緊急程度與說明。</p>
             </div>
 
             <div class="feature-card yellow">
-                <span class="icon">💰</span>
-                <h3>補助查詢</h3>
-                <p>整合各項補助資訊</p>
+                <span class="icon">2</span>
+                <h3>推薦媒合</h3>
+                <p>系統依照區域與需求篩選最合適的社福服務與服務單位，提供優先排序。</p>
             </div>
 
             <div class="feature-card green">
-                <span class="icon">🎯</span>
-                <h3>營運管理</h3>
-                <p>活動、志工、成員管理</p>
+                <span class="icon">3</span>
+                <h3>管理追蹤</h3>
+                <p>社福單位可更新狀態、指派服務、記錄歷程，確保每一筆協助都有進度。</p>
             </div>
         </div>
     </section>

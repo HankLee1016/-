@@ -1,0 +1,55 @@
+{
+  "help_requests": [
+    {
+      "id": "7d05f52e-208e-4383-9bf9-f858c791bf0b",
+      "username": "demo_user",
+      "elder_name": "???",
+      "age_group": "75-84",
+      "district": "???",
+      "urgency": "??",
+      "household_status": "??",
+      "care_level": "????",
+      "need_type": "????",
+      "need_when": "????",
+      "location": "??",
+      "duration": "1-2??",
+      "details": "????????????",
+      "contact_name": "???",
+      "contact_phone": "0912345678",
+      "status": "???",
+      "matched_service": "????",
+      "service_id": "",
+      "service_contact": "",
+      "assigned_unit": "?????",
+      "admin_note": "???????",
+      "history": [
+        {
+          "time": "2026-09-14 19:36:52",
+          "message": "管理者更新狀態為 ???；指派服務：????；服務單位：?????；備註：???????"
+        },
+        {
+          "time": "2026-09-14 19:36:52",
+          "message": "需求已送出，等待社福單位確認"
+        }
+      ],
+      "created_at": "2026-09-14 19:36:52"
+    },
+    {
+      "id": "dac7cb84-8830-4ab7-bef8-f2844ff3f680",
+      "username": "demo_user",
+      "need_type": "??",
+      "need_when": "????",
+      "location": "??????",
+      "duration": "1??",
+      "details": "??????",
+      "contact_name": "???",
+      "contact_phone": "0912345678",
+      "status": "???",
+      "matched_service": "",
+      "service_id": "",
+      "service_contact": "",
+      "admin_note": "???????",
+      "created_at": "2026-09-14 19:30:50"
+    }
+  ]
+}

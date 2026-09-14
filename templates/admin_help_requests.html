@@ -1,0 +1,120 @@
+{% extends 'base.html' %}
+
+{% block title %}需求狀態更新 — 長者服務平台{% endblock %}
+
+{% block content %}
+<div class="page-bg"></div>
+<header class="hero-card main-hero">
+    <div class="hero-copy">
+        <span class="eyebrow">管理者後台</span>
+        <h1>📋 需求狀態更新</h1>
+        <p>查看所有長者需求，更新處理進度並安排符合的服務。</p>
+    </div>
+    <div class="hero-panel">
+        <div class="mini-stat">
+            <span>總需求數</span>
+            <strong>{{ requests|length if requests else 0 }}</strong>
+        </div>
+        <div class="mini-stat">
+            <span>服務指派</span>
+            <strong>即時更新</strong>
+        </div>
+    </div>
+</header>
+
+<section class="card">
+    <div class="card-title">
+        <h2 class="section-title">長者需求列表</h2>
+        <p class="text-muted">更新需求狀態，保留處理紀錄與後續追蹤。</p>
+    </div>
+
+    {% if requests %}
+    {% for item in requests %}
+    <div class="request-card">
+        <div class="request-card-header">
+            <h3>{{ item.need_type }}</h3>
+            {% if item.status == '待處理' %}
+            <span class="badge badge-warning">⏳ 待處理</span>
+            {% elif item.status == '已申請' %}
+            <span class="badge badge-info">📩 已申請</span>
+            {% elif item.status == '處理中' %}
+            <span class="badge badge-info">🔄 處理中</span>
+            {% elif item.status == '已安排' %}
+            <span class="badge badge-success">✅ 已安排</span>
+            {% elif item.status == '已完成' %}
+            <span class="badge badge-success">✔ 已完成</span>
+            {% else %}
+            <span class="badge badge-secondary">{{ item.status }}</span>
+            {% endif %}
+        </div>
+
+        <div class="request-meta">
+            <div><span>申請人：</span> {{ item.username }}</div>
+            <div><span>長者：</span> {{ item.elder_name or '未填寫' }}</div>
+            <div><span>區域：</span> {{ item.district or '未填寫' }}</div>
+            <div><span>時間：</span> {{ item.need_when }}</div>
+            <div><span>地點：</span> {{ item.location }}</div>
+            <div><span>聯絡方式：</span> {{ item.contact_phone or '未提供' }}</div>
+        </div>
+
+        {% if item.details %}
+        <div class="request-description">{{ item.details }}</div>
+        {% endif %}
+
+        <form method="post" action="/admin/help-requests/{{ item.id }}/status">
+            <div class="request-form-grid">
+                <div class="form-group">
+                    <label for="status_{{ item.id }}">狀態</label>
+                    <select id="status_{{ item.id }}" name="status">
+                        <option value="待處理" {% if item.status == '待處理' %}selected{% endif %}>待處理</option>
+                        <option value="已申請" {% if item.status == '已申請' %}selected{% endif %}>已申請</option>
+                        <option value="處理中" {% if item.status == '處理中' %}selected{% endif %}>處理中</option>
+                        <option value="已安排" {% if item.status == '已安排' %}selected{% endif %}>已安排</option>
+                        <option value="已完成" {% if item.status == '已完成' %}selected{% endif %}>已完成</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="assigned_service_{{ item.id }}">指派服務</label>
+                    <select id="assigned_service_{{ item.id }}" name="assigned_service">
+                        <option value="">未指派</option>
+                        {% for service in service_options %}
+                        <option value="{{ service.service_name }}" {% if item.matched_service == service.service_name %}selected{% endif %}>{{ service.service_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="assigned_unit_{{ item.id }}">服務單位</label>
+                    <input id="assigned_unit_{{ item.id }}" type="text" name="assigned_unit" value="{{ item.assigned_unit or '' }}" placeholder="例如：社會福利館、社區關懷站">
+                </div>
+
+                <div class="form-group">
+                    <label for="admin_note_{{ item.id }}">管理員備註</label>
+                    <textarea id="admin_note_{{ item.id }}" name="admin_note" rows="3" placeholder="輸入處理說明">{{ item.admin_note or '' }}</textarea>
+                </div>
+            </div>
+
+            {% if item.history %}
+            <div class="history-box">
+                <strong>歷程紀錄：</strong>
+                {% for h in item.history[:4] %}
+                <div><span>{{ h.time }}</span> — {{ h.message }}</div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <div class="request-actions">
+                <button type="submit" class="button">更新狀態</button>
+            </div>
+        </form>
+    </div>
+    {% endfor %}
+    {% else %}
+    <div class="empty-state">
+        <p>📭</p>
+        <p>目前尚無需求資料。</p>
+    </div>
+    {% endif %}
+</section>
+{% endblock %}

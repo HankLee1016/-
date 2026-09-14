@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 
-{% block title %}管理者後台 — 社福資源平台{% endblock %}
+{% block title %}管理者後台 — 長者服務平台{% endblock %}
 
 {% block head_extra %}
     <link rel="stylesheet" href="{{ url_for('static', filename='css/admin-dashboard.css') }}">
@@ -10,134 +10,88 @@
 
 <div class="page-bg"></div>
 
-<header class="hero-card">
+<header class="hero-card main-hero">
     <div class="hero-copy">
-        <span class="eyebrow">管理者後台</span>
+        <span class="eyebrow">社福單位 / 管理者後台</span>
         <h1>👋 歡迎，{{ username or '管理者' }}</h1>
-        <p>您可以查看系統數據、管理內容，並進行後台操作。讓我們一起維護這個幫助他人的平台。</p>
+        <p>此平台保留原本社福資源與活動管理功能，同時聚焦於長者需求、服務媒合與後續追蹤。</p>
     </div>
-    <div class="hero-actions">
-        <a class="button" href="/donations">💳 查看捐款資料</a>
-        <a class="button button-secondary" href="/admin/members">👥 成員管理</a>
-        <a class="button button-secondary" href="/logout">🚪 登出</a>
+    <div class="hero-panel">
+        <div class="mini-stat">
+            <span>待處理需求</span>
+            <strong>{{ pending_cases_count }}</strong>
+        </div>
+        <div class="mini-stat">
+            <span>本月活動</span>
+            <strong>{{ activities_count }}</strong>
+        </div>
+        <div class="mini-stat">
+            <span>最新公告</span>
+            <strong>{{ announcements_count }}</strong>
+        </div>
     </div>
 </header>
 
-<!-- 統計資訊 -->
-<div class="stats-grid">
-    <div class="stat-box">
-        <h3>活動總數</h3>
-        <div class="value">{{ activities_count }}</div>
-    </div>
-    <div class="stat-box">
-        <h3>註冊成員</h3>
-        <div class="value">{{ members_count }}</div>
-    </div>
-    <div class="stat-box">
-        <h3>待處理個案</h3>
-        <div class="value">{{ pending_cases_count }}</div>
-    </div>
-    <div class="stat-box">
-        <h3>系統公告</h3>
-        <div class="value">{{ announcements_count }}</div>
-    </div>
-</div>
-
 <section class="card">
     <div class="card-title">
-        <h2 class="section-title">⚙️ 管理者功能</h2>
-        <p class="text-muted">快速進入各管理模組</p>
+        <h2 class="section-title">⚙️ 管理功能</h2>
+        <p class="text-muted">保留原本社福功能，同時延伸長者服務管理流程</p>
     </div>
 
-    <div class="features-grid">
-        <div class="feature-card">
+    <div class="dashboard-grid">
+        <article class="dashboard-tile tile-blue">
             <h3>👥 成員管理</h3>
-            <p>查看、編輯和刪除系統中的註冊成員，管理使用者權限。</p>
-            <a class="button" href="/admin/members">進入成員管理</a>
-        </div>
+            <p>維護長者、家屬與社福成員資料，保留原本的會員管理。</p>
+            <div class="form-actions" style="margin-top: 1rem;"><a class="button" href="/admin/members">進入成員管理</a></div>
+        </article>
 
-        <div class="feature-card">
-            <h3>📋 個案管理</h3>
-            <p>管理並追蹤所有個案資料，記錄服務進度。</p>
-            <a class="button" href="/admin/cases">進入個案管理</a>
-        </div>
+        <article class="dashboard-tile tile-blue">
+            <h3>📋 需求狀態更新</h3>
+            <p>處理長者需求、服務申請與案件狀態更新。</p>
+            <div class="form-actions" style="margin-top: 1rem;"><a class="button" href="/admin/help-requests">進入需求狀態更新</a></div>
+        </article>
 
-        <div class="feature-card">
+        <article class="dashboard-tile tile-green">
+            <h3>📋 需求管理</h3>
+            <p>維持既有案件與活動管理功能，保留原平台運作。</p>
+            <div class="form-actions" style="margin-top: 1rem;"><a class="button" href="/admin/activities">進入需求管理</a></div>
+        </article>
+
+        <article class="dashboard-tile tile-green">
             <h3>🎯 活動管理</h3>
-            <p>建立與管理社區活動、志願者排班。</p>
-            <a class="button" href="/admin/activities">進入活動管理</a>
-        </div>
+            <p>維持區域活動、志願者排班、社區服務與活動辦理。</p>
+            <div class="form-actions" style="margin-top: 1rem;"><a class="button" href="/admin/activities">進入活動管理</a></div>
+        </article>
 
-        <div class="feature-card">
+        <article class="dashboard-tile tile-yellow">
             <h3>🤝 服務管理</h3>
-            <p>管理社會福利服務項目及詳細資訊。</p>
-            <a class="button" href="/admin/services">進入服務管理</a>
-        </div>
+            <p>新增與管理陪伴、就醫、送餐、交通等長者服務項目。</p>
+            <div class="form-actions" style="margin-top: 1rem;"><a class="button" href="/admin/services">進入服務管理</a></div>
+        </article>
 
-        <div class="feature-card">
+        <article class="dashboard-tile tile-blue">
             <h3>📝 內容管理</h3>
-            <p>管理新聞、文章與系統內容，保持資訊新鮮。</p>
-            <a class="button" href="/admin/contents">進入內容管理</a>
-        </div>
+            <p>管理社福資訊、活動公告、長者服務相關內容。</p>
+            <div class="form-actions" style="margin-top: 1rem;"><a class="button" href="/admin/contents">進入內容管理</a></div>
+        </article>
 
-        <div class="feature-card">
+        <article class="dashboard-tile tile-yellow">
             <h3>📢 公告管理</h3>
-            <p>發布與管理重要公告及系統升級訊息。</p>
-            <a class="button" href="/admin/announcements">進入公告管理</a>
-        </div>
+            <p>發布消息、福利資訊與重要社區更新。</p>
+            <div class="form-actions" style="margin-top: 1rem;"><a class="button" href="/admin/announcements">進入公告管理</a></div>
+        </article>
 
-        <div class="feature-card">
-            <h3>� 補助申請審核</h3>
-            <p>查看使用者申請案件，進行批准或拒絕。</p>
-            <a class="button" href="/admin/applications">進入申請審核</a>
-        </div>
+        <article class="dashboard-tile tile-green">
+            <h3>✅ 申請審核</h3>
+            <p>查看長者服務申請，進行核准、拒絕與後續安排。</p>
+            <div class="form-actions" style="margin-top: 1rem;"><a class="button" href="/admin/applications">進入申請審核</a></div>
+        </article>
 
-        <div class="feature-card">
-            <h3>�💳 捐款資料</h3>
-            <p>查看所有捐款紀錄、統計及捐獻者資訊。</p>
-            <a class="button" href="/donations">查看捐款資料</a>
-        </div>
-
-        <div class="feature-card">
-            <h3>�‍💼 志願者管理</h3>
-            <p>管理志願者資料、聯絡方式及服務時數。</p>
-            <a class="button" href="/admin/volunteers">進入志願者管理</a>
-        </div>
-
-        <div class="feature-card">
-            <h3>📈 分析儀表板</h3>
-            <p>查看系統統計數據、生成報告和分析。</p>
-            <a class="button" href="/analytics/dashboard">進入分析</a>
-        </div>
-
-        <div class="feature-card">
-            <h3>� 進階搜尋</h3>
-            <p>搜尋個案和活動，使用篩選器快速查找。</p>
-            <a class="button" href="/search/cases">搜尋個案</a>
-        </div>
+        <article class="dashboard-tile tile-yellow">
+            <h3>💳 捐款資料</h3>
+            <p>保留捐款紀錄與資源支持，維持社福平台財務運作。</p>
+            <div class="form-actions" style="margin-top: 1rem;"><a class="button" href="/donations">查看捐款資料</a></div>
+        </article>
     </div>
 </section>
-
-<section class="card recent-updates-section">
-    <div class="card-title">
-        <h2 class="section-title">🔔 最近的活動</h2>
-        <p class="text-muted">系統最近的變動</p>
-    </div>
-    
-    <div class="recent-updates-grid">
-        <div class="recent-update-card recent-update-card--info">
-            <p class="text-sm text-muted">今天 14:30</p>
-            <p class="font-semibold">新增活動：社區清潔日</p>
-        </div>
-        <div class="recent-update-card recent-update-card--success">
-            <p class="text-sm text-muted">昨天 09:15</p>
-            <p class="font-semibold">成員王小明完成志願服務 8 小時</p>
-        </div>
-        <div class="recent-update-card recent-update-card--warning">
-            <p class="text-sm text-muted">3 天前 11:00</p>
-            <p class="font-semibold">系統更新：新增補助資料 5 筆</p>
-        </div>
-    </div>
-</section>
-
 {% endblock %}

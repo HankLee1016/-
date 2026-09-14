@@ -1,39 +1,30 @@
 {% extends 'base.html' %}
 
-{% block title %}服務管理 — 社福資源平台{% endblock %}
+{% block title %}服務管理 — 長者服務平台{% endblock %}
 
 {% block content %}
     <div class="page-bg"></div>
-    <header class="hero-card">
+    <header class="hero-card main-hero">
         <div class="hero-copy">
-            <span class="eyebrow">服務管理</span>
-            <h1>🤝 系統服務管理</h1>
-            <p>管理和推廣所有社福服務，讓社福機構更好地服務受眾。</p>
+            <span class="eyebrow">長者服務管理</span>
+            <h1>🤝 長者服務項目管理</h1>
+            <p>維持原本社福服務管理功能，同時新增陪伴、就醫、交通與居家照顧等長者服務類型。</p>
         </div>
-        <div class="hero-actions">
-            <a class="button" href="/admin/services/create">+ 新增服務</a>
-            <a class="button button-secondary" href="/admin">返回管理首頁</a>
-            <a class="button button-secondary" href="/logout">登出</a>
+        <div class="hero-panel">
+            <div class="mini-stat">
+                <span>目前開放</span>
+                <strong>{{ services|selectattr('status', 'equalto', '開放申請')|list|length }}</strong>
+            </div>
+            <div class="mini-stat">
+                <span>已額滿</span>
+                <strong>{{ services|selectattr('status', 'equalto', '額滿')|list|length }}</strong>
+            </div>
         </div>
     </header>
 
-    <!-- 統計資訊 -->
     {% set open_count = services|selectattr('status', 'equalto', '開放申請')|list|length %}
     {% set full_count = services|selectattr('status', 'equalto', '額滿')|list|length %}
-    <div class="stats-grid">
-        <div class="stat-box">
-            <h3>服務總數</h3>
-            <div class="value">{{ services|length }}</div>
-        </div>
-        <div class="stat-box">
-            <h3>開放申請</h3>
-            <div class="value">{{ open_count }}</div>
-        </div>
-        <div class="stat-box">
-            <h3>額滿服務</h3>
-            <div class="value">{{ full_count }}</div>
-        </div>
-    </div>
+    {% set stopped_count = services|selectattr('status', 'equalto', '停止申請')|list|length %}
 
     <section class="card">
         <div class="card-title">
@@ -43,51 +34,44 @@
         
         {% if services %}
             {% for service in services %}
-            <div class="service-card">
-                <div class="service-container">
-                    <div class="service-content">
-                        <h3>{{ service.service_name }}</h3>
-                        <div class="service-meta">
-                            <div>
-                                <span class="font-semibold">📂 類型：</span> {{ service.service_type }}
-                            </div>
-                            {% if service.target_group %}
-                            <div>
-                                <span class="font-semibold">👥 服務對象：</span> {{ service.target_group }}
-                            </div>
-                            {% endif %}
-                            {% if service.contact %}
-                            <div>
-                                <span class="font-semibold">📞 聯絡方式：</span> {{ service.contact }}
-                            </div>
-                            {% endif %}
-                        </div>
-                        {% if service.description %}
-                        <div class="service-description">{{ service.description }}</div>
-                        {% endif %}
-                        <div>
-                            {% if service.status == '開放申請' %}
-                                <span class="badge badge-success">✅ 開放申請</span>
-                            {% elif service.status == '額滿' %}
-                                <span class="badge badge-warning">⚠️ 額滿</span>
-                            {% else %}
-                                <span class="badge badge-danger">❌ 停止申請</span>
-                            {% endif %}
-                        </div>
-                    </div>
-                    <div class="service-buttons">
-                        <a class="button btn-small" href="/admin/services/{{ service.id }}/edit" title="編輯服務">✏️ 編輯</a>
-                        <form method="post" action="/admin/services/{{ service.id }}/delete" style="display:inline;" onsubmit="return confirm('確認刪除此服務嗎？');">
-                            <button type="submit" class="button button-danger btn-small" style="width: 100%;">🗑️ 刪除</button>
-                        </form>
-                    </div>
+            <div class="request-card">
+                <div class="request-card-header">
+                    <h3>{{ service.service_name }}</h3>
+                    {% if service.status == '開放申請' %}
+                        <span class="badge badge-success">✅ 開放申請</span>
+                    {% elif service.status == '額滿' %}
+                        <span class="badge badge-warning">⚠️ 額滿</span>
+                    {% else %}
+                        <span class="badge badge-danger">❌ 停止申請</span>
+                    {% endif %}
+                </div>
+
+                <div class="request-meta">
+                    <div><span>類型：</span> {{ service.service_type }}</div>
+                    {% if service.target_group %}
+                    <div><span>服務對象：</span> {{ service.target_group }}</div>
+                    {% endif %}
+                    {% if service.contact %}
+                    <div><span>聯絡方式：</span> {{ service.contact }}</div>
+                    {% endif %}
+                </div>
+
+                {% if service.description %}
+                <div class="request-description">{{ service.description }}</div>
+                {% endif %}
+
+                <div class="request-actions">
+                    <a class="button btn-small" href="/admin/services/{{ service.id }}/edit" title="編輯服務">✏️ 編輯</a>
+                    <form method="post" action="/admin/services/{{ service.id }}/delete" style="display:inline;" onsubmit="return confirm('確認刪除此服務嗎？');">
+                        <button type="submit" class="button button-danger btn-small">🗑️ 刪除</button>
+                    </form>
                 </div>
             </div>
             {% endfor %}
         {% else %}
             <div class="empty-state">
                 <p>🛠️</p>
-                <p class="text-muted">還沒有任何服務</p>
+                <p>還沒有任何服務</p>
                 <a href="/admin/services/create" class="button mt-3">立即創建第一個服務</a>
             </div>
         {% endif %}

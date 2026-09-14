@@ -1,18 +1,24 @@
 {% extends 'base.html' %}
 
-{% block title %}我的資料 — 社福資源平台{% endblock %}
+{% block title %}我的資料 — 長者服務平台{% endblock %}
 
 {% block content %}
     <div class="page-bg"></div>
-    <header class="hero-card">
+    <header class="hero-card main-hero">
         <div class="hero-copy">
-            <span class="eyebrow">使用者資料</span>
-            <h1>👤 社福團體背景設定</h1>
-            <p>請在此填寫您的團體背景與服務特色，系統會幫您保存於個人資料中。</p>
+            <span class="eyebrow">個人資料</span>
+            <h1>👤 我的資料</h1>
+            <p>請在此更新您的基本資料與聯絡資訊，讓系統更準確支援長者需求與服務媒合。</p>
         </div>
-        <div class="hero-actions">
-            <a class="button" href="/user">返回使用者首頁</a>
-            <a class="button button-secondary" href="/logout">登出</a>
+        <div class="hero-panel">
+            <div class="mini-stat">
+                <span>帳號身份</span>
+                <strong>{{ session.get('username') or '使用者' }}</strong>
+            </div>
+            <div class="mini-stat">
+                <span>資料狀態</span>
+                <strong>已更新</strong>
+            </div>
         </div>
     </header>
 
@@ -25,44 +31,44 @@
         {% endif %}
 
         <div class="card-title">
-            <h2 class="section-title">📋 團體基本資訊</h2>
-            <p class="text-muted">更新您的社福團體背景資料</p>
+            <h2 class="section-title">📋 基本資料</h2>
+            <p class="text-muted">更新您的個人與聯絡資訊</p>
         </div>
 
-        <form class="proposal-form" method="post" action="/user/profile">
-            <div style="display: grid; gap: 1.5rem;">
-                <label>
-                    <span class="label-text font-semibold">🏢 社福團體名稱</span>
-                    <input type="text" name="org_name" value="{{ org_profile.org_name | default('') }}" placeholder="輸入團體名稱" required>
-                </label>
+        <form class="profile-form" method="post" action="/user/profile">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="org_name">🏢 社福團體名稱</label>
+                    <input type="text" id="org_name" name="org_name" value="{{ org_profile.org_name | default('') }}" placeholder="輸入團體名稱" required>
+                </div>
 
-                <label>
-                    <span class="label-text font-semibold">🔢 社福團體字號</span>
-                    <input type="text" name="org_id" value="{{ org_profile.org_id | default('') }}" placeholder="輸入團體字號" required>
-                </label>
+                <div class="form-group">
+                    <label for="org_id">🔢 社福團體字號</label>
+                    <input type="text" id="org_id" name="org_id" value="{{ org_profile.org_id | default('') }}" placeholder="輸入團體字號" required>
+                </div>
 
-                <label>
-                    <span class="label-text font-semibold">👥 社員人數</span>
-                    <input type="number" name="member_count" value="{{ org_profile.member_count | default('') }}" placeholder="輸入社員人數">
-                </label>
+                <div class="form-group">
+                    <label for="member_count">👥 社員人數</label>
+                    <input type="number" id="member_count" name="member_count" value="{{ org_profile.member_count | default('') }}" placeholder="輸入社員人數">
+                </div>
 
-                <label>
-                    <span class="label-text font-semibold">🕐 志工人數</span>
-                    <input type="number" name="volunteer_count" value="{{ org_profile.volunteer_count | default('') }}" placeholder="輸入志工人數">
-                </label>
+                <div class="form-group">
+                    <label for="volunteer_count">🕐 志工人數</label>
+                    <input type="number" id="volunteer_count" name="volunteer_count" value="{{ org_profile.volunteer_count | default('') }}" placeholder="輸入志工人數">
+                </div>
 
-                <label>
-                    <span class="label-text font-semibold">💼 負責人</span>
-                    <input type="text" name="contact_person" value="{{ org_profile.contact_person | default('') }}" placeholder="輸入負責人姓名">
-                </label>
+                <div class="form-group">
+                    <label for="contact_person">💼 負責人</label>
+                    <input type="text" id="contact_person" name="contact_person" value="{{ org_profile.contact_person | default('') }}" placeholder="輸入負責人姓名">
+                </div>
 
-                <label>
-                    <span class="label-text font-semibold">📍 登記地址</span>
-                    <textarea name="address" placeholder="輸入登記地址">{{ org_profile.address | default('') }}</textarea>
-                </label>
+                <div class="form-group">
+                    <label for="address">📍 登記地址</label>
+                    <textarea id="address" name="address" rows="4" placeholder="輸入登記地址">{{ org_profile.address | default('') }}</textarea>
+                </div>
             </div>
 
-            <div style="margin-top: 1.5rem; display: flex; gap: 1rem;">
+            <div class="form-actions">
                 <button type="submit" class="button">💾 儲存資料</button>
                 <a href="/user" class="button button-secondary">❌ 取消</a>
             </div>

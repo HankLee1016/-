@@ -1,0 +1,94 @@
+{% extends 'base.html' %}
+
+{% block title %}申請進度 — 長者服務平台{% endblock %}
+
+{% block content %}
+<div class="page-bg"></div>
+<header class="hero-card main-hero">
+    <div class="hero-copy">
+        <span class="eyebrow">申請進度</span>
+        <h1>📄 我的申請進度</h1>
+        <p>查看需求提交、媒合狀態與服務處理結果。</p>
+    </div>
+    <div class="hero-panel">
+        <div class="mini-stat">
+            <span>總進度</span>
+            <strong>{{ requests|length if requests else 0 }} 筆</strong>
+        </div>
+        <div class="mini-stat">
+            <span>最新狀態</span>
+            <strong>即時更新</strong>
+        </div>
+    </div>
+</header>
+
+<section class="card">
+    <div class="card-title">
+        <h2 class="section-title">需求與服務狀態</h2>
+        <p class="text-muted">最新紀錄顯示在最前面</p>
+    </div>
+
+    {% if requests %}
+    {% for item in requests %}
+    <div class="request-card">
+        <div class="request-card-header">
+            <h3>{{ item.need_type }}</h3>
+            {% if item.status == '待處理' %}
+            <span class="badge badge-warning">⏳ 待處理</span>
+            {% elif item.status == '已申請' %}
+            <span class="badge badge-info">📩 已申請</span>
+            {% elif item.status == '處理中' %}
+            <span class="badge badge-info">🔄 處理中</span>
+            {% elif item.status == '已安排' %}
+            <span class="badge badge-success">✅ 已安排</span>
+            {% elif item.status == '已完成' %}
+            <span class="badge badge-success">✔ 已完成</span>
+            {% else %}
+            <span class="badge badge-secondary">{{ item.status }}</span>
+            {% endif %}
+        </div>
+
+        <div class="request-meta">
+            <div><span>長者：</span> {{ item.elder_name or '未填寫' }}</div>
+            <div><span>區域：</span> {{ item.district or '未填寫' }}</div>
+            <div><span>時間：</span> {{ item.need_when }}</div>
+            <div><span>地點：</span> {{ item.location }}</div>
+            <div><span>服務時長：</span> {{ item.duration or '依需求安排' }}</div>
+        </div>
+
+        {% if item.details %}
+        <div class="request-description">{{ item.details }}</div>
+        {% endif %}
+
+        {% if item.matched_service %}
+        <div class="request-description"><strong>媒合服務：</strong> {{ item.matched_service }}</div>
+        {% endif %}
+        {% if item.assigned_unit %}
+        <div class="request-description"><strong>服務單位：</strong> {{ item.assigned_unit }}</div>
+        {% endif %}
+        {% if item.service_contact %}
+        <div class="request-description"><strong>聯絡方式：</strong> {{ item.service_contact }}</div>
+        {% endif %}
+
+        {% if item.history %}
+        <div class="history-box">
+            <strong>歷程紀錄：</strong>
+            {% for h in item.history[:3] %}
+            <div><span>{{ h.time }}</span> — {{ h.message }}</div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        {% if item.admin_note %}
+        <div class="request-description"><strong>管理者回覆：</strong> {{ item.admin_note }}</div>
+        {% endif %}
+    </div>
+    {% endfor %}
+    {% else %}
+    <div class="empty-state">
+        <p>📋</p>
+        <p>目前沒有需求紀錄，請先填寫「我需要幫助」表單。</p>
+    </div>
+    {% endif %}
+</section>
+{% endblock %}

@@ -1,0 +1,152 @@
+{% extends 'base.html' %}
+
+{% block title %}我需要幫助 — 長者服務平台{% endblock %}
+
+{% block content %}
+<div class="page-bg"></div>
+<header class="hero-card main-hero">
+    <div class="hero-copy">
+        <span class="eyebrow">長者需求申請</span>
+        <h1>🆘 我需要幫助</h1>
+        <p>填寫您的需求後，系統會推薦適合的社福服務與支援資源。</p>
+    </div>
+    <div class="hero-panel">
+        <div class="mini-stat">
+            <span>填表狀態</span>
+            <strong>需求申請</strong>
+        </div>
+        <div class="mini-stat">
+            <span>媒合方式</span>
+            <strong>地區 + 類型</strong>
+        </div>
+    </div>
+</header>
+
+<section class="card">
+    <div class="card-title">
+        <h2 class="section-title">需求表單</h2>
+        <p class="text-muted">請填寫需求資訊，讓我們更快協助您找到合適的服務。</p>
+    </div>
+
+    {% if error %}
+    <div class="message error">{{ error }}</div>
+    {% endif %}
+
+    <form method="post" action="/user/help-request" class="elder-form">
+        <div class="form-grid">
+            <div class="form-group">
+                <label for="elder_name">長者姓名</label>
+                <input type="text" id="elder_name" name="elder_name" placeholder="例如：王阿嬤">
+            </div>
+            <div class="form-group">
+                <label for="age_group">年齡層</label>
+                <select id="age_group" name="age_group">
+                    <option value="">請選擇</option>
+                    <option value="65-74">65-74</option>
+                    <option value="75-84">75-84</option>
+                    <option value="85歲以上">85歲以上</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="form-grid">
+            <div class="form-group">
+                <label for="need_type">需求類型 <span class="required-mark">*</span></label>
+                <select id="need_type" name="need_type" required>
+                    <option value="">請選擇</option>
+                    {% for choice in choices %}
+                    <option value="{{ choice }}">{{ choice }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="urgency">緊急程度</label>
+                <select id="urgency" name="urgency">
+                    <option value="一般">一般</option>
+                    <option value="緊急">緊急</option>
+                    <option value="非常緊急">非常緊急</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="form-grid">
+            <div class="form-group">
+                <label for="district">所在區域 <span class="required-mark">*</span></label>
+                <select id="district" name="district" required>
+                    <option value="">請選擇</option>
+                    <option value="中山區">中山區</option>
+                    <option value="大安區">大安區</option>
+                    <option value="信義區">信義區</option>
+                    <option value="士林區">士林區</option>
+                    <option value="北投區">北投區</option>
+                    <option value="內湖區">內湖區</option>
+                    <option value="中正區">中正區</option>
+                    <option value="萬華區">萬華區</option>
+                    <option value="板橋區">板橋區</option>
+                    <option value="桃園區">桃園區</option>
+                    <option value="其他">其他</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="need_when">預計幫助時間 <span class="required-mark">*</span></label>
+                <input type="text" id="need_when" name="need_when" required placeholder="例如：本週末、明天早上、下週一">
+            </div>
+        </div>
+
+        <div class="form-grid">
+            <div class="form-group">
+                <label for="location">地點/服務地點 <span class="required-mark">*</span></label>
+                <input type="text" id="location" name="location" required placeholder="例如：家中、社區活動中心、醫院">
+            </div>
+            <div class="form-group">
+                <label for="duration">預計服務時長</label>
+                <input type="text" id="duration" name="duration" placeholder="例如：1-2 小時、半天、整天">
+            </div>
+        </div>
+
+        <div class="form-grid">
+            <div class="form-group">
+                <label for="household_status">家庭狀況</label>
+                <select id="household_status" name="household_status">
+                    <option value="">請選擇</option>
+                    <option value="獨居">獨居</option>
+                    <option value="與家人同住">與家人同住</option>
+                    <option value="低收入">低收入</option>
+                    <option value="失能照護">失能照護</option>
+                    <option value="其他">其他</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="care_level">照護程度</label>
+                <select id="care_level" name="care_level">
+                    <option value="">請選擇</option>
+                    <option value="自理">自理</option>
+                    <option value="部分協助">部分協助</option>
+                    <option value="需長期照護">需長期照護</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="form-grid">
+            <div class="form-group">
+                <label for="contact_name">聯絡人姓名</label>
+                <input type="text" id="contact_name" name="contact_name" placeholder="例如：王先生 / 家屬">
+            </div>
+            <div class="form-group">
+                <label for="contact_phone">聯絡電話</label>
+                <input type="text" id="contact_phone" name="contact_phone" placeholder="09XX-XXX-XXX">
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="details">需求說明</label>
+            <textarea id="details" name="details" rows="6" placeholder="請描述目前狀況，例如：行動不便、需要餐食配送、就醫陪伴、家務協助或情緒支持等。"></textarea>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit">送出需求</button>
+            <a href="/user" class="button button-secondary">取消</a>
+        </div>
+    </form>
+</section>
+{% endblock %}
