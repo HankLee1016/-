@@ -25,7 +25,13 @@
 <section class="card">
     <div class="card-title">
         <h2 class="section-title">我的需求</h2>
-        <p class="text-muted">選擇一筆需求查看推薦服務</p>
+        <p class="text-muted">依需求類型與所在區域媒合目前開放申請的服務。</p>
+    </div>
+
+    <div class="request-actions" style="margin-bottom: 1rem;">
+        <a class="button" href="/user/help-request">新增需求</a>
+        <a class="button button-secondary" href="/user/help-requests">查看申請進度</a>
+        <a class="button button-secondary" href="/services">瀏覽服務介紹</a>
     </div>
 
     {% if requests %}
@@ -59,7 +65,11 @@
     {% else %}
     <div class="empty-state">
         <p>📭</p>
-        <p>尚未建立任何需求，請先提交一筆需求紀錄。</p>
+        <p>尚未建立需求。填寫需求後，系統會依需求類型與區域推薦目前開放的服務。</p>
+        <div class="request-actions" style="justify-content: center;">
+            <a class="button" href="/user/help-request">建立需求並開始媒合</a>
+            <a class="button button-secondary" href="/services">先瀏覽服務</a>
+        </div>
     </div>
     {% endif %}
 
@@ -84,16 +94,24 @@
         {% endif %}
         <div class="request-actions">
             <span class="badge badge-success">{{ match.reason }}</span>
+            {% if selected_request.service_id or selected_request.matched_service %}
+            <a class="button button-secondary" href="/user/help-requests">已送出申請，查看進度</a>
+            {% else %}
             <form method="post" action="/user/help-requests/{{ selected_request.id }}/apply/{{ match.service.id }}" style="display:inline;">
                 <button type="submit" class="button">申請此服務</button>
             </form>
+            {% endif %}
         </div>
     </div>
     {% endfor %}
     {% elif selected_request %}
     <div class="empty-state">
         <p>📌</p>
-        <p>目前沒有符合此需求的服務項目，請稍後再試或新增不同需求類型。</p>
+        <p>目前沒有開放中的符合服務。您可以瀏覽全部服務，或新增另一筆需求再試一次。</p>
+        <div class="request-actions" style="justify-content: center;">
+            <a class="button" href="/user/help-request">新增另一筆需求</a>
+            <a class="button button-secondary" href="/services">瀏覽服務介紹</a>
+        </div>
     </div>
     {% endif %}
 </section>

@@ -1,0 +1,76 @@
+{% extends 'base.html' %}
+
+{% block title %}服務介紹 — 長者安心服務平台{% endblock %}
+
+{% block content %}
+<header class="hero-card main-hero">
+    <div class="hero-copy">
+        <span class="eyebrow">長者安心服務平台</span>
+        <h1>找到適合的支持，讓日常多一份安心。</h1>
+        <p>瀏覽目前提供的長者服務，了解服務內容、適用對象與服務區域。</p>
+        <div class="hero-actions">
+            {% if session.get('role') == 'user' %}
+            <a class="button" href="/user/help-request">提出服務需求</a>
+            {% else %}
+            <a class="button" href="/login">登入後提出需求</a>
+            {% endif %}
+        </div>
+    </div>
+    <div class="hero-panel">
+        <div class="mini-stat">
+            <span>服務項目</span>
+            <strong>{{ services|length }}</strong>
+        </div>
+        <div class="mini-stat">
+            <span>目前開放</span>
+            <strong>{{ services|selectattr('status', 'equalto', '開放申請')|list|length }}</strong>
+        </div>
+    </div>
+</header>
+
+<section class="card">
+    <div class="card-title">
+        <h2 class="section-title">服務項目</h2>
+        <p class="text-muted">實際服務安排與申請資格，請以服務單位聯絡確認為準。</p>
+    </div>
+
+    {% if services %}
+    <div class="service-list">
+        {% for service in services %}
+        <article class="service-card">
+            <div class="request-card-header">
+                <div>
+                    <span class="badge badge-info">{{ service.service_type or '長者服務' }}</span>
+                    <h3>{{ service.service_name }}</h3>
+                </div>
+                {% if service.status == '開放申請' %}
+                <span class="badge badge-success">開放申請</span>
+                {% elif service.status == '額滿' %}
+                <span class="badge badge-warning">額滿</span>
+                {% else %}
+                <span class="badge badge-danger">停止申請</span>
+                {% endif %}
+            </div>
+            {% if service.description %}
+            <p class="service-description">{{ service.description }}</p>
+            {% endif %}
+            <div class="service-meta">
+                {% if service.target_group %}
+                <div><strong>服務對象：</strong>{{ service.target_group }}</div>
+                {% endif %}
+                <div><strong>服務區域：</strong>{{ service.district or service.service_scope or '請洽服務單位' }}</div>
+                {% if service.contact %}
+                <div><strong>聯絡方式：</strong><a href="tel:{{ service.contact }}">{{ service.contact }}</a></div>
+                {% endif %}
+            </div>
+        </article>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <p>目前尚無服務項目</p>
+        <p class="text-muted">請稍後再回來查看，或聯絡平台了解可用資源。</p>
+    </div>
+    {% endif %}
+</section>
+{% endblock %}

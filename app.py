@@ -324,7 +324,7 @@ def update_help_request_status(request_id, status, admin_note="", assigned_servi
 def apply_help_request_service(request_id, service_id):
     request_item = get_help_request(request_id)
     service = get_service(service_id)
-    if not request_item or not service:
+    if not request_item or not service or service.get("status") != "開放申請":
         return None
     requests = load_help_requests()
     for req in requests:
@@ -357,6 +357,9 @@ def get_help_request_matches(request_item):
 
     matches = []
     for service in services:
+        if service.get("status") != "開放申請":
+            continue
+
         service_name = str(service.get("service_name", ""))
         service_type = str(service.get("service_type", ""))
         target_group = str(service.get("target_group", ""))
@@ -947,6 +950,11 @@ def generate_chat_response(user_input, history, subsidy_summary=""):
 def home():
     return render_template("index.html")
 
+@app.route("/services")
+def service_introduction():
+    services = load_services()
+    return render_template("services.html", services=services)
+
 @app.route("/register", methods=["GET", "POST"])
 def register():
     error = None
@@ -1118,7 +1126,13 @@ def user_help_requests():
         return redirect(url_for("home"))
 
     requests = get_user_help_requests(session.get("username"))
-    return render_template("user_help_requests.html", username=session.get("username"), requests=requests)
+    applications = get_user_applications(session.get("username"))
+    return render_template(
+        "user_help_requests.html",
+        username=session.get("username"),
+        requests=requests,
+        applications=applications,
+    )
 
 
 @app.route("/user/help-requests/<request_id>/apply/<service_id>", methods=["POST"])

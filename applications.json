@@ -1,6 +1,22 @@
 {
   "applications": [
     {
+      "id": "383f2236-97de-44f7-ab0c-1826742bfced",
+      "username": "88",
+      "case_title": "4",
+      "background": "5",
+      "issues": "5",
+      "goals": "5",
+      "proposal": "計畫名稱：4<br>一、計畫緣起<br>5<br>二、問題分析<br>5<br>三、計畫目標<br>5<br>四、服務對象<br>請補充年齡層、身份背景、服務規模與選案依據。<br>五、執行方式<br>請依服務流程、分工、資源配置與期程進一步撰寫。<br>六、預期效益<br>請補充量化與質化成果指標。<br>七、經費概算<br>請依實際補助規定拆分人事費、業務費與雜支。<br>八、風險與因應<br>請補充可能風險與對應措施。<h4 style=\"margin-top: 24px;\">預算表</h4><table class=\"budget-table\" style=\"width: 100%; border-collapse: collapse; margin: 12px 0;\"><thead><tr style=\"background: #e8f5f0;\"><th style=\"padding: 10px; border: 1px solid #ddd; text-align: left;\">經費項目</th><th style=\"padding: 10px; border: 1px solid #ddd; text-align: left;\">用途說明</th><th style=\"padding: 10px; border: 1px solid #ddd; text-align: right;\">金額</th></tr></thead><tbody><tr><td style=\"padding: 10px; border: 1px solid #ddd;\">5</td><td style=\"padding: 10px; border: 1px solid #ddd;\">—</td><td style=\"padding: 10px; border: 1px solid #ddd; text-align: right;\">NT$ 55,555</td></tr><tr class=\"budget-total\" style=\"background: #f0f7f4; font-weight: bold;\"><td colspan=\"2\" style=\"padding: 10px; border: 1px solid #ddd;\">合計</td><td style=\"padding: 10px; border: 1px solid #ddd; text-align: right;\">NT$ 55,555</td></tr></tbody></table><h4 style=\"margin-top: 24px;\">甘特圖（專案進度時程表）</h4><div class=\"gantt-legend\"><span class=\"legend-item legend-done\">已完成</span><span class=\"legend-item legend-active\">進行中</span><span class=\"legend-item legend-planned\">未開始</span></div><div class=\"gantt-scroll\" style=\"max-width: 100%; overflow-x: auto; border: 1px solid #ddd; border-radius: 10px; margin: 12px 0;\"><table class=\"gantt-table\" style=\"width: 100%; min-width: 720px; border-collapse: collapse; font-size: 12px;\"><thead><tr style=\"background: #e8f5f0;\"><th style=\"padding: 8px; border: 1px solid #ddd; text-align: left; min-width: 150px;\">工作項目</th><th style=\"padding: 8px; border: 1px solid #ddd; min-width: 90px;\">負責人</th><th style=\"padding: 8px; border: 1px solid #ddd; min-width: 80px;\">狀態</th><th style=\"padding: 8px; border: 1px solid #ddd; min-width: 90px;\">完成度</th><th style=\"padding: 8px; border: 1px solid #ddd; text-align: center; min-width: 78px;\">2026/10</th></tr></thead><tbody><tr><td style=\"padding: 8px; border: 1px solid #ddd;\"><strong>5</strong><br><small>2026/10/05 - 2026/10/22</small></td><td style=\"padding: 8px; border: 1px solid #ddd; text-align: center;\">5</td><td class=\"gantt-active\" style=\"padding: 8px; border: 1px solid #ddd; text-align: center; font-weight: 700;\">進行中</td><td style=\"padding: 8px; border: 1px solid #ddd; text-align: center;\"><div style=\"height: 8px; background: #edf1ee; border-radius: 999px; overflow: hidden; margin-bottom: 4px;\"><div style=\"width: 5%; height: 8px; background: #1a7a5e;\"></div></div>5%</td><td class=\"gantt-active\" style=\"padding: 8px; border: 1px solid #ddd; text-align: center;\">■</td></tr></tbody></table></div><p style=\"margin-top: 12px; font-size: 12px; color: #666;\">計畫期間：<strong>2026年10月05日 至 2026年10月22日</strong>，共 18 天。</p>",
+      "subsidy_summary": "5 - 5",
+      "success_pdf": null,
+      "subsidy_pdf": null,
+      "status": "rejected",
+      "admin_note": "不符合條件",
+      "created_at": "2026-10-05T11:25:44.319943",
+      "updated_at": "2026-10-05T11:26:46.850679"
+    },
+    {
       "id": "cafb8b5c-e31f-4d34-8595-534a430d93d6",
       "username": "user",
       "case_title": "111",

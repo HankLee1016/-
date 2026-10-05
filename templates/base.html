@@ -30,12 +30,13 @@
             </a>
 
             <div class="nav-links">
+                <a href="/services">服務介紹</a>
                 {% if session.get('username') %}
                     <span class="nav-user">{{ session.get('username') }}</span>
 
                     {% if session.get('role') == 'admin' %}
                         <a href="/admin">總覽</a>
-                        <a href="/admin/help-requests">需求狀態</a>
+                        <a href="/admin/help-requests">服務需求</a>
                         <a href="/admin/services">服務管理</a>
                         <a href="/admin/activities">需求管理</a>
                         <a href="/admin/applications">申請審核</a>
