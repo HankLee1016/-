@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+
+{% block title %}企劃書產生器 — 長者安心服務平台{% endblock %}
+
+{% block content %}
+<div class="page-bg"></div>
+<section class="card">
+    <div class="card-title">
+        <h2 class="section-title">🤖 AI 社區計畫企劃書產生器</h2>
+        <a class="button button-secondary" href="/admin/assistant">AI 企劃對話優化</a>
+    </div>
+    <p class="text-muted">供里辦公處撰寫社區照顧、長者活動等計畫補助申請之企劃書，可匯出 DOC／PDF。</p>
+    {% include '_proposal_builder.html' %}
+</section>
+{% endblock %}

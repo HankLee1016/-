@@ -32,7 +32,7 @@ app.register_blueprint(features_bp)
 # 檔案路徑與全域設定 (融合雙方設定)
 # ==========================================
 USERS_FILE = Path(app.root_path) / "users.json"
-SUBSIDIES_FILE = Path(app.root_path) / "subsidies.json"
+WELFARE_FILE = Path(app.root_path) / "welfare.json"
 CASES_FILE = Path(app.root_path) / "cases.json"
 ACTIVITIES_FILE = Path(app.root_path) / "activities.json"
 SERVICES_FILE = Path(app.root_path) / "services.json"
@@ -40,9 +40,6 @@ CONTENTS_FILE = Path(app.root_path) / "contents.json"
 ANNOUNCEMENTS_FILE = Path(app.root_path) / "announcements.json"
 REGISTRATIONS_FILE = Path(app.root_path) / "registrations.json"
 ATTENDANCES_FILE = Path(app.root_path) / "attendances.json"
-VOLUNTEER_SHIFTS_FILE = Path(app.root_path) / "volunteer_shifts.json"
-VOLUNTEERS_FILE = Path(app.root_path) / "volunteers.json"
-APPLICATIONS_FILE = Path(app.root_path) / "applications.json"
 HELP_REQUESTS_FILE = Path(app.root_path) / "help_requests.json"
 
 UPLOAD_FOLDER = Path(app.root_path) / "uploads"
@@ -50,6 +47,21 @@ UPLOAD_FOLDER.mkdir(parents=True, exist_ok=True)
 ALLOWED_EXTENSIONS = {"pdf"}
 
 ADMIN_REG_CODE = os.getenv("ADMIN_REG_CODE", "ADMIN2026")
+
+# 長者需求類型與服務類型共用同一組分類，媒合時以此比對
+NEED_TYPES = [
+    "餐食協助", "居家照顧", "交通接送", "就醫陪伴", "陪伴聊天", "3C／數位協助",
+    "社會福利申請", "活動／社交參與", "居家整理", "緊急協助"
+]
+DISTRICTS = ["中山區", "大安區", "信義區", "士林區", "北投區", "內湖區", "中正區", "萬華區", "板橋區", "桃園區", "其他"]
+CITYWIDE_SCOPES = {"全區", "全縣市", "全國"}
+AGE_GROUPS = ["65-74", "75-84", "85歲以上"]
+HOUSEHOLD_STATUSES = ["獨居", "與家人同住", "雙老同住", "低收入", "其他"]
+CARE_LEVELS = ["自理", "部分協助", "需長期照護"]
+RELATIONS = ["本人", "子女", "配偶", "其他親屬", "照顧者"]
+PROFILE_FIELDS = ["contact_name", "relation", "phone", "email", "elder_name", "age_group", "district",
+                  "address", "household_status", "care_level", "care_notes"]
+PROFILE_REQUIRED = ["contact_name", "phone", "elder_name", "district"]
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 AI_MOCK_MODE = os.getenv("AI_MOCK_MODE", "false").strip().lower() in {"1", "true", "yes", "on"}
 AI_TIMEOUT_SECONDS = int(os.getenv("AI_TIMEOUT_SECONDS", "15"))
@@ -100,16 +112,12 @@ def find_user(username):
         if user["username"] == username: return user
     return None
 
-def create_user(username, password, role="user", org_profile=None):
-    if org_profile is None:
-        org_profile = {
-            "org_name": "", "org_id": "", "member_count": "", 
-            "volunteer_count": "", "contact_person": "", "address": ""
-        }
+def create_user(username, password, role="user", profile=None):
+    profile = profile or {k: "" for k in PROFILE_FIELDS}
     users = load_users()
     users.append({
         "username": username, "password": hash_password(password),
-        "role": role, "org_profile": org_profile
+        "role": role, "profile": profile
     })
     save_users(users)
 
@@ -123,36 +131,53 @@ def update_user_role(username, role):
         if user["username"] == username: user["role"] = role
     save_users(users)
 
-def update_user_profile(username, org_profile):
+def get_user_profile(username):
+    user = find_user(username) or {}
+    profile = {k: "" for k in PROFILE_FIELDS}
+    profile.update({k: v for k, v in (user.get("profile") or {}).items() if k in PROFILE_FIELDS})
+    return profile
+
+def update_user_profile(username, profile):
     users = load_users()
     for user in users:
-        if user["username"] == username: user["org_profile"] = org_profile
+        if user["username"] == username: user["profile"] = profile
+    save_users(users)
+
+def update_user_password(username, new_password):
+    users = load_users()
+    for user in users:
+        if user["username"] == username: user["password"] = hash_password(new_password)
     save_users(users)
 
 # --- Subsidies ---
-def load_subsidies():
-    if not SUBSIDIES_FILE.exists(): return []
+WELFARE_CATEGORIES = ["經濟補助", "長期照顧", "醫療保健", "生活照顧", "交通與優待", "其他"]
+WELFARE_FIELDS = ["title", "category", "agency", "eligibility", "benefit", "apply_method", "contact", "source_url"]
+
+def load_welfare():
+    if not WELFARE_FILE.exists(): return []
     try:
-        with SUBSIDIES_FILE.open("r", encoding="utf-8") as f:
-            return json.load(f).get("subsidies", [])
+        with WELFARE_FILE.open("r", encoding="utf-8") as f:
+            return json.load(f).get("welfare", [])
     except json.JSONDecodeError: return []
 
-def save_subsidies(subsidies):
-    with SUBSIDIES_FILE.open("w", encoding="utf-8") as f:
-        json.dump({"subsidies": subsidies}, f, ensure_ascii=False, indent=2)
+def save_welfare(items):
+    with WELFARE_FILE.open("w", encoding="utf-8") as f:
+        json.dump({"welfare": items}, f, ensure_ascii=False, indent=2)
 
-def search_subsidies(category, keyword):
-    items = load_subsidies()
-    if category: items = [s for s in items if s.get("category", "") == category]
+def search_welfare(category, keyword):
+    items = load_welfare()
+    if category: items = [w for w in items if w.get("category") == category]
     if keyword:
-        lower = keyword.lower()
-        items = [s for s in items if lower in s.get("title", "").lower() or lower in s.get("agency", "").lower() or lower in s.get("description", "").lower() or lower in s.get("eligibility", "").lower()]
+        items = [w for w in items if keyword in " ".join(str(w.get(k, "")) for k in WELFARE_FIELDS)]
     return items
 
-def get_subsidy_by_id(subsidy_id):
-    for subsidy in load_subsidies():
-        if subsidy.get("id") == subsidy_id: return subsidy
+def get_welfare(welfare_id):
+    for item in load_welfare():
+        if item.get("id") == welfare_id: return item
     return None
+
+def welfare_from_form(form):
+    return {k: form.get(k, "").strip() for k in WELFARE_FIELDS}
 
 # --- Cases ---
 def load_cases():
@@ -164,66 +189,6 @@ def load_cases():
 def save_cases(cases):
     with CASES_FILE.open("w", encoding="utf-8") as f:
         json.dump({"cases": cases}, f, ensure_ascii=False, indent=2)
-
-# --- Applications ---
-def load_applications():
-    if not APPLICATIONS_FILE.exists(): return []
-    try:
-        with APPLICATIONS_FILE.open("r", encoding="utf-8") as f:
-            return json.load(f).get("applications", [])
-    except json.JSONDecodeError:
-        return []
-
-
-def save_applications(applications):
-    with APPLICATIONS_FILE.open("w", encoding="utf-8") as f:
-        json.dump({"applications": applications}, f, ensure_ascii=False, indent=2)
-
-
-def create_application(username, case_title, background, issues, goals, proposal, subsidy_summary="", success_pdf=None, subsidy_pdf=None, status="pending"):
-    applications = load_applications()
-    new_app = {
-        "id": str(uuid.uuid4()),
-        "username": username,
-        "case_title": case_title,
-        "background": background,
-        "issues": issues,
-        "goals": goals,
-        "proposal": proposal,
-        "subsidy_summary": subsidy_summary,
-        "success_pdf": success_pdf,
-        "subsidy_pdf": subsidy_pdf,
-        "status": status,
-        "admin_note": "",
-        "created_at": datetime.datetime.utcnow().isoformat(),
-        "updated_at": datetime.datetime.utcnow().isoformat()
-    }
-    applications.insert(0, new_app)
-    save_applications(applications)
-    return new_app
-
-
-def get_application(application_id):
-    for app_item in load_applications():
-        if app_item.get("id") == application_id:
-            return app_item
-    return None
-
-
-def get_user_applications(username):
-    return [app_item for app_item in load_applications() if app_item.get("username") == username]
-
-
-def update_application_status(application_id, status, admin_note=""):
-    applications = load_applications()
-    for app_item in applications:
-        if app_item.get("id") == application_id:
-            app_item["status"] = status
-            app_item["admin_note"] = admin_note
-            app_item["updated_at"] = datetime.datetime.utcnow().isoformat()
-            save_applications(applications)
-            return app_item
-    return None
 
 # --- Help Requests / Elderly Service Needs ---
 def load_help_requests():
@@ -268,7 +233,7 @@ def create_help_request(username, need_type, need_when, location, duration, deta
         "admin_note": "",
         "history": [{
             "time": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            "message": "需求已送出，等待社福單位確認"
+            "message": "需求已送出，等待里辦公處確認"
         }],
         "created_at": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     }
@@ -346,65 +311,34 @@ def apply_help_request_service(request_id, service_id):
 
 
 def get_help_request_matches(request_item):
+    """只推薦服務類型與需求相符的開放服務，依「同區 → 全區 → 跨區」排序。"""
     if not request_item:
         return []
     need_type = str(request_item.get("need_type", "")).strip()
     district = str(request_item.get("district", "")).strip()
-    urgency = str(request_item.get("urgency", "一般")).strip()
-    services = load_services()
-    if not services:
+    if not need_type:
         return []
 
     matches = []
-    for service in services:
+    for service in load_services():
         if service.get("status") != "開放申請":
             continue
+        text = f"{service.get('service_name', '')} {service.get('description', '')} {service.get('target_group', '')}"
+        if service.get("service_type") != need_type and need_type not in text:
+            continue
 
-        service_name = str(service.get("service_name", ""))
-        service_type = str(service.get("service_type", ""))
-        target_group = str(service.get("target_group", ""))
         service_district = str(service.get("district", "")).strip()
-        service_scope = str(service.get("service_scope", "")).strip()
-        combined = f"{service_name} {service_type} {target_group} {service.get('description','')} {service_scope} {service_district}"
-        score = 0
-
-        if need_type and need_type in combined:
-            score += 7
-        if district and (district in service_district or service_district in district or service_scope == '全區' or service_scope == '全縣市'):
-            score += 8
-        elif district:
-            score += 2
-
-        if urgency == '緊急' and any(keyword in combined for keyword in ['緊急', '居家', '送餐', '陪伴', '就醫', '交通']):
-            score += 5
-
-        for keyword, value in {
-            '餐食': 4, '就醫': 4, '交通': 4, '陪伴': 4, '居家': 3, '照顧': 4, '活動': 2, '數位': 2, '社會福利': 2
-        }.items():
-            if keyword in need_type and keyword in combined:
-                score += value
-
-        if service.get("status") == "開放申請":
-            score += 3
-        if service.get("status") == "額滿":
-            score -= 5
-
-        if score > 0:
-            reason = []
-            if district and (district in service_district or service_scope in ('全區', '全縣市', '全國')):
-                reason.append('地區適配')
-            if need_type and need_type in combined:
-                reason.append('需求類型符合')
-            if service.get("status") == "開放申請":
-                reason.append('開放接案')
-            matches.append({
-                "service": service,
-                "score": score,
-                "reason": '、'.join(reason) if reason else '可提供相關協助'
-            })
+        citywide = str(service.get("service_scope", "")).strip() in CITYWIDE_SCOPES or not service_district
+        if district and service_district == district:
+            score, area = 3, "同區服務"
+        elif citywide:
+            score, area = 2, "全區皆可服務"
+        else:
+            score, area = 1, f"跨區服務（{service_district}），申請前請先聯絡確認"
+        matches.append({"service": service, "score": score, "area": area, "reason": f"需求類型相符・{area}"})
 
     matches.sort(key=lambda m: m["score"], reverse=True)
-    return matches[:6]
+    return matches
 
 
 def create_case(case_name, member_name, issue_description, status="進行中"):
@@ -504,7 +438,8 @@ def create_registration(activity_id, username, email, phone, status="待審核")
     registrations = load_registrations()
     new_reg = {
         "id": str(uuid.uuid4()), "activity_id": activity_id, "username": username,
-        "email": email, "phone": phone, "status": status, "registered_at": str(uuid.uuid4().hex[:8])
+        "email": email, "phone": phone, "status": status,
+        "registered_at": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     }
     registrations.append(new_reg)
     save_registrations(registrations)
@@ -538,7 +473,8 @@ def create_attendance(activity_id, username, check_in_time, check_out_time=None)
     attendances = load_attendances()
     new_att = {
         "id": str(uuid.uuid4()), "activity_id": activity_id, "username": username,
-        "check_in_time": check_in_time, "check_out_time": check_out_time, "created_at": str(uuid.uuid4().hex[:8])
+        "check_in_time": check_in_time, "check_out_time": check_out_time,
+        "created_at": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     }
     attendances.append(new_att)
     save_attendances(attendances)
@@ -554,87 +490,27 @@ def update_check_out(activity_id, username, check_out_time):
 def get_activity_attendances(activity_id):
     return [a for a in load_attendances() if a["activity_id"] == activity_id]
 
-# --- Volunteer Shifts ---
-def load_volunteer_shifts():
-    if not VOLUNTEER_SHIFTS_FILE.exists(): return []
-    try:
-        with VOLUNTEER_SHIFTS_FILE.open("r", encoding="utf-8") as f: return json.load(f).get("volunteer_shifts", [])
-    except json.JSONDecodeError: return []
+def get_user_registration(activity_id, username):
+    for reg in load_registrations():
+        if reg["activity_id"] == activity_id and reg["username"] == username: return reg
+    return None
 
-def save_volunteer_shifts(shifts):
-    with VOLUNTEER_SHIFTS_FILE.open("w", encoding="utf-8") as f:
-        json.dump({"volunteer_shifts": shifts}, f, ensure_ascii=False, indent=2)
+def get_user_attendance(activity_id, username):
+    for att in load_attendances():
+        if att["activity_id"] == activity_id and att["username"] == username: return att
+    return None
 
-def create_volunteer_shift(activity_id, shift_name, start_time, end_time, required_count=1, status="招募中"):
-    shifts = load_volunteer_shifts()
-    new_shift = {
-        "id": str(uuid.uuid4()), "activity_id": activity_id, "shift_name": shift_name,
-        "start_time": start_time, "end_time": end_time, "required_count": int(required_count),
-        "volunteers": [], "status": status, "created_at": str(uuid.uuid4().hex[:8])
-    }
-    shifts.append(new_shift)
-    save_volunteer_shifts(shifts)
-    return new_shift
-
-def add_volunteer_to_shift(shift_id, username):
-    """Add volunteer to shift - validates volunteer exists in volunteers list"""
-    # Load volunteers list
-    volunteers = load_volunteers()
-    volunteer_names = [v.get("name", "") for v in volunteers]
-    
-    # Validate volunteer exists
-    if username not in volunteer_names:
-        return False
-    
-    shifts = load_volunteer_shifts()
-    for shift in shifts:
-        if shift["id"] == shift_id:
-            if username not in shift.get("volunteers", []):
-                if "volunteers" not in shift: shift["volunteers"] = []
-                shift["volunteers"].append(username)
-                if len(shift["volunteers"]) >= shift["required_count"]: shift["status"] = "已滿員"
-            break
-    save_volunteer_shifts(shifts)
-    return True
-
-def get_activity_volunteer_shifts(activity_id):
-    return [s for s in load_volunteer_shifts() if s["activity_id"] == activity_id]
-
-def add_volunteer_id_to_shift(shift_id, volunteer_id):
-    """Add volunteer by ID to a shift"""
-    shifts = load_volunteer_shifts()
-    for shift in shifts:
-        if shift["id"] == shift_id:
-            if "volunteer_ids" not in shift: shift["volunteer_ids"] = []
-            if volunteer_id not in shift["volunteer_ids"]:
-                shift["volunteer_ids"].append(volunteer_id)
-                if len(shift["volunteer_ids"]) >= shift["required_count"]: shift["status"] = "已滿員"
-            break
-    save_volunteer_shifts(shifts)
-
-def remove_volunteer_from_shift(shift_id, volunteer_id):
-    """Remove volunteer by ID from a shift"""
-    shifts = load_volunteer_shifts()
-    for shift in shifts:
-        if shift["id"] == shift_id:
-            if "volunteer_ids" in shift and volunteer_id in shift["volunteer_ids"]:
-                shift["volunteer_ids"].remove(volunteer_id)
-                if len(shift.get("volunteer_ids", [])) < shift["required_count"]: shift["status"] = "招募中"
-            break
-    save_volunteer_shifts(shifts)
-
-def get_volunteer_shifts(volunteer_id):
-    """Get all shifts assigned to a volunteer"""
-    shifts = load_volunteer_shifts()
-    result = []
-    for shift in shifts:
-        if volunteer_id in shift.get("volunteer_ids", []):
-            # Get related activity info
-            activity = get_activity(shift["activity_id"])
-            shift_with_activity = shift.copy()
-            shift_with_activity["activity"] = activity
-            result.append(shift_with_activity)
-    return result
+def registration_block_reason(activity, username):
+    """回傳無法報名的原因；可報名時回傳 None。"""
+    if activity.get("status") != "進行中": return "此活動目前不開放報名。"
+    if get_user_registration(activity["id"], username): return "您已報名此活動。"
+    deadline = activity.get("registration_deadline")
+    if deadline and deadline < datetime.date.today().isoformat(): return "已超過報名截止日。"
+    capacity = int(activity.get("max_capacity") or 0)
+    if capacity:
+        taken = [r for r in get_activity_registrations(activity["id"]) if r.get("status") != "已拒絕"]
+        if len(taken) >= capacity: return "報名人數已額滿。"
+    return None
 
 # --- Services ---
 def load_services(username=None):
@@ -814,6 +690,21 @@ def summarize_input(label, content):
 
 def _normalize_text(value):
     return " ".join(str(value or "").split())
+
+
+def _build_chat_system_prompt(subsidy_summary=""):
+    prompt = (
+        "你是社區計畫補助企劃書的對話優化助理，協助里辦公處人員修改社區照顧與長者活動計畫的企劃書內容。"
+        "請以正式、公文式、可送件的語氣回覆，內容具體、分段清楚，避免口語化與重複。"
+        "企劃書章節依序為：一、計畫緣起；二、問題分析；三、計畫目標；四、服務對象；"
+        "五、執行方式；六、預期效益；七、經費概算；八、風險與因應。"
+        "使用者提供草稿時，請直接給出修改後的段落；資訊不足時，請具體指出需補充的項目（如服務人數、期程、成效指標、經費項目）。"
+        "不可捏造統計數據、法規條文或補助金額。"
+    )
+    summary = _normalize_text(subsidy_summary)
+    if summary:
+        prompt += f"\n\n本次申請之補助資訊如下，請讓建議內容符合其補助目的與申請資格：{summary}"
+    return prompt
 
 
 def _fallback_proposal(title, background, issues, goals):
@@ -1016,21 +907,30 @@ def user_profile():
     if not user: return redirect(url_for("home"))
 
     error = None; success = None
-    org_profile = user.get("org_profile", {
-        "org_name": "", "org_id": "", "member_count": "",
-        "volunteer_count": "", "contact_person": "", "address": ""
-    })
+    profile = get_user_profile(username)
+    if request.method == "POST" and request.form.get("action") == "password":
+        current = request.form.get("current_password", "")
+        new = request.form.get("new_password", "")
+        if user["password"] != hash_password(current): error = "目前密碼不正確。"
+        elif len(new) < 6: error = "新密碼至少需 6 個字元。"
+        elif new != request.form.get("confirm_password", ""): error = "兩次輸入的新密碼不一致。"
+        else:
+            update_user_password(username, new)
+            success = "密碼已更新。"
+    elif request.method == "POST":
+        profile = {k: request.form.get(k, "").strip() for k in PROFILE_FIELDS}
+        missing = [k for k in PROFILE_REQUIRED if not profile[k]]
+        if missing:
+            error = "請填寫聯絡人姓名、手機、長者姓名與所在區域。"
+        else:
+            update_user_profile(username, profile)
+            success = "已儲存長者與聯絡人資料，之後填寫需求時會自動帶入。"
 
-    if request.method == "POST":
-        org_profile = {
-            "org_name": request.form.get("org_name", "").strip(), "org_id": request.form.get("org_id", "").strip(),
-            "member_count": request.form.get("member_count", "").strip(), "volunteer_count": request.form.get("volunteer_count", "").strip(),
-            "contact_person": request.form.get("contact_person", "").strip(), "address": request.form.get("address", "").strip()
-        }
-        update_user_profile(username, org_profile)
-        success = "已儲存您的社福團體資料。"
-
-    return render_template("profile.html", username=username, org_profile=org_profile, success=success, error=error)
+    filled = sum(1 for k in PROFILE_FIELDS if k not in ("email", "care_notes") and profile.get(k))
+    completeness = round(filled / (len(PROFILE_FIELDS) - 2) * 100)
+    return render_template("profile.html", username=username, profile=profile, completeness=completeness,
+                           success=success, error=error, relations=RELATIONS, age_groups=AGE_GROUPS,
+                           districts=DISTRICTS, household_statuses=HOUSEHOLD_STATUSES, care_levels=CARE_LEVELS)
 
 # ==========================================
 # 路由 (Routes) - 使用者功能 (提案與 AI 對話)
@@ -1038,18 +938,14 @@ def user_profile():
 @app.route("/user")
 def user_dashboard():
     if session.get("role") != "user": return redirect(url_for("home"))
-    case_title = request.args.get("case_title", "").strip()
-    background = request.args.get("background", "").strip()
-    issues = request.args.get("issues", "").strip()
-    goals = request.args.get("goals", "").strip()
-    subsidy_summary = request.args.get("subsidy_summary", "").strip()
-    agent = choose_ai_agent(background, issues)
-    return render_template(
-        "user.html", username=session.get("username"), ai_agent=agent["name"], ai_agent_note=agent["description"],
-        ai_model=AI_MODEL_NAME, ai_engine=AI_MODEL_ENGINE, case_title=case_title, background=background,
-        issues=issues, goals=goals, subsidy_summary=subsidy_summary, submitted_applications=len(get_user_applications(session.get("username"))),
-        page_title="社福企劃生成器", budget_reference=WELFARE_BUDGET_REFERENCE
-    )
+    username = session.get("username")
+    my_requests = get_user_help_requests(username)
+    stats = {
+        "pending": sum(1 for r in my_requests if r.get("status") in ("待處理", "已申請", "處理中")),
+        "arranged": sum(1 for r in my_requests if r.get("status") in ("已安排", "已完成")),
+        "activities": sum(1 for r in load_registrations() if r.get("username") == username),
+    }
+    return render_template("user.html", username=username, stats=stats)
 
 
 @app.route("/user/help-request", methods=["GET", "POST"])
@@ -1094,11 +990,10 @@ def user_help_request():
             )
             return redirect(url_for("user_service_matches") + f"?request_id={created['id']}")
 
-    choices = [
-        "餐食協助", "居家照顧", "交通接送", "就醫陪伴", "陪伴聊天", "3C／數位協助",
-        "社會福利申請", "活動／社交參與", "居家整理", "緊急協助"
-    ]
-    return render_template("user_help_request_form.html", username=session.get("username"), choices=choices, error=error)
+    return render_template("user_help_request_form.html", username=session.get("username"), choices=NEED_TYPES,
+                           districts=DISTRICTS, age_groups=AGE_GROUPS, household_statuses=HOUSEHOLD_STATUSES,
+                           care_levels=CARE_LEVELS, profile=get_user_profile(session.get("username")),
+                           form=request.form if request.method == "POST" else {}, error=error)
 
 
 @app.route("/user/service-matches")
@@ -1107,16 +1002,14 @@ def user_service_matches():
         return redirect(url_for("home"))
 
     username = session.get("username")
-    requests = get_user_help_requests(username)
-    selected_request_id = request.args.get("request_id") or (requests[0]["id"] if requests else "")
-    selected_request = get_help_request(selected_request_id) if selected_request_id else None
-    matches = get_help_request_matches(selected_request) if selected_request else []
+    selected_request = get_help_request(request.args.get("request_id", ""))
+    if not selected_request or selected_request.get("username") != username:
+        return redirect(url_for("user_help_requests"))
     return render_template(
         "user_service_matches.html",
         username=username,
-        requests=requests,
         selected_request=selected_request,
-        matches=matches,
+        matches=get_help_request_matches(selected_request),
     )
 
 
@@ -1126,12 +1019,10 @@ def user_help_requests():
         return redirect(url_for("home"))
 
     requests = get_user_help_requests(session.get("username"))
-    applications = get_user_applications(session.get("username"))
     return render_template(
         "user_help_requests.html",
         username=session.get("username"),
         requests=requests,
-        applications=applications,
     )
 
 
@@ -1153,7 +1044,9 @@ def admin_help_requests():
 
     requests = load_help_requests()
     service_options = load_services()
-    return render_template("admin_help_requests.html", username=session.get("username"), requests=requests, service_options=service_options)
+    profiles = {r.get("username"): get_user_profile(r.get("username")) for r in requests}
+    return render_template("admin_help_requests.html", username=session.get("username"), requests=requests,
+                           service_options=service_options, profiles=profiles)
 
 
 @app.route("/admin/help-requests/<request_id>/status", methods=["POST"])
@@ -1168,261 +1061,28 @@ def admin_update_help_request_status(request_id):
     update_help_request_status(request_id, status, admin_note, assigned_service, assigned_unit)
     return redirect(url_for("admin_help_requests"))
 
-@app.route("/donate", methods=["GET", "POST"])
-def donate():
-    error = None
-    success = None
-    donor = session.get("username", "")
-    amount = ""
-    donation_date = ""
-    note = ""
 
-    if request.method == "POST":
-        donor = request.form.get("donor", "").strip()
-        amount = request.form.get("amount", "").strip()
-        donation_date = request.form.get("donation_date", "").strip()
-        note = request.form.get("note", "").strip()
-
-        if not donor or not amount or not donation_date:
-            error = "請填寫捐款人、金額與日期。"
-        else:
-            try:
-                amount_value = float(amount)
-                if amount_value <= 0:
-                    raise ValueError("金額必須大於零。")
-                parsed_date = datetime.datetime.strptime(donation_date, "%Y-%m-%d").date()
-
-                conn = get_db_connection()
-                cur = conn.cursor()
-                cur.execute("SELECT COALESCE(MAX(id), 1000000) + 1 FROM donations")
-                next_id = cur.fetchone()[0]
-                now = datetime.datetime.now()
-                cur.execute(
-                    """
-                    INSERT INTO donations (id, donor, funds_no, amount, donation_date, note, category, unit_data_id, show_flag, last_user, last_date, build_date)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                    """,
-                    (
-                        next_id,
-                        donor,
-                        "WEB",
-                        amount_value,
-                        parsed_date,
-                        note,
-                        1,
-                        0,
-                        1,
-                        0,
-                        now,
-                        now
-                    )
-                )
-                conn.commit()
-                cur.close()
-                conn.close()
-
-                success = "感謝您的捐款，已成功記錄。"
-                amount = ""
-                donation_date = ""
-                note = ""
-            except ValueError as err:
-                error = str(err)
-            except OperationalError as err:
-                error = "資料庫連線失敗，請稍後再試。"
-                print("Donation DB error:", err)
-            except Exception as err:
-                error = "儲存捐款時發生錯誤，請稍後再試。"
-                print("Donation save error:", err)
-
-    return render_template(
-        "donate.html", error=error, success=success, donor=donor,
-        amount=amount, donation_date=donation_date, note=note
-    )
-
-@app.route("/user/proposal", methods=["POST"])
-def user_proposal():
-    if session.get("role") != "user": return redirect(url_for("home"))
-
-    case_title = request.form.get("case_title", "").strip()
-    background = request.form.get("background", "").strip()
-    issues = request.form.get("issues", "").strip()
-    goals = request.form.get("goals", "").strip()
-    subsidy_summary = request.form.get("subsidy_summary", "").strip()
-    
-    success_pdf = request.files.get("success_pdf")
-    subsidy_pdf = request.files.get("subsidy_pdf")
-    uploaded_success_pdf = save_uploaded_file(success_pdf, "success") if success_pdf else None
-    uploaded_subsidy_pdf = save_uploaded_file(subsidy_pdf, "subsidy") if subsidy_pdf else None
-    error = None; proposal = None
-
-    if not case_title or not background:
-        error = "請輸入案名與個案背景，才能產生企畫書。"
-        agent = choose_ai_agent(background, issues)
-        ai_agent = agent["name"]; ai_agent_note = agent["description"]
-    else:
-        agent = choose_ai_agent(background, issues)
-        ai_agent = agent["name"]; ai_agent_note = agent["description"]
-        proposal = generate_case_proposal(case_title, background, issues or "尚待補充具體問題敘述。", goals or "尚待補充具體目標與預期成效。", ai_agent)
-        
-        if proposal:
-            chat_history = session.get('chat_history', [])
-            user_inputs = [m.get('content','') for m in chat_history if m.get('role') == 'user']
-            if user_inputs:
-                appended = "\n\n對話紀錄（使用者輸入）：\n" + "\n".join(user_inputs)
-                proposal_to_save = proposal + appended
-            else:
-                proposal_to_save = proposal
-
-            session["last_proposal"] = proposal_to_save
-            editing_conv_idx = session.get('editing_conversation_idx')
-            editing_proposal_idx = session.get('editing_proposal_idx')
-            history = session.get('proposal_history', [])
-
-            if editing_proposal_idx is not None and editing_proposal_idx < len(history):
-                history[editing_proposal_idx] = proposal_to_save
-            else:
-                history.insert(0, proposal_to_save)
-                convs = session.get('conversation_history', [])
-                for conv in convs:
-                    if conv.get('proposal_idx') is not None: conv['proposal_idx'] += 1
-                if editing_conv_idx is not None and convs and editing_conv_idx < len(convs):
-                    convs[editing_conv_idx]['proposal_idx'] = 0
-                session['conversation_history'] = convs
-
-            session['proposal_history'] = history[:10]
-            session['editing_conversation_idx'] = None
-            session['editing_proposal_idx'] = None
-            proposal = proposal_to_save
-
-    return render_template(
-        "user.html", username=session.get("username"), case_title=case_title, background=background,
-        issues=issues, goals=goals, subsidy_summary=subsidy_summary, uploaded_success_pdf=uploaded_success_pdf,
-        uploaded_subsidy_pdf=uploaded_subsidy_pdf, proposal=proposal, ai_agent=ai_agent, ai_agent_note=ai_agent_note,
-        ai_model=AI_MODEL_NAME, ai_engine=AI_MODEL_ENGINE, error=error, submitted_applications=len(get_user_applications(session.get("username")))
-    )
-
-@app.route("/user/application/submit", methods=["POST"])
-def user_application_submit():
-    if session.get("role") != "user":
-        return jsonify({'status': 'error', 'message': '權限不足'}), 403
-
-    case_title = request.form.get("case_title", "").strip()
-    background = request.form.get("background", "").strip()
-    issues = request.form.get("issues", "").strip()
-    goals = request.form.get("goals", "").strip()
-    subsidy_summary = request.form.get("subsidy_summary", "").strip()
-    proposal = request.form.get("proposal", "").strip()
-    success_pdf = request.form.get("success_pdf")
-    subsidy_pdf = request.form.get("subsidy_pdf")
-
-    if not case_title or not proposal:
-        return jsonify({'status': 'error', 'message': '計畫名稱或企劃書不能為空'}), 400
-
-    try:
-        new_app = create_application(
-            username=session.get("username"),
-            case_title=case_title,
-            background=background,
-            issues=issues,
-            goals=goals,
-            proposal=proposal,
-            subsidy_summary=subsidy_summary,
-            success_pdf=success_pdf,
-            subsidy_pdf=subsidy_pdf
-        )
-        
-        return jsonify({
-            'status': 'success',
-            'message': '企劃書已成功提交',
-            'application_id': new_app.get('id'),
-            'redirect_url': url_for('user_applications')
-        }), 200
-    except Exception as e:
-        return jsonify({'status': 'error', 'message': f'提交失敗：{str(e)}'}), 500
-
-# 保持舊版本以支持重定向
-@app.route("/user/application/submit-redirect", methods=["POST"])
-def user_application_submit_redirect():
-    if session.get("role") != "user":
-        return redirect(url_for("home"))
-
-    case_title = request.form.get("case_title", "").strip()
-    background = request.form.get("background", "").strip()
-    issues = request.form.get("issues", "").strip()
-    goals = request.form.get("goals", "").strip()
-    subsidy_summary = request.form.get("subsidy_summary", "").strip()
-    proposal = request.form.get("proposal", "").strip()
-    success_pdf = request.form.get("success_pdf")
-    subsidy_pdf = request.form.get("subsidy_pdf")
-
-    if not case_title or not proposal:
-        return redirect(url_for("user"))
-
-    create_application(
-        username=session.get("username"),
-        case_title=case_title,
-        background=background,
-        issues=issues,
-        goals=goals,
-        proposal=proposal,
-        subsidy_summary=subsidy_summary,
-        success_pdf=success_pdf,
-        subsidy_pdf=subsidy_pdf
-    )
-
-    return redirect(url_for("user_applications"))
-
-@app.route("/user/applications")
-def user_applications():
-    if not session.get("username"):
-        return redirect(url_for("home"))
-    applications = get_user_applications(session.get("username"))
-    return render_template("user_applications.html", username=session.get("username"), applications=applications)
-
-@app.route("/admin/applications")
-def admin_applications():
-    if session.get("role") != "admin":
-        return redirect(url_for("home"))
-    applications = load_applications()
-    return render_template("admin_applications.html", username=session.get("username"), applications=applications)
-
-@app.route("/admin/applications/<application_id>/approve", methods=["POST"])
-def admin_approve_application(application_id):
-    if session.get("role") != "admin":
-        return redirect(url_for("home"))
-    admin_note = request.form.get("admin_note", "").strip()
-    update_application_status(application_id, "approved", admin_note)
-    return redirect(url_for("admin_applications"))
-
-@app.route("/admin/applications/<application_id>/reject", methods=["POST"])
-def admin_reject_application(application_id):
-    if session.get("role") != "admin":
-        return redirect(url_for("home"))
-    admin_note = request.form.get("admin_note", "").strip()
-    update_application_status(application_id, "rejected", admin_note)
-    return redirect(url_for("admin_applications"))
-
-@app.route("/user/proposal/download")
+@app.route("/admin/proposal/download")
 def download_proposal():
-    if session.get("role") != "user": return redirect(url_for("home"))
+    if session.get("role") != "admin": return redirect(url_for("home"))
     proposal = session.get("last_proposal")
-    if not proposal: return redirect(url_for("user"))
+    if not proposal: return redirect(url_for("admin_proposal"))
     return Response(proposal, mimetype="text/plain; charset=utf-8", headers={"Content-Disposition": "attachment; filename=proposal.txt"})
 
-@app.route("/user/proposal/download/<int:idx>")
+@app.route("/admin/proposal/download/<int:idx>")
 def download_proposal_index(idx):
-    if session.get("role") != "user": return redirect(url_for("home"))
+    if session.get("role") != "admin": return redirect(url_for("home"))
     history = session.get('proposal_history', [])
-    if not history or idx < 0 or idx >= len(history): return redirect(url_for('user'))
+    if not history or idx < 0 or idx >= len(history): return redirect(url_for('admin_proposal'))
     text = history[idx]
     filename = request.args.get('filename', f"proposal_{idx+1}.txt").strip()
     try: filename = secure_filename(filename)
     except: pass
     return Response(text, mimetype="text/plain; charset=utf-8", headers={"Content-Disposition": f"attachment; filename={filename}"})
 
-@app.route("/user/assistant", methods=["GET", "POST"])
-def user_assistant():
-    if session.get("role") != "user": return redirect(url_for("home"))
+@app.route("/admin/assistant", methods=["GET", "POST"])
+def admin_assistant():
+    if session.get("role") != "admin": return redirect(url_for("home"))
     subsidy_summary = request.values.get("subsidy_summary", "").strip()
 
     if request.args.get("save_history") == "1":
@@ -1463,7 +1123,7 @@ def user_assistant():
 @app.route('/api/generate-proposal', methods=['POST'])
 def api_generate_proposal():
     """API 端點：生成企劃書"""
-    if session.get('role') != 'user': 
+    if session.get('role') != 'admin': 
         return jsonify({'status': 'error', 'message': '權限不足'}), 403
     
     try:
@@ -1652,7 +1312,7 @@ def api_generate_proposal():
 
 @app.route('/api/chat', methods=['POST'])
 def api_chat():
-    if session.get('role') != 'user': return jsonify({'error': '權限不足'}), 403
+    if session.get('role') != 'admin': return jsonify({'error': '權限不足'}), 403
     data = request.get_json() or {}
     user_message = (data.get('message') or '').strip()
     if not user_message: return jsonify({'error': 'empty message'}), 400
@@ -1664,9 +1324,9 @@ def api_chat():
     session['chat_history'] = chat_history
     return jsonify({'reply': assistant_response})
 
-@app.route("/user/assistant/export")
+@app.route("/admin/assistant/export")
 def assistant_export():
-    if session.get("role") != "user": return redirect(url_for("home"))
+    if session.get("role") != "admin": return redirect(url_for("home"))
     chat_history = session.get("chat_history", [])
     subsidy_summary = request.args.get("subsidy_summary", "").strip()
     lines = []
@@ -1680,20 +1340,20 @@ def assistant_export():
     export_text = "\n".join(lines)
     return Response(export_text, mimetype="text/plain; charset=utf-8", headers={"Content-Disposition": "attachment; filename=assistant_export.txt"})
 
-@app.route("/user/assistant/import_proposal")
+@app.route("/admin/assistant/import_proposal")
 def assistant_import_proposal():
-    if session.get("role") != "user": return redirect(url_for("home"))
+    if session.get("role") != "admin": return redirect(url_for("home"))
     proposal = session.get("last_proposal")
     subsidy_summary = request.args.get("subsidy_summary", "").strip()
-    if not proposal: return redirect(url_for("user_assistant", subsidy_summary=subsidy_summary))
+    if not proposal: return redirect(url_for("admin_assistant", subsidy_summary=subsidy_summary))
     chat_history = session.get("chat_history", [])
     chat_history.append({"role": "assistant", "content": f"初步企劃草稿：\n\n{proposal}"})
     session["chat_history"] = chat_history
-    return redirect(url_for("user_assistant", subsidy_summary=subsidy_summary))
+    return redirect(url_for("admin_assistant", subsidy_summary=subsidy_summary))
 
-@app.route("/user/assistant/export_selected")
+@app.route("/admin/assistant/export_selected")
 def assistant_export_selected():
-    if session.get("role") != "user": return redirect(url_for("home"))
+    if session.get("role") != "admin": return redirect(url_for("home"))
     idx_list = request.args.getlist('idx')
     subsidy_summary = request.args.get("subsidy_summary", "").strip()
     chat_history = session.get("chat_history", [])
@@ -1713,21 +1373,21 @@ def assistant_export_selected():
     except: pass
     return Response("\n".join(lines), mimetype="text/plain; charset=utf-8", headers={"Content-Disposition": f"attachment; filename={filename}"})
 
-@app.route('/user/assistant/load_conversation/<int:idx>')
+@app.route('/admin/assistant/load_conversation/<int:idx>')
 def load_conversation(idx):
-    if session.get('role') != 'user': return redirect(url_for('home'))
+    if session.get('role') != 'admin': return redirect(url_for('home'))
     convs = session.get('conversation_history', [])
-    if not convs or idx < 0 or idx >= len(convs): return redirect(url_for('user_assistant'))
+    if not convs or idx < 0 or idx >= len(convs): return redirect(url_for('admin_assistant'))
     session['chat_history'] = convs[idx].get('chat', [])
     session['editing_conversation_idx'] = idx
     session['editing_proposal_idx'] = convs[idx].get('proposal_idx')
-    return redirect(url_for('user_assistant'))
+    return redirect(url_for('admin_assistant'))
 
-@app.route('/user/assistant/download_conversation/<int:idx>')
+@app.route('/admin/assistant/download_conversation/<int:idx>')
 def download_conversation(idx):
-    if session.get('role') != 'user': return redirect(url_for('home'))
+    if session.get('role') != 'admin': return redirect(url_for('home'))
     convs = session.get('conversation_history', [])
-    if not convs or idx < 0 or idx >= len(convs): return redirect(url_for('user_assistant'))
+    if not convs or idx < 0 or idx >= len(convs): return redirect(url_for('admin_assistant'))
     conv = convs[idx]
     lines = [f"對話紀錄（{conv.get('timestamp','')})\n\n"]
     for m in conv.get('chat', []):
@@ -1738,9 +1398,9 @@ def download_conversation(idx):
     except: pass
     return Response("\n".join(lines), mimetype='text/plain; charset=utf-8', headers={"Content-Disposition": f"attachment; filename={filename}"})
 
-@app.route('/user/assistant/rename_conversation/<int:idx>', methods=['POST'])
+@app.route('/admin/assistant/rename_conversation/<int:idx>', methods=['POST'])
 def rename_conversation(idx):
-    if session.get('role') != 'user': return jsonify({'error': '權限不足'}), 403
+    if session.get('role') != 'admin': return jsonify({'error': '權限不足'}), 403
     data = request.get_json() or {}
     new_name = (data.get('name') or '').strip()
     if not new_name: return jsonify({'error': '名稱不能為空'}), 400
@@ -1751,36 +1411,107 @@ def rename_conversation(idx):
     session.modified = True
     return jsonify({'success': True, 'name': new_name})
 
-@app.route('/user/assistant/from_proposal/<int:idx>')
+@app.route('/admin/assistant/from_proposal/<int:idx>')
 def resume_conversation_from_proposal(idx):
-    if session.get('role') != 'user': return redirect(url_for('home'))
+    if session.get('role') != 'admin': return redirect(url_for('home'))
     proposals = session.get('proposal_history', [])
-    if not proposals or idx < 0 or idx >= len(proposals): return redirect(url_for('user_assistant'))
+    if not proposals or idx < 0 or idx >= len(proposals): return redirect(url_for('admin_assistant'))
     session['chat_history'] = []
     session['last_proposal'] = proposals[idx]
-    return redirect(url_for('user_assistant'))
+    return redirect(url_for('admin_assistant'))
 
 # ==========================================
 # 路由 (Routes) - 補助資源清單
 # ==========================================
-@app.route("/subsidies")
-def subsidies_page():
+@app.route("/welfare")
+def welfare_page():
     if not session.get("username"): return redirect(url_for("home"))
     category = request.args.get("category", "")
     keyword = request.args.get("q", "").strip()
-    subsidies = search_subsidies(category, keyword)
-    categories = sorted({s.get("category", "其他") for s in load_subsidies()})
-    return render_template("subsidies.html", username=session.get("username"), subsidies=subsidies, categories=categories, selected_category=category, keyword=keyword)
+    return render_template("welfare.html", username=session.get("username"), items=search_welfare(category, keyword),
+                           categories=WELFARE_CATEGORIES, selected_category=category, keyword=keyword)
 
-@app.route("/subsidies/<int:subsidy_id>")
-def subsidy_detail(subsidy_id):
+@app.route("/welfare/<int:welfare_id>")
+def welfare_detail(welfare_id):
     if not session.get("username"): return redirect(url_for("home"))
-    subsidy = get_subsidy_by_id(subsidy_id)
-    if not subsidy: return redirect(url_for("subsidies_page"))
-    subsidy_summary = f"本補助由 {subsidy.get('agency')} 提供，補助內容為：{subsidy.get('description')}。申請資格：{subsidy.get('eligibility')}。"
-    generate_url = url_for("user_dashboard", case_title=subsidy.get("title", "補助申請企劃"), background=f"機構申請 {subsidy.get('title')}，補助來源：{subsidy.get('agency')}。{subsidy.get('description')}", issues="需要確認補助資格並提出實務可行的申請計畫。", goals="獲得補助並改善社福服務品質與資源運用。", subsidy_summary=subsidy_summary)
-    assistant_url = url_for("user_assistant", subsidy_summary=subsidy_summary)
-    return render_template("subsidy_detail.html", username=session.get("username"), subsidy=subsidy, generate_url=generate_url, assistant_url=assistant_url)
+    item = get_welfare(welfare_id)
+    if not item: return redirect(url_for("welfare_page"))
+    return render_template("welfare_detail.html", username=session.get("username"), item=item)
+
+# --- User: AI 福利小幫手 ---
+def _welfare_context():
+    lines = []
+    for w in load_welfare():
+        lines.append(f"【{w.get('title')}】類別：{w.get('category')}；主辦：{w.get('agency')}；資格：{w.get('eligibility')}；"
+                     f"內容：{w.get('benefit')}；申請方式：{w.get('apply_method')}；聯絡：{w.get('contact')}")
+    return "\n".join(lines)
+
+def _welfare_fallback(question):
+    """未啟用 OpenAI 時，以關鍵詞比對福利資料回覆。"""
+    q = _normalize_text(question)
+    synonyms = {"吃飯": "餐食", "煮飯": "備餐", "三餐": "餐食", "沒錢": "收入", "經濟": "收入", "行動不便": "失能",
+                "走不動": "失能", "臥床": "失能", "公車": "大眾運輸", "捷運": "大眾運輸", "牙齒": "假牙", "跌倒": "緊急救援"}
+    q += " " + " ".join(v for k, v in synonyms.items() if k in q)
+    stop = {"申請", "可以", "什麼", "請問", "需要", "長者", "老人", "以上", "歲以", "我們", "家裡", "爸爸", "媽媽", "有沒", "沒有", "怎麼"}
+    grams = {q[i:i + 2] for i in range(len(q) - 1) if all("一" <= ch <= "鿿" for ch in q[i:i + 2])} - stop
+    scored = []
+    for w in load_welfare():
+        weighted = [(w.get("title", ""), 3), (w.get("eligibility", ""), 2), (w.get("category", ""), 2),
+                    (f"{w.get('benefit', '')} {w.get('apply_method', '')}", 1)]
+        score = sum(weight for g in grams for text, weight in weighted if g in text)
+        if score: scored.append((score, w))
+    scored.sort(key=lambda x: x[0], reverse=True)
+    if not scored:
+        return ("目前找不到與您問題直接相關的福利項目。建議先撥打長照專線 1966，或洽里辦公處、區公所社會課詢問；"
+                "您也可以描述長者的年齡、是否獨居、身體狀況或經濟狀況，我會再幫您比對。")
+    parts = ["依您的描述，以下福利可能適用（實際資格請以主管機關公告為準）："]
+    for _, w in scored[:3]:
+        parts.append(f"\n■ {w.get('title')}\n　資格：{w.get('eligibility')}\n　內容：{w.get('benefit')}\n　申請：{w.get('apply_method')}")
+    return "\n".join(parts)
+
+def generate_welfare_response(question, history):
+    question = _normalize_text(question)
+    if not question:
+        return "請輸入想詢問的問題，例如：「我爸爸 70 歲獨居，可以申請什麼？」"
+    if openai_client is None:
+        return _welfare_fallback(question)
+    system_prompt = (
+        "你是里辦公處的「長者福利小幫手」，協助里內長者與家屬了解可申請的老人福利。"
+        "請使用親切、簡單易懂的口語，句子簡短，適合長者閱讀。"
+        "回答時優先引用下列福利資料，說明適用資格、內容與申請方式；資料沒有的內容不可捏造金額、法規或電話，"
+        "並提醒實際資格以主管機關公告為準。若資訊不足，請詢問長者年齡、居住狀況、身體與經濟狀況。\n\n"
+        f"福利資料：\n{_welfare_context()}"
+    )
+    messages = [{"role": "system", "content": system_prompt}]
+    for item in history[-8:]:
+        messages.append({"role": item.get("role", "user"), "content": _normalize_text(item.get("content", ""))})
+    messages.append({"role": "user", "content": question})
+    try:
+        completion = openai_client.chat.completions.create(model=AI_MODEL, messages=messages, temperature=0.3, max_tokens=700)
+        content = completion.choices[0].message.content
+        return content.strip() if content else _welfare_fallback(question)
+    except Exception:
+        return _welfare_fallback(question)
+
+@app.route("/user/welfare-assistant")
+def user_welfare_assistant():
+    if session.get("role") != "user": return redirect(url_for("home"))
+    if request.args.get("clear") == "1":
+        session["welfare_chat"] = []
+        return redirect(url_for("user_welfare_assistant"))
+    return render_template("welfare_assistant.html", username=session.get("username"),
+                           chat=session.get("welfare_chat", []), preset=request.args.get("q", ""))
+
+@app.route("/api/welfare-chat", methods=["POST"])
+def api_welfare_chat():
+    if session.get("role") != "user": return jsonify({"error": "權限不足"}), 403
+    question = (request.get_json(silent=True) or {}).get("message", "")
+    history = session.get("welfare_chat", [])
+    answer = generate_welfare_response(question, history)
+    history = (history + [{"role": "user", "content": _normalize_text(question)},
+                          {"role": "assistant", "content": answer}])[-20:]
+    session["welfare_chat"] = history
+    return jsonify({"reply": answer})
 
 # ==========================================
 # 路由 (Routes) - 管理者後台 (Admin Dashboards)
@@ -1879,11 +1610,115 @@ def admin_delete_case(case_id):
     delete_case(case_id)
     return redirect(url_for("admin_cases"))
 
+# --- User: Activities ---
+@app.route("/user/activities")
+def user_activities():
+    if session.get("role") != "user": return redirect(url_for("home"))
+    username = session.get("username")
+    items = []
+    for activity in load_activities():
+        if activity.get("status") == "已取消": continue
+        items.append({
+            "activity": activity,
+            "registration": get_user_registration(activity["id"], username),
+            "attendance": get_user_attendance(activity["id"], username),
+            "block_reason": registration_block_reason(activity, username),
+        })
+    return render_template("user_activities.html", username=username, items=items,
+                           phone=get_user_profile(username).get("phone", ""))
+
+@app.route("/user/activities/<activity_id>/register", methods=["POST"])
+def user_register_activity(activity_id):
+    if session.get("role") != "user": return redirect(url_for("home"))
+    username = session.get("username")
+    activity = get_activity(activity_id)
+    if not activity: return redirect(url_for("user_activities"))
+    reason = registration_block_reason(activity, username)
+    if reason:
+        flash(reason, "error")
+    else:
+        create_registration(activity_id, username, request.form.get("email", "").strip(), request.form.get("phone", "").strip())
+        flash(f"已報名「{activity['activity_name']}」，待管理者審核通過後即可簽到。", "success")
+    return redirect(url_for("user_activities"))
+
+@app.route("/user/activities/<activity_id>/cancel", methods=["POST"])
+def user_cancel_registration(activity_id):
+    if session.get("role") != "user": return redirect(url_for("home"))
+    reg = get_user_registration(activity_id, session.get("username"))
+    if reg and reg.get("status") == "待審核":
+        delete_registration(reg["id"])
+        flash("已取消報名。", "success")
+    else:
+        flash("只有待審核的報名可以取消。", "error")
+    return redirect(url_for("user_activities"))
+
+@app.route("/user/activities/<activity_id>/checkin", methods=["POST"])
+def user_check_in(activity_id):
+    if session.get("role") != "user": return redirect(url_for("home"))
+    username = session.get("username")
+    reg = get_user_registration(activity_id, username)
+    if not reg or reg.get("status") != "已通過":
+        flash("報名審核通過後才可簽到。", "error")
+    elif get_user_attendance(activity_id, username):
+        flash("您已完成簽到。", "error")
+    else:
+        create_attendance(activity_id, username, datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+        flash("簽到成功！", "success")
+    return redirect(url_for("user_activities"))
+
+# --- Admin: Welfare ---
+@app.route("/admin/welfare")
+def admin_welfare():
+    if session.get("role") != "admin": return redirect(url_for("home"))
+    return render_template("admin_welfare.html", username=session.get("username"), items=load_welfare())
+
+@app.route("/admin/welfare/create", methods=["GET", "POST"])
+@app.route("/admin/welfare/<int:welfare_id>/edit", methods=["GET", "POST"])
+def admin_welfare_form(welfare_id=None):
+    if session.get("role") != "admin": return redirect(url_for("home"))
+    items = load_welfare()
+    item = next((w for w in items if w.get("id") == welfare_id), None) if welfare_id else {}
+    if welfare_id and item is None: return redirect(url_for("admin_welfare"))
+    error = None
+    if request.method == "POST":
+        data = welfare_from_form(request.form)
+        if not data["title"] or not data["eligibility"] or not data["apply_method"]:
+            error = "請填寫福利名稱、申請資格與申請方式。"
+            item = {**item, **data}
+        else:
+            data["updated_at"] = datetime.date.today().isoformat()
+            if welfare_id:
+                item.update(data)
+            else:
+                data["id"] = max((w.get("id", 0) for w in items), default=0) + 1
+                items.append(data)
+            save_welfare(items)
+            return redirect(url_for("admin_welfare"))
+    return render_template("admin_welfare_form.html", username=session.get("username"), item=item,
+                           categories=WELFARE_CATEGORIES, error=error)
+
+@app.route("/admin/welfare/<int:welfare_id>/delete", methods=["POST"])
+def admin_welfare_delete(welfare_id):
+    if session.get("role") != "admin": return redirect(url_for("home"))
+    save_welfare([w for w in load_welfare() if w.get("id") != welfare_id])
+    return redirect(url_for("admin_welfare"))
+
+# --- Admin: Proposal ---
+@app.route("/admin/proposal")
+def admin_proposal():
+    if session.get("role") != "admin": return redirect(url_for("home"))
+    return render_template("admin_proposal.html", username=session.get("username"),
+                           page_title="社區計畫企劃書產生器", budget_reference=WELFARE_BUDGET_REFERENCE)
+
 # --- Admin: Activities ---
 @app.route("/admin/activities")
 def admin_activities():
     if session.get("role") != "admin": return redirect(url_for("home"))
-    return render_template("admin_activities.html", activities=load_activities(), username=session.get("username"))
+    registrations, attendances = load_registrations(), load_attendances()
+    reg_counts = {a["id"]: sum(1 for r in registrations if r["activity_id"] == a["id"]) for a in load_activities()}
+    att_counts = {a["id"]: sum(1 for t in attendances if t["activity_id"] == a["id"]) for a in load_activities()}
+    return render_template("admin_activities.html", activities=load_activities(), reg_counts=reg_counts,
+                           att_counts=att_counts, username=session.get("username"))
 
 @app.route("/admin/activities/create", methods=["GET", "POST"])
 def admin_create_activity():
@@ -1938,7 +1773,9 @@ def admin_activity_registrations(activity_id):
     if session.get("role") != "admin": return redirect(url_for("home"))
     activity = get_activity(activity_id)
     if not activity: return redirect(url_for("admin_activities"))
-    return render_template("admin_activity_registrations.html", activity=activity, registrations=get_activity_registrations(activity_id), username=session.get("username"))
+    checked_in = {a["username"] for a in get_activity_attendances(activity_id)}
+    return render_template("admin_activity_registrations.html", activity=activity, registrations=get_activity_registrations(activity_id),
+                           checked_in=checked_in, username=session.get("username"))
 
 @app.route("/admin/registrations/<registration_id>/approve", methods=["POST"])
 def admin_approve_registration(registration_id):
@@ -1963,13 +1800,17 @@ def admin_activity_attendance(activity_id):
     if session.get("role") != "admin": return redirect(url_for("home"))
     activity = get_activity(activity_id)
     if not activity: return redirect(url_for("admin_activities"))
-    return render_template("admin_activity_attendance.html", activity=activity, attendances=get_activity_attendances(activity_id), username=session.get("username"))
+    attendances = get_activity_attendances(activity_id)
+    checked_in = {a["username"] for a in attendances}
+    pending = [r for r in get_activity_registrations(activity_id) if r.get("status") == "已通過" and r["username"] not in checked_in]
+    return render_template("admin_activity_attendance.html", activity=activity, attendances=attendances,
+                           pending=pending, username=session.get("username"))
 
 @app.route("/admin/activities/<activity_id>/checkin", methods=["POST"])
 def admin_check_in(activity_id):
     if session.get("role") != "admin": return redirect(url_for("home"))
     username = request.form.get("username", "").strip()
-    if username:
+    if username and not get_user_attendance(activity_id, username):
         check_in_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         create_attendance(activity_id, username, check_in_time)
     return redirect(request.referrer or url_for("admin_activities"))
@@ -1985,41 +1826,6 @@ def admin_check_out(attendance_id):
     save_attendances(attendances)
     return redirect(request.referrer or url_for("admin_activities"))
 
-@app.route("/admin/activities/<activity_id>/volunteer-shifts")
-def admin_volunteer_shifts(activity_id):
-    if session.get("role") != "admin": return redirect(url_for("home"))
-    activity = get_activity(activity_id)
-    if not activity: return redirect(url_for("admin_activities"))
-    return render_template("admin_volunteer_shifts.html", activity=activity, shifts=get_activity_volunteer_shifts(activity_id), volunteers=load_volunteers(), username=session.get("username"))
-
-@app.route("/admin/activities/<activity_id>/volunteer-shifts/create", methods=["GET", "POST"])
-def admin_create_volunteer_shift(activity_id):
-    if session.get("role") != "admin": return redirect(url_for("home"))
-    activity = get_activity(activity_id)
-    if not activity: return redirect(url_for("admin_activities"))
-    error = None
-    if request.method == "POST":
-        shift_name = request.form.get("shift_name", "").strip()
-        start_time = request.form.get("start_time", "")
-        end_time = request.form.get("end_time", "")
-        required_count = request.form.get("required_count", "1")
-        if not shift_name or not start_time or not end_time: error = "請填寫所有必填欄位。"
-        else:
-            create_volunteer_shift(activity_id, shift_name, start_time, end_time, required_count)
-            return redirect(url_for("admin_volunteer_shifts", activity_id=activity_id))
-    return render_template("admin_volunteer_shift_create.html", activity=activity, username=session.get("username"), error=error)
-
-@app.route("/admin/volunteer-shifts/<shift_id>/add-volunteer", methods=["POST"])
-def admin_add_volunteer_to_shift(shift_id):
-    if session.get("role") != "admin": return redirect(url_for("home"))
-    username = request.form.get("username", "").strip()
-    if username:
-        success = add_volunteer_to_shift(shift_id, username)
-        if not success:
-            # Get the referrer URL and add error message
-            flash("錯誤：該人員不在志工名單中，無法排班。", "error")
-    return redirect(request.referrer or url_for("admin_activities"))
-
 # --- Admin: Services ---
 @app.route("/admin/services")
 def admin_services():
@@ -2033,17 +1839,19 @@ def admin_create_service():
     if request.method == "POST":
         service_name = request.form.get("service_name", "").strip()
         description = request.form.get("description", "").strip()
-        service_type = request.form.get("service_type", "其他")
+        service_type = request.form.get("service_type", "").strip()
         target_group = request.form.get("target_group", "").strip()
         contact = request.form.get("contact", "").strip()
         status = request.form.get("status", "開放申請")
         district = request.form.get("district", "").strip()
         service_scope = request.form.get("service_scope", "全區").strip()
         if not service_name: error = "請輸入服務名稱。"
+        elif service_type not in NEED_TYPES: error = "請選擇服務類型。"
         else:
             create_service("admin", service_name, description, service_type, target_group, contact, status, district, service_scope)
             return redirect(url_for("admin_services"))
-    return render_template("admin_service_create.html", username=session.get("username"), error=error)
+    return render_template("admin_service_create.html", username=session.get("username"), error=error,
+                           need_types=NEED_TYPES, districts=DISTRICTS)
 
 @app.route("/admin/services/<service_id>/edit", methods=["GET", "POST"])
 def admin_edit_service(service_id):
@@ -2054,17 +1862,19 @@ def admin_edit_service(service_id):
     if request.method == "POST":
         service_name = request.form.get("service_name", "").strip()
         description = request.form.get("description", "").strip()
-        service_type = request.form.get("service_type", "其他")
+        service_type = request.form.get("service_type", "").strip()
         target_group = request.form.get("target_group", "").strip()
         contact = request.form.get("contact", "").strip()
         status = request.form.get("status", "開放申請")
         district = request.form.get("district", "").strip()
         service_scope = request.form.get("service_scope", "全區").strip()
         if not service_name: error = "請輸入服務名稱。"
+        elif service_type not in NEED_TYPES and service_type != service.get("service_type"): error = "請選擇服務類型。"
         else:
             update_service(service_id, service_name, description, service_type, target_group, contact, status, district, service_scope)
             return redirect(url_for("admin_services"))
-    return render_template("admin_service_edit.html", service=service, username=session.get("username"), error=error)
+    return render_template("admin_service_edit.html", service=service, username=session.get("username"), error=error,
+                           need_types=NEED_TYPES, districts=DISTRICTS)
 
 @app.route("/admin/services/<service_id>/delete", methods=["POST"])
 def admin_delete_service(service_id):
@@ -2161,154 +1971,6 @@ def admin_delete_announcement(announcement_id):
     if session.get("role") != "admin": return redirect(url_for("home"))
     delete_announcement(announcement_id)
     return redirect(url_for("admin_announcements"))
-
-# ==========================================
-# 路由 (Routes) - Donations (API)
-# ==========================================
-@app.route("/donations")
-def donations_page():
-    if session.get("role") != "admin": return render_template("unauthorized.html"), 403
-    return render_template("donations.html")
-
-@app.route("/api/donations")
-def get_donations():
-    if session.get("role") != "admin":
-        return jsonify({"error": "權限不足，只有管理者可以存取捐款資料。"}), 403
-    year = request.args.get("year")
-    month = request.args.get("month")
-    try:
-        conn = get_db_connection()
-        cur = conn.cursor()
-        # 資料表欄位為 donation_date
-        query = "SELECT donor, donation_date, amount, note FROM donations WHERE EXTRACT(YEAR FROM donation_date) = %s AND EXTRACT(MONTH FROM donation_date) = %s"
-        cur.execute(query, (year, month))
-        rows = cur.fetchall()
-        result = [{"donor": r[0], "date": str(r[1]), "amount": float(r[2]) if r[2] is not None else None, "note": r[3]} for r in rows]
-        cur.close(); conn.close()
-        return jsonify(result)
-    except OperationalError as err:
-        return jsonify({"error": "資料庫連線失敗，請檢查 PostgreSQL 是否已啟動並確認連線設定。", "detail": str(err)}), 500
-    except Exception as err:
-        return jsonify({"error": "發生未知錯誤。", "detail": str(err)}), 500
-
-# --- Volunteers ---
-def load_volunteers():
-    if not VOLUNTEERS_FILE.exists(): return []
-    try:
-        with VOLUNTEERS_FILE.open("r", encoding="utf-8") as f: return json.load(f).get("volunteers", [])
-    except json.JSONDecodeError: return []
-
-def save_volunteers(volunteers):
-    with VOLUNTEERS_FILE.open("w", encoding="utf-8") as f:
-        json.dump({"volunteers": volunteers}, f, ensure_ascii=False, indent=2)
-
-def create_volunteer(name, phone="", email="", address="", skills="", status="活躍", joined_date=""):
-    volunteers = load_volunteers()
-    if not joined_date: joined_date = str(datetime.date.today())
-    new_volunteer = {
-        "id": str(uuid.uuid4()), "name": name, "phone": phone, "email": email,
-        "address": address, "skills": skills, "status": status, "service_hours": 0,
-        "joined_date": joined_date, "created_at": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    }
-    volunteers.append(new_volunteer)
-    save_volunteers(volunteers)
-    return new_volunteer
-
-def get_volunteer(volunteer_id):
-    for volunteer in load_volunteers():
-        if volunteer["id"] == volunteer_id: return volunteer
-    return None
-
-def update_volunteer(volunteer_id, name=None, phone=None, email=None, address=None, skills=None, status=None, service_hours=None, joined_date=None):
-    volunteers = load_volunteers()
-    for volunteer in volunteers:
-        if volunteer["id"] == volunteer_id:
-            if name is not None: volunteer["name"] = name
-            if phone is not None: volunteer["phone"] = phone
-            if email is not None: volunteer["email"] = email
-            if address is not None: volunteer["address"] = address
-            if skills is not None: volunteer["skills"] = skills
-            if status is not None: volunteer["status"] = status
-            if service_hours is not None: volunteer["service_hours"] = int(service_hours) if service_hours else 0
-            if joined_date is not None: volunteer["joined_date"] = joined_date
-            break
-    save_volunteers(volunteers)
-
-def delete_volunteer(volunteer_id):
-    volunteers = [volunteer for volunteer in load_volunteers() if volunteer["id"] != volunteer_id]
-    save_volunteers(volunteers)
-
-# --- Admin: Volunteers ---
-@app.route("/admin/volunteers")
-def admin_volunteers():
-    if session.get("role") != "admin": return redirect(url_for("home"))
-    volunteers = load_volunteers()
-    return render_template("admin_volunteers.html", volunteers=volunteers, username=session.get("username"))
-
-@app.route("/admin/volunteers/create", methods=["GET", "POST"])
-def admin_create_volunteer():
-    if session.get("role") != "admin": return redirect(url_for("home"))
-    error = None
-    if request.method == "POST":
-        name = request.form.get("name", "").strip()
-        phone = request.form.get("phone", "").strip()
-        email = request.form.get("email", "").strip()
-        address = request.form.get("address", "").strip()
-        skills = request.form.get("skills", "").strip()
-        status = request.form.get("status", "活躍")
-        joined_date = request.form.get("joined_date", "")
-        if not name: error = "請輸入志願者姓名。"
-        else:
-            create_volunteer(name, phone, email, address, skills, status, joined_date)
-            return redirect(url_for("admin_volunteers"))
-    return render_template("admin_volunteer_create.html", username=session.get("username"), error=error)
-
-@app.route("/admin/volunteers/<volunteer_id>/edit", methods=["GET", "POST"])
-def admin_edit_volunteer(volunteer_id):
-    if session.get("role") != "admin": return redirect(url_for("home"))
-    volunteer = get_volunteer(volunteer_id)
-    if not volunteer: return redirect(url_for("admin_volunteers"))
-    error = None
-    if request.method == "POST":
-        name = request.form.get("name", "").strip()
-        phone = request.form.get("phone", "").strip()
-        email = request.form.get("email", "").strip()
-        address = request.form.get("address", "").strip()
-        skills = request.form.get("skills", "").strip()
-        status = request.form.get("status", "活躍")
-        service_hours = request.form.get("service_hours", "0")
-        joined_date = request.form.get("joined_date", "")
-        if not name: error = "請輸入志願者姓名。"
-        else:
-            update_volunteer(volunteer_id, name, phone, email, address, skills, status, service_hours, joined_date)
-            return redirect(url_for("admin_volunteers"))
-    # Get volunteer's assigned shifts and all available activities for shift selection
-    volunteer_shifts = get_volunteer_shifts(volunteer_id)
-    activities = load_activities()
-    all_shifts = load_volunteer_shifts()
-    return render_template("admin_volunteer_edit.html", volunteer=volunteer, volunteer_shifts=volunteer_shifts, activities=activities, all_shifts=all_shifts, username=session.get("username"), error=error)
-
-@app.route("/admin/volunteers/<volunteer_id>/delete", methods=["POST"])
-def admin_delete_volunteer(volunteer_id):
-    if session.get("role") != "admin": return redirect(url_for("home"))
-    delete_volunteer(volunteer_id)
-    return redirect(url_for("admin_volunteers"))
-
-@app.route("/admin/volunteers/<volunteer_id>/assign-shift", methods=["POST"])
-def admin_assign_volunteer_shift(volunteer_id):
-    if session.get("role") != "admin": return redirect(url_for("home"))
-    volunteer = get_volunteer(volunteer_id)
-    if not volunteer: return redirect(url_for("admin_volunteers"))
-    shift_id = request.form.get("shift_id", "").strip()
-    if shift_id:
-        add_volunteer_id_to_shift(shift_id, volunteer_id)
-    return redirect(url_for("admin_edit_volunteer", volunteer_id=volunteer_id))
-
-@app.route("/admin/volunteers/<volunteer_id>/remove-shift/<shift_id>", methods=["POST"])
-def admin_remove_volunteer_shift(volunteer_id, shift_id):
-    if session.get("role") != "admin": return redirect(url_for("home"))
-    remove_volunteer_from_shift(shift_id, volunteer_id)
-    return redirect(url_for("admin_edit_volunteer", volunteer_id=volunteer_id))
 
 if __name__ == "__main__":
     app.run(debug=True)

@@ -77,14 +77,6 @@ class StatsReportManager:
             case_distribution_rows = cursor.fetchall()
             case_distribution = {row['status'] or '未知': row['count'] for row in case_distribution_rows}
 
-            # 捐款統計
-            cursor.execute("SELECT COUNT(*) as total, SUM(amount) as total_amount FROM donations")
-            donation_stats = cursor.fetchone()
-            cursor.execute("SELECT TO_CHAR(donation_date, 'YYYY-MM') as month, COUNT(*) as count, SUM(amount) as total_amount FROM donations GROUP BY month ORDER BY month")
-            donation_distribution_rows = cursor.fetchall()
-            donation_distribution = {row['month'] or '未知': row['count'] for row in donation_distribution_rows}
-            donation_amount_trend = {row['month'] or '未知': float(row['total_amount'] or 0) for row in donation_distribution_rows}
-
             # 最近報告
             cursor.execute("SELECT id, report_name, created_at FROM reports ORDER BY created_at DESC LIMIT 5")
             recent_report_rows = cursor.fetchall()
@@ -105,12 +97,8 @@ class StatsReportManager:
                 'members_count': int(user_stats['total'] or 0) if user_stats else 0,
                 'pending_cases_count': int(case_stats['pending'] or 0) if case_stats else 0,
                 'announcements_count': int(announcement_stats['total'] or 0) if announcement_stats else 0,
-                'donations_count': int(donation_stats['total'] or 0) if donation_stats else 0,
-                'donations_total': float(donation_stats['total_amount']) if donation_stats and donation_stats['total_amount'] is not None else 0,
                 'activity_distribution': activity_distribution,
                 'case_distribution': case_distribution,
-                'donation_distribution': donation_distribution,
-                'donation_amount_trend': donation_amount_trend,
                 'recent_reports': recent_reports,
                 'timestamp': datetime.datetime.now().isoformat()
             }
@@ -127,8 +115,6 @@ class StatsReportManager:
             return 'activities'
         if '個案' in text or 'case' in text:
             return 'cases'
-        if '捐款' in text or 'donation' in text:
-            return 'donations'
         if '成員' in text or '會員' in text or 'user' in text:
             return 'users'
         if '報名' in text or 'registration' in text:
@@ -172,7 +158,7 @@ class StatsReportManager:
             resolved_type = StatsReportManager._parse_report_type(report_type)
             report_data = {}
             
-            if resolved_type in ['activities', 'cases', 'donations']:
+            if resolved_type in ['activities', 'cases']:
                 start_date, end_date = StatsReportManager._normalize_date_range(start_date, end_date)
 
             if resolved_type == 'activities':
@@ -198,15 +184,6 @@ class StatsReportManager:
                     ORDER BY created_at DESC
                 """, (start_date, end_date))
                 report_data = [dict(row) for row in cursor.fetchall()]
-            elif resolved_type == 'donations':
-                cursor.execute("""
-                    SELECT 
-                        id, donor, amount, donation_date, note, category, created_at
-                    FROM donations
-                    WHERE donation_date >= %s AND donation_date <= %s
-                    ORDER BY donation_date DESC
-                """, (start_date, end_date))
-                report_data = [dict(row) for row in cursor.fetchall()]
             elif resolved_type == 'users':
                 cursor.execute("SELECT username, role, created_at FROM users ORDER BY created_at DESC")
                 report_data = [dict(row) for row in cursor.fetchall()]
@@ -227,10 +204,6 @@ class StatsReportManager:
                 registration_count = cursor.fetchone()['total']
                 cursor.execute("SELECT COUNT(*) AS total FROM announcements")
                 announcement_count = cursor.fetchone()['total']
-                cursor.execute("SELECT COUNT(*) AS total, SUM(amount) AS total_amount FROM donations")
-                donation_summary = cursor.fetchone()
-                donation_total = float(donation_summary['total_amount'] or 0)
-                donation_count = donation_summary['total']
 
                 cursor.execute("SELECT category, COUNT(*) AS count FROM activities GROUP BY category ORDER BY count DESC")
                 activity_distribution_rows = cursor.fetchall()
@@ -252,9 +225,7 @@ class StatsReportManager:
                         'cases_count': case_count,
                         'members_count': user_count,
                         'registrations_count': registration_count,
-                        'announcements_count': announcement_count,
-                        'donations_count': donation_count,
-                        'donations_total': donation_total
+                        'announcements_count': announcement_count
                     },
                     'activity_distribution': activity_distribution,
                     'case_distribution': case_distribution
@@ -429,73 +400,6 @@ class SearchFilterManager:
             print(f"搜尋失敗: {e}")
             return []
 
-    @staticmethod
-    def search_volunteers(query, status=None):
-        """搜尋志工"""
-        try:
-            import json
-            from pathlib import Path
-            
-            volunteers_file = Path(__file__).parent / "volunteers.json"
-            if not volunteers_file.exists():
-                return []
-            
-            with open(volunteers_file, "r", encoding="utf-8") as f:
-                data = json.load(f)
-                volunteers = data.get("volunteers", [])
-            
-            # 篩選
-            results = volunteers
-            if query:
-                query = query.lower()
-                results = [v for v in results if 
-                    query in v.get("name", "").lower() or
-                    query in v.get("phone", "").lower() or
-                    query in v.get("email", "").lower() or
-                    query in v.get("skills", "").lower()]
-            
-            if status:
-                results = [v for v in results if v.get("status") == status]
-            
-            return results
-        except Exception as e:
-            print(f"搜尋失敗: {e}")
-            return []
-
-    @staticmethod
-    def search_volunteer_shifts(query, activity_id=None, status=None):
-        """搜尋志工排班"""
-        try:
-            import json
-            from pathlib import Path
-            
-            shifts_file = Path(__file__).parent / "volunteer_shifts.json"
-            if not shifts_file.exists():
-                return []
-            
-            with open(shifts_file, "r", encoding="utf-8") as f:
-                data = json.load(f)
-                shifts = data.get("volunteer_shifts", [])
-            
-            # 篩選
-            results = shifts
-            
-            if activity_id:
-                results = [s for s in results if s.get("activity_id") == activity_id]
-            
-            if status:
-                results = [s for s in results if s.get("status") == status]
-            
-            if query:
-                query = query.lower()
-                results = [s for s in results if 
-                    query in s.get("shift_name", "").lower() or
-                    any(query in v.lower() for v in s.get("volunteers", []))]
-            
-            return results
-        except Exception as e:
-            print(f"搜尋失敗: {e}")
-            return []
 
 
 class FileManager:

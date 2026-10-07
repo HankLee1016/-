@@ -1,0 +1,95 @@
+{% extends 'base.html' %}
+
+{% block title %}AI 福利小幫手 — 長者安心服務平台{% endblock %}
+
+{% block content %}
+<div class="page-bg"></div>
+<header class="hero-card main-hero">
+    <div class="hero-copy">
+        <span class="eyebrow">AI 福利小幫手</span>
+        <h1>🤖 有什麼福利問題都可以問我</h1>
+        <p>描述長者的年齡、居住情況、身體或經濟狀況，小幫手會依福利資料說明可能適合的福利與申請方式。</p>
+    </div>
+</header>
+
+<section class="card">
+    <div class="card-title">
+        <h2 class="section-title">對話</h2>
+        <div style="display:flex; gap:8px;">
+            <a class="button button-secondary" href="/welfare">瀏覽全部福利</a>
+            <a class="button button-secondary" href="/user/welfare-assistant?clear=1">清除對話</a>
+        </div>
+    </div>
+
+    <div id="chat" style="display:flex; flex-direction:column; gap:12px; min-height:220px; max-height:520px; overflow-y:auto; padding:8px 0;">
+        {% if not chat %}
+        <div class="request-card" data-intro>
+            <div class="request-description">您好！您可以這樣問我：</div>
+            <div class="request-actions">
+                {% for ex in ['我爸爸 75 歲獨居，可以申請什麼？', '家裡長輩行動不便需要人照顧', '想幫媽媽申請假牙補助', '65 歲搭公車有優惠嗎？'] %}
+                <button type="button" class="button button-secondary btn-small" onclick="ask('{{ ex }}')">{{ ex }}</button>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+        {% for m in chat %}
+        <div class="request-card" style="{{ 'margin-left:15%; background:#eef5ff;' if m.role == 'user' else 'margin-right:15%;' }}">
+            <strong>{{ '🙋 您' if m.role == 'user' else '🤖 小幫手' }}</strong>
+            <div style="white-space:pre-wrap; margin-top:6px;">{{ m.content }}</div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <form id="ask-form" style="display:flex; gap:8px; margin-top:12px;">
+        <input type="text" id="question" placeholder="請輸入您的問題…" style="flex:1;" value="{{ preset }}" autocomplete="off">
+        <button type="submit" class="button" id="send">送出</button>
+    </form>
+    <p class="text-muted" style="margin-top:8px;">小幫手的回答僅供參考，實際資格請以主管機關公告為準，也可以洽里辦公處協助。</p>
+</section>
+
+<script>
+const chatBox = document.getElementById('chat');
+function addMessage(role, text) {
+    const intro = chatBox.querySelector('[data-intro]');
+    if (intro) intro.remove();
+    const div = document.createElement('div');
+    div.className = 'request-card';
+    div.style.cssText = role === 'user' ? 'margin-left:15%; background:#eef5ff;' : 'margin-right:15%;';
+    const who = document.createElement('strong');
+    who.textContent = role === 'user' ? '🙋 您' : '🤖 小幫手';
+    const body = document.createElement('div');
+    body.style.cssText = 'white-space:pre-wrap; margin-top:6px;';
+    body.textContent = text;
+    div.append(who, body);
+    chatBox.appendChild(div);
+    chatBox.scrollTop = chatBox.scrollHeight;
+    return body;
+}
+async function ask(text) {
+    text = (text || '').trim();
+    if (!text) return;
+    const btn = document.getElementById('send');
+    btn.disabled = true;
+    addMessage('user', text);
+    const pending = addMessage('assistant', '思考中…');
+    try {
+        const res = await fetch('/api/welfare-chat', {
+            method: 'POST', headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({message: text})
+        });
+        const data = await res.json();
+        pending.textContent = data.reply || data.error || '目前無法回覆，請稍後再試。';
+    } catch (e) {
+        pending.textContent = '連線失敗，請稍後再試。';
+    }
+    btn.disabled = false;
+}
+document.getElementById('ask-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const input = document.getElementById('question');
+    ask(input.value);
+    input.value = '';
+});
+chatBox.scrollTop = chatBox.scrollHeight;
+</script>
+{% endblock %}

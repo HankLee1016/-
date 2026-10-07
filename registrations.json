@@ -1,1 +1,22 @@
-{"registrations": []}
+{
+  "registrations": [
+    {
+      "id": "4b6a333a-4199-48d1-8276-e54f7ac4b49f",
+      "activity_id": "b1e00308-96d7-4f76-a0af-1e32dcf4d790",
+      "username": "88",
+      "email": "",
+      "phone": "",
+      "status": "待審核",
+      "registered_at": "2026-10-07 20:14:13"
+    },
+    {
+      "id": "e2ba1540-8e52-4cf5-b1df-fbefce87c424",
+      "activity_id": "f259b8a7-eca6-4fdd-8596-f9bd4555af6f",
+      "username": "2",
+      "email": "",
+      "phone": "",
+      "status": "已通過",
+      "registered_at": "2026-10-07 21:32:52"
+    }
+  ]
+}

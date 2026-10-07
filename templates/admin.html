@@ -12,9 +12,9 @@
 
 <header class="hero-card main-hero">
     <div class="hero-copy">
-        <span class="eyebrow">社福單位 / 管理者後台</span>
+        <span class="eyebrow">里辦公處 / 管理者後台</span>
         <h1>👋 歡迎，{{ username or '管理者' }}</h1>
-        <p>此平台保留原本社福資源與活動管理功能，同時聚焦於長者需求、服務媒合與後續追蹤。</p>
+        <p>受理里內長者的生活需求、媒合在地服務資源，並辦理里民活動與發布公告。</p>
     </div>
     <div class="hero-panel">
         <div class="mini-stat">
@@ -35,31 +35,25 @@
 <section class="card">
     <div class="card-title">
         <h2 class="section-title">⚙️ 管理功能</h2>
-        <p class="text-muted">保留原本社福功能，同時延伸長者服務管理流程</p>
+        <p class="text-muted">里辦公處日常管理功能</p>
     </div>
 
     <div class="dashboard-grid">
         <article class="dashboard-tile tile-blue">
             <h3>👥 成員管理</h3>
-            <p>維護長者、家屬與社福成員資料，保留原本的會員管理。</p>
+            <p>管理里民（長者與家屬）帳號與角色。</p>
             <div class="form-actions" style="margin-top: 1rem;"><a class="button" href="/admin/members">進入成員管理</a></div>
         </article>
 
         <article class="dashboard-tile tile-blue">
             <h3>📋 長者服務需求</h3>
-            <p>受理使用者提交的需求與服務申請；更新後會同步到使用者的申請進度。</p>
+            <p>受理里民提出的長者需求，指派服務並更新處理進度。</p>
             <div class="form-actions" style="margin-top: 1rem;"><a class="button" href="/admin/help-requests">處理使用者需求</a></div>
         </article>
 
         <article class="dashboard-tile tile-green">
-            <h3>📋 需求管理</h3>
-            <p>維持既有案件與活動管理功能，保留原平台運作。</p>
-            <div class="form-actions" style="margin-top: 1rem;"><a class="button" href="/admin/activities">進入需求管理</a></div>
-        </article>
-
-        <article class="dashboard-tile tile-green">
             <h3>🎯 活動管理</h3>
-            <p>維持區域活動、志願者排班、社區服務與活動辦理。</p>
+            <p>建立社區活動、審核使用者報名並查看簽到紀錄。</p>
             <div class="form-actions" style="margin-top: 1rem;"><a class="button" href="/admin/activities">進入活動管理</a></div>
         </article>
 
@@ -73,7 +67,7 @@
 
         <article class="dashboard-tile tile-blue">
             <h3>📝 內容管理</h3>
-            <p>管理社福資訊、活動公告、長者服務相關內容。</p>
+            <p>管理健康衛教與長者照顧相關文章。</p>
             <div class="form-actions" style="margin-top: 1rem;"><a class="button" href="/admin/contents">進入內容管理</a></div>
         </article>
 
@@ -82,17 +76,16 @@
             <p>發布消息、福利資訊與重要社區更新。</p>
             <div class="form-actions" style="margin-top: 1rem;"><a class="button" href="/admin/announcements">進入公告管理</a></div>
         </article>
-
         <article class="dashboard-tile tile-green">
-            <h3>✅ 補助企劃審核</h3>
-            <p>審核使用者提交的社福補助企劃書。</p>
-            <div class="form-actions" style="margin-top: 1rem;"><a class="button" href="/admin/applications">進入補助企劃審核</a></div>
+            <h3>💡 福利資訊管理</h3>
+            <p>維護里民可查詢的老人福利項目，AI 福利小幫手也會依此資料回答。</p>
+            <div class="form-actions" style="margin-top: 1rem;"><a class="button" href="/admin/welfare">進入福利資訊管理</a></div>
         </article>
 
-        <article class="dashboard-tile tile-yellow">
-            <h3>💳 捐款資料</h3>
-            <p>保留捐款紀錄與資源支持，維持社福平台財務運作。</p>
-            <div class="form-actions" style="margin-top: 1rem;"><a class="button" href="/donations">查看捐款資料</a></div>
+        <article class="dashboard-tile tile-blue">
+            <h3>🤖 AI 企劃書產生器</h3>
+            <p>撰寫社區照顧、長者活動等計畫補助的企劃書，可匯出 DOC／PDF。</p>
+            <div class="form-actions" style="margin-top: 1rem;"><a class="button" href="/admin/proposal">進入企劃書產生器</a></div>
         </article>
     </div>
 </section>

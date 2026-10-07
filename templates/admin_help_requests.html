@@ -57,6 +57,13 @@
             <div><span>聯絡方式：</span> {{ item.contact_phone or '未提供' }}</div>
         </div>
 
+        {% set pf = profiles.get(item.username, {}) %}
+        {% if pf.care_notes %}
+        <div class="request-description"><strong>🩺 照護注意事項：</strong>{{ pf.care_notes }}</div>
+        {% endif %}
+        {% if pf.address %}
+        <div class="request-description"><strong>🏠 居住地址：</strong>{{ pf.address }}{% if pf.relation %}（聯絡人為長者{{ pf.relation }}）{% endif %}</div>
+        {% endif %}
         {% if item.details %}
         <div class="request-description">{{ item.details }}</div>
         {% endif %}
@@ -86,7 +93,7 @@
 
                 <div class="form-group">
                     <label for="assigned_unit_{{ item.id }}">服務單位</label>
-                    <input id="assigned_unit_{{ item.id }}" type="text" name="assigned_unit" value="{{ item.assigned_unit or '' }}" placeholder="例如：社會福利館、社區關懷站">
+                    <input id="assigned_unit_{{ item.id }}" type="text" name="assigned_unit" value="{{ item.assigned_unit or '' }}" placeholder="例如：社區關懷據點、送餐單位、里辦公處">
                 </div>
 
                 <div class="form-group">

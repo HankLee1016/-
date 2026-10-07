@@ -1,0 +1,105 @@
+{% extends 'base.html' %}
+
+{% block title %}社區活動 — 長者服務平台{% endblock %}
+
+{% block content %}
+<div class="page-bg"></div>
+<header class="hero-card main-hero">
+    <div class="hero-copy">
+        <span class="eyebrow">社區活動</span>
+        <h1>📅 社區活動報名與簽到</h1>
+        <p>瀏覽社區活動並線上報名；報名經管理者審核通過後，活動當天即可在此簽到。</p>
+    </div>
+    <div class="hero-panel">
+        <div class="mini-stat">
+            <span>已報名</span>
+            <strong>{{ items|selectattr('registration')|list|length }} 場</strong>
+        </div>
+        <div class="mini-stat">
+            <span>已簽到</span>
+            <strong>{{ items|selectattr('attendance')|list|length }} 場</strong>
+        </div>
+    </div>
+</header>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% for category, message in messages %}
+<div class="{{ 'error-message' if category == 'error' else 'success-message' }}" style="margin: 0 0 1rem;">{{ message }}</div>
+{% endfor %}
+{% endwith %}
+
+<section class="card">
+    <div class="card-title">
+        <h2 class="section-title">活動列表</h2>
+        <p class="text-muted">報名 → 管理者審核 → 活動當天簽到</p>
+    </div>
+
+    {% if items %}
+    {% for item in items %}
+    {% set a = item.activity %}
+    {% set reg = item.registration %}
+    <div class="request-card">
+        <div class="request-card-header">
+            <h3>{{ a.activity_name }}</h3>
+            {% if item.attendance %}
+            <span class="badge badge-success">✅ 已簽到</span>
+            {% elif reg and reg.status == '已通過' %}
+            <span class="badge badge-success">👍 報名已通過</span>
+            {% elif reg and reg.status == '待審核' %}
+            <span class="badge badge-warning">⏳ 報名待審核</span>
+            {% elif reg and reg.status == '已拒絕' %}
+            <span class="badge badge-danger">❌ 報名未通過</span>
+            {% elif a.status == '已結束' %}
+            <span class="badge badge-secondary">已結束</span>
+            {% elif item.block_reason %}
+            <span class="badge badge-secondary">暫停報名</span>
+            {% else %}
+            <span class="badge badge-info">🔵 開放報名</span>
+            {% endif %}
+        </div>
+
+        <div class="request-meta">
+            <div><span>分類：</span> {{ a.category }}</div>
+            {% if a.start_date %}<div><span>日期：</span> {{ a.start_date }}{% if a.end_date and a.end_date != a.start_date %} ～ {{ a.end_date }}{% endif %}</div>{% endif %}
+            {% if a.location %}<div><span>地點：</span> {{ a.location }}</div>{% endif %}
+            {% if a.registration_deadline %}<div><span>報名截止：</span> {{ a.registration_deadline }}</div>{% endif %}
+            {% if a.max_capacity %}<div><span>名額：</span> {{ a.max_capacity }} 人</div>{% endif %}
+        </div>
+
+        {% if a.description %}
+        <div class="request-description">{{ a.description }}</div>
+        {% endif %}
+
+        <div class="request-actions">
+            {% if item.attendance %}
+                <span class="text-muted">簽到時間：{{ item.attendance.check_in_time }}</span>
+            {% elif reg and reg.status == '已通過' %}
+                <form method="post" action="/user/activities/{{ a.id }}/checkin" style="display:inline;">
+                    <button type="submit" class="button">✅ 我要簽到</button>
+                </form>
+            {% elif reg and reg.status == '待審核' %}
+                <span class="text-muted">報名時間：{{ reg.registered_at }}，審核通過後即可簽到。</span>
+                <form method="post" action="/user/activities/{{ a.id }}/cancel" style="display:inline;" onsubmit="return confirm('確定要取消報名嗎？');">
+                    <button type="submit" class="button button-danger btn-small">取消報名</button>
+                </form>
+            {% elif reg %}
+                <span class="text-muted">很抱歉，此次報名未通過審核。</span>
+            {% elif item.block_reason %}
+                <span class="text-muted">{{ item.block_reason }}</span>
+            {% else %}
+                <form method="post" action="/user/activities/{{ a.id }}/register" style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+                    <input type="tel" name="phone" placeholder="聯絡電話（選填）" value="{{ phone }}" style="max-width: 200px;">
+                    <button type="submit" class="button">📝 我要報名</button>
+                </form>
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
+    {% else %}
+    <div class="empty-state">
+        <p>📅</p>
+        <p>目前沒有開放的社區活動</p>
+    </div>
+    {% endif %}
+</section>
+{% endblock %}

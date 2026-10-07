@@ -1,118 +1,81 @@
 {% extends 'base.html' %}
 
-{% block title %}服務媒合 — 長者服務平台{% endblock %}
+{% block title %}選擇服務 — 長者服務平台{% endblock %}
 
 {% block content %}
+{% set req = selected_request %}
+{% set applied = req.service_id or req.matched_service %}
 <div class="page-bg"></div>
 <header class="hero-card main-hero">
     <div class="hero-copy">
-        <span class="eyebrow">需求媒合</span>
-        <h1>🤝 服務媒合列表</h1>
-        <p>系統依照需求類型、時間與地點，為您推薦適合的社福服務。</p>
-    </div>
-    <div class="hero-panel">
-        <div class="mini-stat">
-            <span>匹配邏輯</span>
-            <strong>地區 + 需求</strong>
-        </div>
-        <div class="mini-stat">
-            <span>推薦結果</span>
-            <strong>{{ matches|length if matches else 0 }} 項</strong>
-        </div>
+        <span class="eyebrow">服務媒合</span>
+        <h1>🔍 為「{{ req.need_type }}」選擇服務</h1>
+        <p>以下是服務類型與此需求相符、目前開放申請的在地服務，並依所在區域排序。選擇一項提出申請，里辦公處確認後會在申請進度中通知您。</p>
     </div>
 </header>
 
 <section class="card">
     <div class="card-title">
-        <h2 class="section-title">我的需求</h2>
-        <p class="text-muted">依需求類型與所在區域媒合目前開放申請的服務。</p>
+        <h2 class="section-title">需求內容</h2>
+        <a class="button button-secondary" href="/user/help-requests">返回申請進度</a>
     </div>
-
-    <div class="request-actions" style="margin-bottom: 1rem;">
-        <a class="button" href="/user/help-request">新增需求</a>
-        <a class="button button-secondary" href="/user/help-requests">查看申請進度</a>
-        <a class="button button-secondary" href="/services">瀏覽服務介紹</a>
-    </div>
-
-    {% if requests %}
-    <div class="request-actions" style="margin-bottom: 1.5rem;">
-        {% for item in requests %}
-        <a class="button {% if selected_request and selected_request.id == item.id %}button-secondary{% endif %}" href="/user/service-matches?request_id={{ item.id }}">
-            {{ item.need_type }}｜{{ item.need_when }}
-        </a>
-        {% endfor %}
-    </div>
-    {% endif %}
-
-    {% if selected_request %}
     <div class="request-card">
-        <div class="request-card-header">
-            <h3>需求內容</h3>
-            <span class="badge badge-info">{{ selected_request.urgency or '一般' }}</span>
-        </div>
         <div class="request-meta">
-            <div><span>長者：</span> {{ selected_request.elder_name or '未填寫' }}</div>
-            <div><span>年齡層：</span> {{ selected_request.age_group or '未填寫' }}</div>
-            <div><span>需求類型：</span> {{ selected_request.need_type }}</div>
-            <div><span>區域：</span> {{ selected_request.district or '未填寫' }}</div>
-            <div><span>時間：</span> {{ selected_request.need_when }}</div>
-            <div><span>地點：</span> {{ selected_request.location }}</div>
-            <div><span>時長：</span> {{ selected_request.duration or '依需求安排' }}</div>
-            <div><span>家庭狀況：</span> {{ selected_request.household_status or '未填寫' }}</div>
+            <div><span>需求類型：</span> {{ req.need_type }}</div>
+            <div><span>所在區域：</span> {{ req.district or '未填寫' }}</div>
+            <div><span>緊急程度：</span> {{ req.urgency or '一般' }}</div>
+            <div><span>長者：</span> {{ req.elder_name or '未填寫' }}</div>
+            <div><span>時間：</span> {{ req.need_when }}</div>
+            <div><span>地點：</span> {{ req.location }}</div>
         </div>
-        <p class="request-description"><strong>說明：</strong> {{ selected_request.details or '未填寫詳細需求說明' }}</p>
+        {% if req.details %}<p class="request-description"><strong>說明：</strong> {{ req.details }}</p>{% endif %}
     </div>
-    {% else %}
-    <div class="empty-state">
-        <p>📭</p>
-        <p>尚未建立需求。填寫需求後，系統會依需求類型與區域推薦目前開放的服務。</p>
-        <div class="request-actions" style="justify-content: center;">
-            <a class="button" href="/user/help-request">建立需求並開始媒合</a>
-            <a class="button button-secondary" href="/services">先瀏覽服務</a>
-        </div>
-    </div>
+
+    {% if applied %}
+    <div class="success-message">已申請「{{ req.matched_service }}」，請至申請進度查看里辦公處的處理結果。</div>
     {% endif %}
 
-    {% if matches %}
     <div class="card-title">
-        <h2 class="section-title">推薦服務</h2>
+        <h2 class="section-title">推薦服務（{{ matches|length }} 項）</h2>
     </div>
+
     {% for match in matches %}
+    {% set svc = match.service %}
     <div class="request-card">
         <div class="request-card-header">
-            <h3>{{ match.service.service_name }}</h3>
-            <span class="badge badge-info">推薦度 {{ match.score }}</span>
+            <h3>{{ svc.service_name }}</h3>
+            {% if match.score == 3 %}
+            <span class="badge badge-success">📍 同區服務</span>
+            {% elif match.score == 2 %}
+            <span class="badge badge-info">🗺️ 全區皆可服務</span>
+            {% else %}
+            <span class="badge badge-warning">↔️ 跨區服務</span>
+            {% endif %}
         </div>
         <div class="request-meta">
-            <div><span>類型：</span> {{ match.service.service_type }}</div>
-            <div><span>服務對象：</span> {{ match.service.target_group or '一般長者' }}</div>
-            <div><span>服務區域：</span> {{ match.service.district or match.service.service_scope or '全區' }}</div>
-            <div><span>聯絡方式：</span> {{ match.service.contact or '請聯絡服務單位' }}</div>
+            <div><span>服務類型：</span> {{ svc.service_type }}</div>
+            <div><span>服務對象：</span> {{ svc.target_group or '一般長者' }}</div>
+            <div><span>服務區域：</span> {{ svc.district or '全區' }}</div>
+            <div><span>聯絡方式：</span> {{ svc.contact or '請聯絡服務單位' }}</div>
         </div>
-        {% if match.service.description %}
-        <div class="request-description">{{ match.service.description }}</div>
-        {% endif %}
+        {% if svc.description %}<div class="request-description">{{ svc.description }}</div>{% endif %}
+        {% if match.score == 1 %}<p class="text-muted">此服務位於{{ svc.district }}，申請前建議先電話確認是否可跨區服務。</p>{% endif %}
         <div class="request-actions">
-            <span class="badge badge-success">{{ match.reason }}</span>
-            {% if selected_request.service_id or selected_request.matched_service %}
-            <a class="button button-secondary" href="/user/help-requests">已送出申請，查看進度</a>
-            {% else %}
-            <form method="post" action="/user/help-requests/{{ selected_request.id }}/apply/{{ match.service.id }}" style="display:inline;">
+            {% if req.service_id == svc.id %}
+            <span class="badge badge-success">✅ 已申請此服務</span>
+            {% elif not applied %}
+            <form method="post" action="/user/help-requests/{{ req.id }}/apply/{{ svc.id }}" style="display:inline;">
                 <button type="submit" class="button">申請此服務</button>
             </form>
             {% endif %}
         </div>
     </div>
-    {% endfor %}
-    {% elif selected_request %}
+    {% else %}
     <div class="empty-state">
         <p>📌</p>
-        <p>目前沒有開放中的符合服務。您可以瀏覽全部服務，或新增另一筆需求再試一次。</p>
-        <div class="request-actions" style="justify-content: center;">
-            <a class="button" href="/user/help-request">新增另一筆需求</a>
-            <a class="button button-secondary" href="/services">瀏覽服務介紹</a>
-        </div>
+        <p>目前沒有「{{ req.need_type }}」類型的開放服務。</p>
+        <p class="text-muted">您的需求已送出，里辦公處會收到並協助安排，處理結果可在申請進度查看。</p>
     </div>
-    {% endif %}
+    {% endfor %}
 </section>
 {% endblock %}

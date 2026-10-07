@@ -3,15 +3,15 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>企劃助理 — 社福資源平台</title>
+  <title>企劃助理 — 長者安心服務平台</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/assistant.css') }}">
 </head>
 
 <body class="app-assistant">
   <div class="sidebar">
-    <a href="/user" class="logo">🌱 社福 AI 平台</a>
-    <a href="/user/assistant?save_history=1"><button class="new-btn">＋ 新企劃對話</button></a>
+    <a href="/admin" class="logo">🌱 企劃 AI 助理</a>
+    <a href="/admin/assistant?save_history=1"><button class="new-btn">＋ 新企劃對話</button></a>
 
     <div class="section-title">歷史對話</div>
     <ul class="history-list">
@@ -24,7 +24,7 @@
             <button class="btn btn-plain" onclick="editConversationName({{ loop.index0 }})" title="編輯名稱" style="font-size:11px;">編輯</button>
           </div>
           <div style="display:flex;gap:6px;flex-wrap:wrap;">
-            <a class="btn btn-plain" href="/user/assistant/load_conversation/{{ loop.index0 }}" title="載入此對話">繼續</a>
+            <a class="btn btn-plain" href="/admin/assistant/load_conversation/{{ loop.index0 }}" title="載入此對話">繼續</a>
             <button class="btn btn-plain" onclick="downloadConversation({{ loop.index0 }})" title="下載此對話">下載</button>
           </div>
         </li>
@@ -39,9 +39,9 @@
     <div class="header">
       <div id="header-title">智慧社福資源輔助系統（MVP）</div>
       <div class="controls">
-        <a href="/user" class="btn">使用者專區</a>
+        <a href="/admin/proposal" class="btn">返回企劃書產生器</a>
         <button class="btn btn-plain" id="btn-enter-select" onclick="enableSelectionMode()">選取匯出</button>
-        <a href="/user/assistant/export?subsidy_summary={{ subsidy_summary | urlencode }}" class="btn">全部匯出</a>
+        <a href="/admin/assistant/export?subsidy_summary={{ subsidy_summary | urlencode }}" class="btn">全部匯出</a>
         <div class="export-panel" style="display:none;align-items:center;gap:8px;margin-left:12px;">
           <input id="export-filename" placeholder="檔名 (例：my_plan.txt)" />
           <button class="btn" onclick="exportSelectedNow()">立即匯出</button>
@@ -229,7 +229,7 @@
     const filename = (document.getElementById('export-filename')?.value || '').trim();
     if(filename) params.append('filename', filename);
     if ("{{ subsidy_summary | default('') }}") params.append('subsidy_summary', "{{ subsidy_summary | urlencode }}");
-    window.location = '/user/assistant/export_selected?' + params.toString();
+    window.location = '/admin/assistant/export_selected?' + params.toString();
   }
 
   function messageClicked(idx){
@@ -252,7 +252,7 @@
     if(filename === null) return;
     const params = new URLSearchParams();
     if(filename.trim()) params.append('filename', filename.trim());
-    window.location = '/user/proposal/download/' + idx + '?' + params.toString();
+    window.location = '/admin/proposal/download/' + idx + '?' + params.toString();
   }
 
   function downloadConversation(idx){
@@ -261,7 +261,7 @@
     if(filename === null) return;
     const params = new URLSearchParams();
     if(filename.trim()) params.append('filename', filename.trim());
-    window.location = '/user/assistant/download_conversation/' + idx + '?' + params.toString();
+    window.location = '/admin/assistant/download_conversation/' + idx + '?' + params.toString();
   }
 
   function editConversationName(idx){
@@ -272,7 +272,7 @@
     const newName = prompt('請輸入新的對話名稱：', currentName);
     if(newName === null || newName.trim() === '') return;
     
-    fetch('/user/assistant/rename_conversation/' + idx, {
+    fetch('/admin/assistant/rename_conversation/' + idx, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name: newName.trim() })

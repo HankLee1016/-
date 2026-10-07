@@ -21,12 +21,17 @@ def init_database():
                 username VARCHAR(255) UNIQUE NOT NULL,
                 password VARCHAR(255) NOT NULL,
                 role VARCHAR(50) NOT NULL DEFAULT 'user',
-                org_name VARCHAR(255),
-                org_id VARCHAR(255),
-                member_count INTEGER,
-                volunteer_count INTEGER,
-                contact_person VARCHAR(255),
+                contact_name VARCHAR(100),
+                relation VARCHAR(20),
+                phone VARCHAR(30),
+                email VARCHAR(255),
+                elder_name VARCHAR(100),
+                age_group VARCHAR(20),
+                district VARCHAR(20),
                 address TEXT,
+                household_status VARCHAR(20),
+                care_level VARCHAR(20),
+                care_notes TEXT,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
@@ -87,35 +92,7 @@ def init_database():
         """)
         print("✓ attendances 表已建立")
         
-        # 5. 志工排班表
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS volunteer_shifts (
-                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-                activity_id UUID NOT NULL,
-                shift_name VARCHAR(255) NOT NULL,
-                start_time TIME,
-                end_time TIME,
-                required_count INTEGER,
-                status VARCHAR(50) DEFAULT '招募中',
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (activity_id) REFERENCES activities(id)
-            )
-        """)
-        print("✓ volunteer_shifts 表已建立")
-        
-        # 6. 志工分配表
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS shift_volunteers (
-                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-                shift_id UUID NOT NULL,
-                volunteer_name VARCHAR(255) NOT NULL,
-                assigned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (shift_id) REFERENCES volunteer_shifts(id)
-            )
-        """)
-        print("✓ shift_volunteers 表已建立")
-        
-        # 7. 個案表
+        # 5. 個案表
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS cases (
                 id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -134,7 +111,7 @@ def init_database():
         """)
         print("✓ cases 表已建立")
         
-        # 8. 個案進度日誌表
+        # 6. 個案進度日誌表
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS case_logs (
                 id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -149,7 +126,7 @@ def init_database():
         """)
         print("✓ case_logs 表已建立")
         
-        # 9. 公告表
+        # 7. 公告表
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS announcements (
                 id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -166,7 +143,7 @@ def init_database():
         """)
         print("✓ announcements 表已建立")
         
-        # 10. 服務表
+        # 8. 服務表
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS services (
                 id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -182,7 +159,7 @@ def init_database():
         """)
         print("✓ services 表已建立")
         
-        # 11. 內容表
+        # 9. 內容表
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS contents (
                 id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -198,27 +175,7 @@ def init_database():
         """)
         print("✓ contents 表已建立")
 
-        # 12. 捐款表 (兼容 crawler 與 UI)
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS donations (
-                id BIGINT PRIMARY KEY,
-                donor VARCHAR(255),
-                funds_no VARCHAR(100),
-                amount NUMERIC,
-                donation_date DATE,
-                note TEXT,
-                category INTEGER,
-                unit_data_id INTEGER,
-                show_flag INTEGER,
-                last_user INTEGER,
-                last_date TIMESTAMP,
-                build_date TIMESTAMP,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
-        print("✓ donations 表已建立")
-        
-        # 12. 系統日誌表
+        # 10. 系統日誌表
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS system_logs (
                 id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -234,7 +191,7 @@ def init_database():
         """)
         print("✓ system_logs 表已建立")
         
-        # 13. 通知表
+        # 11. 通知表
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS notifications (
                 id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -252,7 +209,7 @@ def init_database():
         """)
         print("✓ notifications 表已建立")
         
-        # 14. 備份表
+        # 12. 備份表
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS backups (
                 id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -268,7 +225,7 @@ def init_database():
         """)
         print("✓ backups 表已建立")
         
-        # 15. 用戶權限表
+        # 13. 用戶權限表
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS user_permissions (
                 id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -283,7 +240,7 @@ def init_database():
         """)
         print("✓ user_permissions 表已建立")
         
-        # 16. 檔案表
+        # 14. 檔案表
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS files (
                 id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -300,7 +257,7 @@ def init_database():
         """)
         print("✓ files 表已建立")
         
-        # 17. 統計報表表
+        # 15. 統計報表表
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS reports (
                 id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

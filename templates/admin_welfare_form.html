@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ '編輯' if item.id else '新增' }}福利項目 — 長者安心服務平台{% endblock %}
+
+{% block content %}
+<div class="page-bg"></div>
+<section class="card">
+    <div class="card-title">
+        <h2 class="section-title">{{ '✏️ 編輯' if item.id else '＋ 新增' }}福利項目</h2>
+        <a class="button button-secondary" href="/admin/welfare">返回列表</a>
+    </div>
+    {% if error %}<div class="error-message">{{ error }}</div>{% endif %}
+    <form method="post">
+        <div class="form-row">
+            <div class="form-group">
+                <label for="title">福利名稱 <span style="color:red;">*</span></label>
+                <input type="text" id="title" name="title" required value="{{ item.title or '' }}" placeholder="例如：中低收入老人生活津貼">
+            </div>
+            <div class="form-group">
+                <label for="category">類別</label>
+                <select id="category" name="category">
+                    {% for c in categories %}<option value="{{ c }}" {% if item.category == c %}selected{% endif %}>{{ c }}</option>{% endfor %}
+                </select>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label for="agency">主辦機關</label>
+                <input type="text" id="agency" name="agency" value="{{ item.agency or '' }}" placeholder="例如：各縣市政府社會局">
+            </div>
+            <div class="form-group">
+                <label for="contact">洽詢窗口</label>
+                <input type="text" id="contact" name="contact" value="{{ item.contact or '' }}" placeholder="例如：長照專線 1966、里辦公處">
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="eligibility">申請資格 <span style="color:red;">*</span></label>
+            <textarea id="eligibility" name="eligibility" rows="3" required>{{ item.eligibility or '' }}</textarea>
+        </div>
+        <div class="form-group">
+            <label for="benefit">福利內容</label>
+            <textarea id="benefit" name="benefit" rows="3">{{ item.benefit or '' }}</textarea>
+        </div>
+        <div class="form-group">
+            <label for="apply_method">申請方式 <span style="color:red;">*</span></label>
+            <textarea id="apply_method" name="apply_method" rows="2" required>{{ item.apply_method or '' }}</textarea>
+        </div>
+        <div class="form-group">
+            <label for="source_url">參考網址</label>
+            <input type="url" id="source_url" name="source_url" value="{{ item.source_url or '' }}" placeholder="https://">
+        </div>
+        <div class="form-actions">
+            <button type="submit" class="button">💾 儲存</button>
+        </div>
+    </form>
+</section>
+{% endblock %}

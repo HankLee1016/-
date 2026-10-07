@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ item.title }} — 長者福利資訊{% endblock %}
+
+{% block content %}
+<div class="page-bg"></div>
+<header class="hero-card main-hero">
+    <div class="hero-copy">
+        <span class="eyebrow">{{ item.category }}</span>
+        <h1>{{ item.title }}</h1>
+        <p>{{ item.agency }}</p>
+    </div>
+</header>
+
+<section class="card">
+    <div class="card-title">
+        <h2 class="section-title">福利說明</h2>
+        <a class="button button-secondary" href="/welfare">返回福利列表</a>
+    </div>
+    <div class="request-card">
+        <div class="request-description"><strong>👤 申請資格：</strong>{{ item.eligibility }}</div>
+        <div class="request-description"><strong>🎁 福利內容：</strong>{{ item.benefit }}</div>
+        <div class="request-description"><strong>📝 申請方式：</strong>{{ item.apply_method }}</div>
+        {% if item.contact %}<div class="request-description"><strong>☎️ 洽詢窗口：</strong>{{ item.contact }}</div>{% endif %}
+        {% if item.source_url %}<div class="request-description"><strong>🔗 參考網站：</strong><a href="{{ item.source_url }}" target="_blank" rel="noopener">{{ item.source_url }}</a></div>{% endif %}
+        <p class="text-muted">資料更新：{{ item.updated_at or '—' }}。資訊僅供參考，實際資格與金額以主管機關最新公告為準。</p>
+    </div>
+    {% if session.get('role') == 'user' %}
+    <div class="request-actions">
+        <a class="button" href="/user/welfare-assistant?q={{ ('請問「' ~ item.title ~ '」我家長者適合申請嗎？要準備什麼？') | urlencode }}">🤖 問 AI 福利小幫手</a>
+        <a class="button button-secondary" href="/user/help-request">需要里辦公處協助申請</a>
+    </div>
+    {% endif %}
+</section>
+{% endblock %}

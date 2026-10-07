@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}長者安心服務平台｜社福資源管理{% endblock %}</title>
+    <title>{% block title %}長者安心服務平台{% endblock %}</title>
 
     <!-- CSS -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
@@ -38,15 +38,16 @@
                         <a href="/admin">總覽</a>
                         <a href="/admin/help-requests">服務需求</a>
                         <a href="/admin/services">服務管理</a>
-                        <a href="/admin/activities">需求管理</a>
-                        <a href="/admin/applications">申請審核</a>
-                        <a href="/donations">捐款資料</a>
+                        <a href="/admin/activities">活動管理</a>
+                        <a href="/admin/welfare">福利資訊</a>
+                        <a href="/admin/proposal">企劃書</a>
                     {% else %}
                         <a href="/user">我的需求</a>
                         <a href="/user/help-request">我需要幫助</a>
-                        <a href="/user/service-matches">服務媒合</a>
                         <a href="/user/help-requests">申請進度</a>
-                        <a href="/subsidies">找服務</a>
+                        <a href="/user/activities">社區活動</a>
+                        <a href="/welfare">福利資訊</a>
+                        <a href="/user/welfare-assistant">福利小幫手</a>
                         <a href="/user/profile">我的資料</a>
                     {% endif %}
 
@@ -55,7 +56,6 @@
                     <a href="/">平台介紹</a>
                     <a href="/login">登入</a>
                     <a href="/register">註冊</a>
-                    <a href="/donate">捐款支持</a>
                 {% endif %}
             </div>
         </div>
@@ -69,7 +69,7 @@
     <!-- Footer -->
     <footer class="footer">
         <div class="footer-content">
-            <p>&copy; 2026 長者安心服務平台｜社福資源管理系統</p>
+            <p>&copy; 2026 長者安心服務平台｜里民長者關懷服務</p>
         </div>
     </footer>
 

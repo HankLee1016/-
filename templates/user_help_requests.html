@@ -8,16 +8,12 @@
     <div class="hero-copy">
         <span class="eyebrow">申請進度</span>
         <h1>📄 我的申請進度</h1>
-        <p>查看長者服務需求進度，以及補助企劃的管理者審核結果。</p>
+        <p>查看長者服務需求的處理狀態、媒合服務與處理歷程。</p>
     </div>
     <div class="hero-panel">
         <div class="mini-stat">
             <span>長者服務需求</span>
             <strong>{{ requests|length if requests else 0 }} 筆</strong>
-        </div>
-        <div class="mini-stat">
-            <span>補助企劃申請</span>
-            <strong>{{ applications|length if applications else 0 }} 筆</strong>
         </div>
     </div>
 </header>
@@ -63,6 +59,12 @@
         {% if item.matched_service %}
         <div class="request-description"><strong>媒合服務：</strong> {{ item.matched_service }}</div>
         {% endif %}
+        {% if not item.matched_service and item.status == '待處理' %}
+        <div class="request-actions">
+            <a class="button" href="/user/service-matches?request_id={{ item.id }}">🔍 選擇服務</a>
+            <span class="text-muted">查看符合此需求的服務並提出申請；也可等待里辦公處直接安排。</span>
+        </div>
+        {% endif %}
         {% if item.assigned_unit %}
         <div class="request-description"><strong>服務單位：</strong> {{ item.assigned_unit }}</div>
         {% endif %}
@@ -93,48 +95,4 @@
     {% endif %}
 </section>
 
-<section class="card">
-    <div class="card-title">
-        <h2 class="section-title">補助企劃審核</h2>
-        <p class="text-muted">查看管理者對補助企劃的審核狀態與意見</p>
-    </div>
-
-    {% if applications %}
-    {% for application in applications %}
-    <article class="request-card">
-        <div class="request-card-header">
-            <div>
-                <h3>{{ application.case_title }}</h3>
-                <span class="text-muted">申請時間：{{ application.created_at[:19].replace('T', ' ') }}</span>
-            </div>
-            {% if application.status == 'pending' %}
-            <span class="badge badge-warning">審核中</span>
-            {% elif application.status == 'approved' %}
-            <span class="badge badge-success">已核准</span>
-            {% elif application.status == 'rejected' %}
-            <span class="badge badge-danger">未通過</span>
-            {% else %}
-            <span class="badge badge-secondary">{{ application.status }}</span>
-            {% endif %}
-        </div>
-        {% if application.subsidy_summary %}
-        <p class="request-description"><strong>申請補助：</strong>{{ application.subsidy_summary }}</p>
-        {% endif %}
-        {% if application.admin_note %}
-        <p class="request-description"><strong>管理者審核意見：</strong>{{ application.admin_note }}</p>
-        {% else %}
-        <p class="request-description text-muted">管理者尚未留下審核意見。</p>
-        {% endif %}
-        <div class="request-actions">
-            <a class="button button-secondary" href="/user/applications">查看企劃書與完整紀錄</a>
-        </div>
-    </article>
-    {% endfor %}
-    {% else %}
-    <div class="empty-state">
-        <p>目前沒有補助企劃申請紀錄。</p>
-        <a class="button button-secondary" href="/user/applications">前往補助申請紀錄</a>
-    </div>
-    {% endif %}
-</section>
 {% endblock %}

@@ -1,77 +1,139 @@
 {% extends 'base.html' %}
 
-{% block title %}我的資料 — 長者服務平台{% endblock %}
+{% block title %}我的資料 — 長者安心服務平台{% endblock %}
 
 {% block content %}
-    <div class="page-bg"></div>
-    <header class="hero-card main-hero">
-        <div class="hero-copy">
-            <span class="eyebrow">個人資料</span>
-            <h1>👤 我的資料</h1>
-            <p>請在此更新您的基本資料與聯絡資訊，讓系統更準確支援長者需求與服務媒合。</p>
+{% macro select(name, options, current, placeholder='請選擇') -%}
+<select id="{{ name }}" name="{{ name }}">
+    <option value="">{{ placeholder }}</option>
+    {% for o in options %}<option value="{{ o }}" {% if current == o %}selected{% endif %}>{{ o }}</option>{% endfor %}
+</select>
+{%- endmacro %}
+<div class="page-bg"></div>
+<header class="hero-card main-hero">
+    <div class="hero-copy">
+        <span class="eyebrow">我的資料</span>
+        <h1>👤 長者與聯絡人資料</h1>
+        <p>填寫一次，之後提出需求、報名活動時會自動帶入；里辦公處也能更快聯絡並了解長者狀況。</p>
+    </div>
+    <div class="hero-panel">
+        <div class="mini-stat">
+            <span>帳號</span>
+            <strong>{{ username }}</strong>
         </div>
-        <div class="hero-panel">
-            <div class="mini-stat">
-                <span>帳號身份</span>
-                <strong>{{ session.get('username') or '使用者' }}</strong>
+        <div class="mini-stat">
+            <span>資料完整度</span>
+            <strong>{{ completeness }}%</strong>
+        </div>
+    </div>
+</header>
+
+{% if success %}<div class="success-message">✅ {{ success }}</div>{% endif %}
+{% if error %}<div class="error-message">❌ {{ error }}</div>{% endif %}
+
+<form method="post" action="/user/profile">
+    <section class="card">
+        <div class="card-title">
+            <h2 class="section-title">🙋 聯絡人（填寫者）</h2>
+            <p class="text-muted">里辦公處聯絡您時使用</p>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label for="contact_name">姓名 <span style="color:red;">*</span></label>
+                <input type="text" id="contact_name" name="contact_name" required value="{{ profile.contact_name }}" placeholder="例如：王小明">
             </div>
-            <div class="mini-stat">
-                <span>資料狀態</span>
-                <strong>已更新</strong>
+            <div class="form-group">
+                <label for="relation">與長者關係</label>
+                {{ select('relation', relations, profile.relation) }}
             </div>
         </div>
-    </header>
+        <div class="form-row">
+            <div class="form-group">
+                <label for="phone">手機 <span style="color:red;">*</span></label>
+                <input type="tel" id="phone" name="phone" required value="{{ profile.phone }}" placeholder="09XX-XXX-XXX">
+            </div>
+            <div class="form-group">
+                <label for="email">Email（選填）</label>
+                <input type="email" id="email" name="email" value="{{ profile.email }}">
+            </div>
+        </div>
+    </section>
 
     <section class="card">
-        {% if success %}
-            <div class="message success">✅ {{ success }}</div>
-        {% endif %}
-        {% if error %}
-            <div class="message error">❌ {{ error }}</div>
-        {% endif %}
-
         <div class="card-title">
-            <h2 class="section-title">📋 基本資料</h2>
-            <p class="text-muted">更新您的個人與聯絡資訊</p>
+            <h2 class="section-title">👵 長者基本資料</h2>
+            <p class="text-muted">提出需求時會自動帶入</p>
         </div>
-
-        <form class="profile-form" method="post" action="/user/profile">
-            <div class="form-grid">
-                <div class="form-group">
-                    <label for="org_name">🏢 社福團體名稱</label>
-                    <input type="text" id="org_name" name="org_name" value="{{ org_profile.org_name | default('') }}" placeholder="輸入團體名稱" required>
-                </div>
-
-                <div class="form-group">
-                    <label for="org_id">🔢 社福團體字號</label>
-                    <input type="text" id="org_id" name="org_id" value="{{ org_profile.org_id | default('') }}" placeholder="輸入團體字號" required>
-                </div>
-
-                <div class="form-group">
-                    <label for="member_count">👥 社員人數</label>
-                    <input type="number" id="member_count" name="member_count" value="{{ org_profile.member_count | default('') }}" placeholder="輸入社員人數">
-                </div>
-
-                <div class="form-group">
-                    <label for="volunteer_count">🕐 志工人數</label>
-                    <input type="number" id="volunteer_count" name="volunteer_count" value="{{ org_profile.volunteer_count | default('') }}" placeholder="輸入志工人數">
-                </div>
-
-                <div class="form-group">
-                    <label for="contact_person">💼 負責人</label>
-                    <input type="text" id="contact_person" name="contact_person" value="{{ org_profile.contact_person | default('') }}" placeholder="輸入負責人姓名">
-                </div>
-
-                <div class="form-group">
-                    <label for="address">📍 登記地址</label>
-                    <textarea id="address" name="address" rows="4" placeholder="輸入登記地址">{{ org_profile.address | default('') }}</textarea>
-                </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label for="elder_name">長者姓名 <span style="color:red;">*</span></label>
+                <input type="text" id="elder_name" name="elder_name" required value="{{ profile.elder_name }}" placeholder="例如：王阿嬤">
             </div>
-
-            <div class="form-actions">
-                <button type="submit" class="button">💾 儲存資料</button>
-                <a href="/user" class="button button-secondary">❌ 取消</a>
+            <div class="form-group">
+                <label for="age_group">年齡層</label>
+                {{ select('age_group', age_groups, profile.age_group) }}
             </div>
-        </form>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label for="district">所在區域 <span style="color:red;">*</span></label>
+                {{ select('district', districts, profile.district) }}
+            </div>
+            <div class="form-group">
+                <label for="address">居住地址</label>
+                <input type="text" id="address" name="address" value="{{ profile.address }}" placeholder="例如：○○路○段○號○樓">
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label for="household_status">家戶狀況</label>
+                {{ select('household_status', household_statuses, profile.household_status) }}
+            </div>
+            <div class="form-group">
+                <label for="care_level">照顧程度</label>
+                {{ select('care_level', care_levels, profile.care_level) }}
+            </div>
+        </div>
     </section>
+
+    <section class="card">
+        <div class="card-title">
+            <h2 class="section-title">🩺 照護注意事項（選填）</h2>
+            <p class="text-muted">僅本人與里辦公處可查看，供服務人員到府前參考</p>
+        </div>
+        <div class="form-group">
+            <textarea id="care_notes" name="care_notes" rows="4" placeholder="例如：有高血壓需按時服藥、使用助行器、對花生過敏、耳朵較不靈光請大聲說話">{{ profile.care_notes }}</textarea>
+        </div>
+        <div class="form-actions">
+            <button type="submit" class="button">💾 儲存資料</button>
+            <a href="/user" class="button button-secondary">取消</a>
+        </div>
+    </section>
+</form>
+
+<section class="card">
+    <div class="card-title">
+        <h2 class="section-title">🔐 修改密碼</h2>
+    </div>
+    <form method="post" action="/user/profile">
+        <input type="hidden" name="action" value="password">
+        <div class="form-row">
+            <div class="form-group">
+                <label for="current_password">目前密碼</label>
+                <input type="password" id="current_password" name="current_password" required autocomplete="current-password">
+            </div>
+            <div class="form-group">
+                <label for="new_password">新密碼（至少 6 個字元）</label>
+                <input type="password" id="new_password" name="new_password" required minlength="6" autocomplete="new-password">
+            </div>
+            <div class="form-group">
+                <label for="confirm_password">確認新密碼</label>
+                <input type="password" id="confirm_password" name="confirm_password" required minlength="6" autocomplete="new-password">
+            </div>
+        </div>
+        <div class="form-actions">
+            <button type="submit" class="button">更新密碼</button>
+        </div>
+    </form>
+</section>
 {% endblock %}

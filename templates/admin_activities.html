@@ -1,14 +1,14 @@
 {% extends 'base.html' %}
 
-{% block title %}需求與活動管理 — 長者服務平台{% endblock %}
+{% block title %}社區活動管理 — 長者服務平台{% endblock %}
 
 {% block content %}
     <div class="page-bg"></div>
     <header class="hero-card main-hero">
         <div class="hero-copy">
-            <span class="eyebrow">長者需求 / 活動管理</span>
-            <h1>🎯 長者需求與社區活動管理</h1>
-            <p>保留現有社區活動與志願者管理功能，同時處理長者需求、陪伴與服務安排。</p>
+            <span class="eyebrow">活動管理</span>
+            <h1>🎯 社區活動管理</h1>
+            <p>建立社區活動，審核使用者報名並管理活動簽到。</p>
         </div>
         <div class="hero-panel">
             <div class="mini-stat">
@@ -29,7 +29,7 @@
     <section class="card">
         <div class="card-title">
             <h2 class="section-title">📅 活動列表</h2>
-            <p class="text-muted">管理社區活動、報名、簽到與志願者排班</p>
+            <a href="/admin/activities/create" class="button">＋ 新增活動</a>
         </div>
         
         {% if activities %}
@@ -54,6 +54,8 @@
                     {% if activity.end_date %}
                     <div><span>結束：</span> {{ activity.end_date }}</div>
                     {% endif %}
+                    <div><span>報名：</span> {{ reg_counts.get(activity.id, 0) }} 人{% if activity.max_capacity %} / {{ activity.max_capacity }}{% endif %}</div>
+                    <div><span>已簽到：</span> {{ att_counts.get(activity.id, 0) }} 人</div>
                 </div>
 
                 {% if activity.description %}
@@ -64,7 +66,6 @@
                     <a class="button btn-small" href="/admin/activities/{{ activity.id }}/edit" title="編輯活動">✏️ 編輯</a>
                     <a class="button btn-small" href="/admin/activities/{{ activity.id }}/registrations" title="查看報名">👥 報名</a>
                     <a class="button btn-small" href="/admin/activities/{{ activity.id }}/attendance" title="簽到">✅ 簽到</a>
-                    <a class="button btn-small" href="/admin/activities/{{ activity.id }}/volunteer-shifts" title="志願者排班">🕐 排班</a>
                     <form method="post" action="/admin/activities/{{ activity.id }}/delete" style="display:inline;" onsubmit="return confirm('確認刪除此活動嗎？');">
                         <button type="submit" class="button button-danger btn-small">🗑️ 刪除</button>
                     </form>

@@ -8,117 +8,73 @@
         <div class="hero-copy">
             <span class="eyebrow">老人／家屬專區</span>
             <h1>👋 歡迎，{{ username or '使用者' }}</h1>
-            <p>這裡保留原本的社福資源與補助查詢功能，同時強化長者需求建檔、服務媒合與申請追蹤。</p>
-        </div>
-        <div class="hero-panel">
-            <div class="mini-stat">
-                <span>待處理需求</span>
-                <strong>2</strong>
-            </div>
-            <div class="mini-stat">
-                <span>已安排服務</span>
-                <strong>3</strong>
-            </div>
-            <div class="mini-stat">
-                <span>可用補助</span>
-                <strong>{{ available_subsidies | default('—') }}</strong>
-            </div>
+            <p>提出長者需求、查看服務媒合與申請進度，並可報名社區活動。</p>
         </div>
     </header>
 
     <div class="stats-grid">
         <div class="stat-box">
-            <h3>待處理需求</h3>
-            <div class="value">2</div>
+            <h3>處理中需求</h3>
+            <div class="value">{{ stats.pending }}</div>
         </div>
         <div class="stat-box">
             <h3>已安排服務</h3>
-            <div class="value">3</div>
+            <div class="value">{{ stats.arranged }}</div>
         </div>
         <div class="stat-box">
-            <h3>可用補助</h3>
-            <div class="value">{{ available_subsidies | default('—') }}</div>
-        </div>
-        <div class="stat-box">
-            <h3>已提交申請</h3>
-            <div class="value">{{ submitted_applications | default('—') }}</div>
+            <h3>已報名活動</h3>
+            <div class="value">{{ stats.activities }}</div>
         </div>
     </div>
 
     <section class="card">
         <div class="card-title">
-            <h2 class="section-title">📢 老人服務功能</h2>
-            <p class="text-muted">這裡是長者需求申請、服務媒合與追蹤的核心入口</p>
+            <h2 class="section-title">📢 長者服務功能</h2>
+            <p class="text-muted">提出需求後，系統會推薦符合的服務，並可隨時追蹤處理進度</p>
         </div>
 
         <div class="dashboard-grid">
             <article class="dashboard-tile tile-blue">
                 <h3>🆘 我需要什麼幫助</h3>
-                <p>可快速建立長者的生活與照護需求，包括餐食、交通、就醫、陪伴、居家照顧等服務。</p>
+                <p>填寫長者的生活與照護需求，例如餐食、交通、就醫、陪伴、居家照顧。</p>
                 <div class="form-actions" style="margin-top: 1rem;">
                     <a class="button" href="/user/help-request">立即填寫需求</a>
                 </div>
             </article>
 
-            <article class="dashboard-tile tile-green">
-                <h3>🔍 服務媒合建議</h3>
-                <p>依照地區、需求類型與緊急程度，推薦最適合的社福服務與合適單位。</p>
-                <div class="form-actions" style="margin-top: 1rem;">
-                    <a class="button" href="/user/service-matches">查看服務媒合</a>
-                </div>
-            </article>
-
             <article class="dashboard-tile tile-yellow">
                 <h3>📄 申請進度與安排</h3>
-                <p>檢視服務進度、安排情況、指派單位與歷程紀錄，讓長者與家屬更安心。</p>
+                <p>查看需求的處理狀態、選擇推薦服務，以及指派單位與歷程紀錄。</p>
                 <div class="form-actions" style="margin-top: 1rem;">
                     <a class="button" href="/user/help-requests">查看申請進度</a>
                 </div>
             </article>
-        </div>
-    </section>
 
-    <section class="card">
-        <div class="card-title">
-            <h2 class="section-title">⚡ 立即查看重要功能</h2>
-            <p class="text-muted">這兩個入口是長者服務平台的核心：服務媒合與申請進度</p>
-        </div>
-
-        <div class="dashboard-grid">
             <article class="dashboard-tile tile-green">
-                <h3>🔍 服務媒合</h3>
-                <p>查看符合長者需求的社福服務與安排建議，依地區、需求類型與緊急程度推薦。</p>
+                <h3>💡 長者福利資訊</h3>
+                <p>查詢長者可申請的福利，例如長照服務、生活津貼、假牙補助與敬老卡。</p>
                 <div class="form-actions" style="margin-top: 1rem;">
-                    <a class="button" href="/user/service-matches">進入服務媒合</a>
+                    <a class="button" href="/welfare">查詢福利</a>
                 </div>
             </article>
 
             <article class="dashboard-tile tile-yellow">
-                <h3>📄 申請進度</h3>
-                <p>檢視需求是否已受理、已安排哪個服務單位、目前處理進度與歷程紀錄。</p>
+                <h3>🤖 AI 福利小幫手</h3>
+                <p>描述長者的狀況，小幫手會說明可能適合的福利與申請方式。</p>
                 <div class="form-actions" style="margin-top: 1rem;">
-                    <a class="button" href="/user/help-requests">查看申請進度</a>
+                    <a class="button" href="/user/welfare-assistant">開始詢問</a>
+                </div>
+            </article>
+
+            <article class="dashboard-tile tile-blue">
+                <h3>📅 社區活動</h3>
+                <p>瀏覽社區活動、線上報名，審核通過後於活動當天簽到。</p>
+                <div class="form-actions" style="margin-top: 1rem;">
+                    <a class="button" href="/user/activities">查看社區活動</a>
                 </div>
             </article>
         </div>
     </section>
 
-    <section class="card">
-        <div class="card-title">
-            <h2 class="section-title">🤖 AI 個案企劃書產生器</h2>
-            <p class="text-muted">保留原本的社福企劃支援，讓系統兼具服務協助與資源申請能力。</p>
-        </div>
 
-        <div class="ai-panel">
-            <h4>🤖 {{ ai_agent | default('企劃小助手') }}</h4>
-            <div class="ai-tags">
-                <span class="badge badge-info">模型：{{ ai_model | default('ChatAssist GPT') }}</span>
-                <span class="badge badge-info">引擎：{{ ai_engine | default('GPT-Assist-2.0') }}</span>
-                <span class="badge badge-info">功能：甘特圖 / 預算表 / DOC / PDF</span>
-            </div>
-            <p>{{ ai_agent_note | default('這個代理人會持續協助社福資源或個案方案的整理與建議。') }}</p>
-        </div>
-
-        {% include '_proposal_builder.html' %}
-    </section>
 {% endblock %}

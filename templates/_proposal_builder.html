@@ -3,7 +3,7 @@
         <div class="proposal-header">
             <div class="proposal-badge">AI 輔助</div>
             <div>
-                <h1>{{ page_title or '社福企劃生成器' }}</h1>
+                <h1>{{ page_title or '社區計畫企劃書產生器' }}</h1>
                 <p>整合公版上傳、補助資訊、自訂經費、專案時程、真實甘特圖與企劃書匯出功能。</p>
             </div>
         </div>
@@ -221,7 +221,6 @@
                     </div>
                     <div class="submit-actions">
                         <button type="button" class="btn-secondary" onclick="goStep(3)">返回編輯</button>
-                        <button type="button" class="btn-primary" id="submitBtn" onclick="formalSubmitApplication()">正式提交審核</button>
                     </div>
                     <div id="submitStatus" hidden class="status-message"></div>
                 </div>
@@ -623,45 +622,6 @@ async function submitApplication() {
         alert(`生成企劃書時出錯：${error.message}`);
     } finally {
         btn.disabled = false; btn.textContent = '開始生成'; loading.hidden = true;
-    }
-}
-
-async function formalSubmitApplication() {
-    const btn = document.getElementById('submitBtn');
-    const statusDiv = document.getElementById('submitStatus');
-    btn.disabled = true;
-    btn.textContent = '提交中...';
-    statusDiv.hidden = false;
-    statusDiv.className = 'status-message';
-    
-    try {
-        const formData = new FormData();
-        const proposalHtml = document.getElementById('proposalPreview').innerHTML;
-        formData.append('case_title', document.getElementById('project_name').value);
-        formData.append('background', document.getElementById('background').value);
-        formData.append('issues', document.getElementById('target_people').value);
-        formData.append('goals', document.getElementById('goals').value);
-        formData.append('proposal', proposalHtml);
-        formData.append('subsidy_summary', `${document.getElementById('subsidy_source').value} - ${document.getElementById('subsidy_category').value}`);
-        
-        const response = await fetch('/user/application/submit', { 
-            method: 'POST', 
-            body: formData 
-        });
-        
-        if (response.ok) {
-            statusDiv.className = 'status-message success';
-            statusDiv.innerHTML = '✓ 企劃書已成功提交！管理員將於 3 個工作日內審核。<br><a href="/user/applications" style="color: inherit; text-decoration: underline;">點擊查看申請狀態</a>';
-            btn.textContent = '已提交';
-            setTimeout(() => { window.location.href = '/user/applications'; }, 2000);
-        } else {
-            throw new Error('提交失敗，請稍後重試');
-        }
-    } catch (error) {
-        statusDiv.className = 'status-message error';
-        statusDiv.innerHTML = `✗ 提交失敗：${error.message}`;
-        btn.disabled = false;
-        btn.textContent = '正式提交審核';
     }
 }
 

@@ -85,6 +85,14 @@ textarea.extra-large {
     margin-bottom: 20px;
 }
 
+.success-message {
+    background-color: #e8f5e9;
+    color: #2e7d32;
+    padding: 12px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+
 /* Info box styles (for displaying IDs) */
 .activity-id-info,
 .announcement-id-info,

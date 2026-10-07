@@ -39,15 +39,10 @@
 
                 <div class="form-row">
                     <div class="form-group">
-                        <label for="service_type">服務類型</label>
-                        <select id="service_type" name="service_type">
-                            <option value="其他">其他</option>
-                            <option value="輔導諮詢">輔導諮詢</option>
-                            <option value="教育培訓">教育培訓</option>
-                            <option value="物資援助">物資援助</option>
-                            <option value="心理支持">心理支持</option>
-                            <option value="社區服務">社區服務</option>
-                            <option value="技能培養">技能培養</option>
+                        <label for="service_type">服務類型 <span style="color: red;">*</span></label>
+                        <select id="service_type" name="service_type" required>
+                            <option value="">請選擇（對應長者需求類型）</option>
+                            {% for t in need_types %}<option value="{{ t }}">{{ t }}</option>{% endfor %}
                         </select>
                     </div>
                     <div class="form-group">
@@ -60,6 +55,22 @@
                     </div>
                 </div>
 
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="district">服務行政區</label>
+                        <select id="district" name="district">
+                            <option value="">（未指定）</option>
+                            {% for d in districts %}<option value="{{ d }}">{{ d }}</option>{% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="service_scope">服務範圍</label>
+                        <select id="service_scope" name="service_scope">
+                            <option value="本區" selected>僅服務所在行政區</option>
+                            <option value="全區">全區皆可服務</option>
+                        </select>
+                    </div>
+                </div>
                 <div class="form-row">
                     <div class="form-group">
                         <label for="target_group">服務對象</label>

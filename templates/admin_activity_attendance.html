@@ -34,7 +34,11 @@
                     <div class="checkin-form-row" style="display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: flex-end;">
                         <div>
                             <label for="username">參與者名稱</label>
-                            <input type="text" id="username" name="username" required placeholder="輸入簽到人名稱">
+                            <input type="text" id="username" name="username" required list="pending-users" placeholder="輸入或選擇已報名的使用者">
+                            <datalist id="pending-users">
+                                {% for r in pending %}<option value="{{ r.username }}">{% endfor %}
+                            </datalist>
+                            {% if pending %}<p style="margin-top:6px; color: var(--text-secondary);">已通過報名、尚未簽到：{{ pending|map(attribute='username')|join('、') }}</p>{% endif %}
                         </div>
                         <button type="submit" style="background-color: var(--primary); color: white; padding: 10px 20px; border-radius: 6px; cursor: pointer; border: none;">簽到</button>
                     </div>

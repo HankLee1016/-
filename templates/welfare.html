@@ -1,0 +1,67 @@
+{% extends 'base.html' %}
+
+{% block title %}長者福利資訊 — 長者安心服務平台{% endblock %}
+
+{% block content %}
+<div class="page-bg"></div>
+<header class="hero-card main-hero">
+    <div class="hero-copy">
+        <span class="eyebrow">長者福利資訊</span>
+        <h1>💡 長者可以申請哪些福利？</h1>
+        <p>整理長者與家屬常用的老人福利，包含申請資格、福利內容與申請方式。不確定適合哪一項時，可以問 AI 福利小幫手。</p>
+    </div>
+    {% if session.get('role') == 'user' %}
+    <div class="hero-actions">
+        <a class="button" href="/user/welfare-assistant">🤖 問 AI 福利小幫手</a>
+    </div>
+    {% endif %}
+</header>
+
+<section class="card">
+    <div class="card-title">
+        <h2 class="section-title">🔍 查詢</h2>
+    </div>
+    <form method="get" action="/welfare" style="display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end;">
+        <label style="flex:1; min-width:160px;">
+            <span>類別</span>
+            <select name="category">
+                <option value="">全部類別</option>
+                {% for cat in categories %}
+                <option value="{{ cat }}" {% if selected_category == cat %}selected{% endif %}>{{ cat }}</option>
+                {% endfor %}
+            </select>
+        </label>
+        <label style="flex:2; min-width:200px;">
+            <span>關鍵字</span>
+            <input type="text" name="q" value="{{ keyword }}" placeholder="例如：失能、假牙、津貼、獨居">
+        </label>
+        <button type="submit" class="button">查詢</button>
+        {% if selected_category or keyword %}<a class="button button-secondary" href="/welfare">清除條件</a>{% endif %}
+    </form>
+</section>
+
+<section class="card">
+    <div class="card-title">
+        <h2 class="section-title">福利項目（{{ items|length }} 項）</h2>
+        <p class="text-muted">資訊僅供參考，實際資格與金額以各縣市政府最新公告為準</p>
+    </div>
+    {% for w in items %}
+    <div class="request-card">
+        <div class="request-card-header">
+            <h3><a href="/welfare/{{ w.id }}">{{ w.title }}</a></h3>
+            <span class="badge badge-info">{{ w.category }}</span>
+        </div>
+        <div class="request-description"><strong>申請資格：</strong>{{ w.eligibility }}</div>
+        <div class="request-description"><strong>福利內容：</strong>{{ w.benefit }}</div>
+        <div class="request-actions">
+            <a class="button btn-small" href="/welfare/{{ w.id }}">查看申請方式</a>
+        </div>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <p>🔎</p>
+        <p>找不到符合條件的福利項目。</p>
+    </div>
+    {% endfor %}
+</section>
+{% endblock %}

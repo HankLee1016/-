@@ -65,45 +65,6 @@
       }
     },
     {
-      "username": "22222",
-      "password": "9b871512327c09ce91dd649b3f96a63b7408ef267c8cc5710114e629730cb61f",
-      "role": "admin",
-      "org_profile": {
-        "org_name": "",
-        "org_id": "",
-        "member_count": "",
-        "volunteer_count": "",
-        "contact_person": "",
-        "address": ""
-      }
-    },
-    {
-      "username": "122",
-      "password": "1be00341082e25c4e251ca6713e767f7131a2823b0052caf9c9b006ec512f6cb",
-      "role": "admin",
-      "org_profile": {
-        "org_name": "",
-        "org_id": "",
-        "member_count": "",
-        "volunteer_count": "",
-        "contact_person": "",
-        "address": ""
-      }
-    },
-    {
-      "username": "admin",
-      "password": "04445e6487736590d1ef50186b414e737e0164683cbbec64e00e73c000fd3bef",
-      "role": "admin",
-      "org_profile": {
-        "org_name": "",
-        "org_id": "",
-        "member_count": "",
-        "volunteer_count": "",
-        "contact_person": "",
-        "address": ""
-      }
-    },
-    {
       "username": "123444",
       "password": "e79f76b48b78ece237491c1b60c0716bc8cfa7bbe6ce9cd22658481f9aae4fbf",
       "role": "user",
@@ -114,6 +75,42 @@
         "volunteer_count": "",
         "contact_person": "",
         "address": ""
+      }
+    },
+    {
+      "username": "1",
+      "password": "6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b",
+      "role": "admin",
+      "profile": {
+        "contact_name": "",
+        "relation": "",
+        "phone": "",
+        "email": "",
+        "elder_name": "",
+        "age_group": "",
+        "district": "",
+        "address": "",
+        "household_status": "",
+        "care_level": "",
+        "care_notes": ""
+      }
+    },
+    {
+      "username": "2",
+      "password": "d4735e3a265e16eee03f59718b9b5d03019c07d8b6c51f90da3a666eec13ab35",
+      "role": "user",
+      "profile": {
+        "contact_name": "",
+        "relation": "",
+        "phone": "",
+        "email": "",
+        "elder_name": "",
+        "age_group": "",
+        "district": "",
+        "address": "",
+        "household_status": "",
+        "care_level": "",
+        "care_notes": ""
       }
     }
   ]

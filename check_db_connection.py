@@ -1,4 +1,4 @@
-"""快速檢查 PostgreSQL 連線與 donations 表。
+"""快速檢查 PostgreSQL 連線與 users 表。
 
 執行方式：
     python check_db_connection.py
@@ -17,12 +17,12 @@ def main() -> None:
             cur.execute("select 1")
             print("✅ 連線成功：select 1 =", cur.fetchone()[0])
 
-            cur.execute("select to_regclass('public.donations')")
+            cur.execute("select to_regclass('public.users')")
             regclass = cur.fetchone()[0]
             if regclass:
-                print("✅ 表存在：donations")
+                print("✅ 表存在：users")
             else:
-                print("⚠️  找不到 donations 表：請先執行 python init_database.py")
+                print("⚠️  找不到 users 表：請先執行 python init_database.py")
         finally:
             cur.close()
     finally:

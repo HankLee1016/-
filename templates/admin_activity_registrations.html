@@ -37,10 +37,11 @@
                         <div style="flex: 1;">
                             <h3>{{ registration.username }}</h3>
                             <div class="registration-meta">
-                                <strong>電子郵件:</strong> {{ registration.email }}<br>
-                                <strong>聯絡電話:</strong> {{ registration.phone }}<br>
+                                {% if registration.email %}<strong>電子郵件:</strong> {{ registration.email }}<br>{% endif %}
+                                <strong>聯絡電話:</strong> {{ registration.phone or '未填寫' }}<br>
                                 <strong>報名時間:</strong> {{ registration.registered_at }}<br>
-                                <strong>狀態:</strong> <span class="registration-status {{ registration.status }}">{{ registration.status }}</span>
+                                <strong>狀態:</strong> <span class="registration-status {{ registration.status }}">{{ registration.status }}</span><br>
+                                <strong>簽到:</strong> {% if registration.username in checked_in %}✅ 已簽到{% else %}尚未簽到{% endif %}
                             </div>
                         </div>
                     </div>

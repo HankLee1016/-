@@ -8,7 +8,7 @@
     <div class="hero-copy">
         <span class="eyebrow">長者需求申請</span>
         <h1>🆘 我需要幫助</h1>
-        <p>填寫您的需求後，系統會推薦適合的社福服務與支援資源。</p>
+        <p>填寫長者的需求後，系統會推薦適合的在地服務資源，里辦公處也會收到並協助安排。</p>
     </div>
     <div class="hero-panel">
         <div class="mini-stat">
@@ -32,19 +32,20 @@
     <div class="message error">{{ error }}</div>
     {% endif %}
 
-    <form method="post" action="/user/help-request" class="elder-form">
+    {% if not profile.elder_name %}
+        <div class="request-description" style="margin-bottom:1rem;">💡 先到 <a href="/user/profile">我的資料</a> 填寫長者與聯絡人資料，之後提出需求就不用每次重填。</div>
+        {% endif %}
+        <form method="post" action="/user/help-request" class="elder-form">
         <div class="form-grid">
             <div class="form-group">
                 <label for="elder_name">長者姓名</label>
-                <input type="text" id="elder_name" name="elder_name" placeholder="例如：王阿嬤">
+                <input type="text" id="elder_name" name="elder_name" placeholder="例如：王阿嬤" value="{{ form.get('elder_name') or profile.elder_name or '' }}">
             </div>
             <div class="form-group">
                 <label for="age_group">年齡層</label>
                 <select id="age_group" name="age_group">
                     <option value="">請選擇</option>
-                    <option value="65-74">65-74</option>
-                    <option value="75-84">75-84</option>
-                    <option value="85歲以上">85歲以上</option>
+                    {% for o in age_groups %}<option value="{{ o }}" {% if (form.get('age_group') or profile.age_group) == o %}selected{% endif %}>{{ o }}</option>{% endfor %}
                 </select>
             </div>
         </div>
@@ -54,17 +55,15 @@
                 <label for="need_type">需求類型 <span class="required-mark">*</span></label>
                 <select id="need_type" name="need_type" required>
                     <option value="">請選擇</option>
-                    {% for choice in choices %}
-                    <option value="{{ choice }}">{{ choice }}</option>
-                    {% endfor %}
+                    {% for choice in choices %}<option value="{{ choice }}" {% if form.get('need_type') == choice %}selected{% endif %}>{{ choice }}</option>{% endfor %}
                 </select>
             </div>
             <div class="form-group">
                 <label for="urgency">緊急程度</label>
                 <select id="urgency" name="urgency">
-                    <option value="一般">一般</option>
-                    <option value="緊急">緊急</option>
-                    <option value="非常緊急">非常緊急</option>
+                    <option value="一般" {% if form.get('urgency') == '一般' %}selected{% endif %}>一般</option>
+                    <option value="緊急" {% if form.get('urgency') == '緊急' %}selected{% endif %}>緊急</option>
+                    <option value="非常緊急" {% if form.get('urgency') == '非常緊急' %}selected{% endif %}>非常緊急</option>
                 </select>
             </div>
         </div>
@@ -74,33 +73,23 @@
                 <label for="district">所在區域 <span class="required-mark">*</span></label>
                 <select id="district" name="district" required>
                     <option value="">請選擇</option>
-                    <option value="中山區">中山區</option>
-                    <option value="大安區">大安區</option>
-                    <option value="信義區">信義區</option>
-                    <option value="士林區">士林區</option>
-                    <option value="北投區">北投區</option>
-                    <option value="內湖區">內湖區</option>
-                    <option value="中正區">中正區</option>
-                    <option value="萬華區">萬華區</option>
-                    <option value="板橋區">板橋區</option>
-                    <option value="桃園區">桃園區</option>
-                    <option value="其他">其他</option>
+                    {% for o in districts %}<option value="{{ o }}" {% if (form.get('district') or profile.district) == o %}selected{% endif %}>{{ o }}</option>{% endfor %}
                 </select>
             </div>
             <div class="form-group">
                 <label for="need_when">預計幫助時間 <span class="required-mark">*</span></label>
-                <input type="text" id="need_when" name="need_when" required placeholder="例如：本週末、明天早上、下週一">
+                <input type="text" id="need_when" name="need_when" required placeholder="例如：本週末、明天早上、下週一" value="{{ form.get('need_when', '') }}">
             </div>
         </div>
 
         <div class="form-grid">
             <div class="form-group">
                 <label for="location">地點/服務地點 <span class="required-mark">*</span></label>
-                <input type="text" id="location" name="location" required placeholder="例如：家中、社區活動中心、醫院">
+                <input type="text" id="location" name="location" required placeholder="例如：家中、社區活動中心、醫院" value="{{ form.get('location', '') }}">
             </div>
             <div class="form-group">
                 <label for="duration">預計服務時長</label>
-                <input type="text" id="duration" name="duration" placeholder="例如：1-2 小時、半天、整天">
+                <input type="text" id="duration" name="duration" placeholder="例如：1-2 小時、半天、整天" value="{{ form.get('duration', '') }}">
             </div>
         </div>
 
@@ -109,20 +98,14 @@
                 <label for="household_status">家庭狀況</label>
                 <select id="household_status" name="household_status">
                     <option value="">請選擇</option>
-                    <option value="獨居">獨居</option>
-                    <option value="與家人同住">與家人同住</option>
-                    <option value="低收入">低收入</option>
-                    <option value="失能照護">失能照護</option>
-                    <option value="其他">其他</option>
+                    {% for o in household_statuses %}<option value="{{ o }}" {% if (form.get('household_status') or profile.household_status) == o %}selected{% endif %}>{{ o }}</option>{% endfor %}
                 </select>
             </div>
             <div class="form-group">
                 <label for="care_level">照護程度</label>
                 <select id="care_level" name="care_level">
                     <option value="">請選擇</option>
-                    <option value="自理">自理</option>
-                    <option value="部分協助">部分協助</option>
-                    <option value="需長期照護">需長期照護</option>
+                    {% for o in care_levels %}<option value="{{ o }}" {% if (form.get('care_level') or profile.care_level) == o %}selected{% endif %}>{{ o }}</option>{% endfor %}
                 </select>
             </div>
         </div>
@@ -130,17 +113,17 @@
         <div class="form-grid">
             <div class="form-group">
                 <label for="contact_name">聯絡人姓名</label>
-                <input type="text" id="contact_name" name="contact_name" placeholder="例如：王先生 / 家屬">
+                <input type="text" id="contact_name" name="contact_name" placeholder="例如：王先生 / 家屬" value="{{ form.get('contact_name') or profile.contact_name or '' }}">
             </div>
             <div class="form-group">
                 <label for="contact_phone">聯絡電話</label>
-                <input type="text" id="contact_phone" name="contact_phone" placeholder="09XX-XXX-XXX">
+                <input type="text" id="contact_phone" name="contact_phone" placeholder="09XX-XXX-XXX" value="{{ form.get('contact_phone') or profile.phone or '' }}">
             </div>
         </div>
 
         <div class="form-group">
             <label for="details">需求說明</label>
-            <textarea id="details" name="details" rows="6" placeholder="請描述目前狀況，例如：行動不便、需要餐食配送、就醫陪伴、家務協助或情緒支持等。"></textarea>
+            <textarea id="details" name="details" rows="6" placeholder="請描述目前狀況，例如：行動不便、需要餐食配送、就醫陪伴、家務協助或情緒支持等。">{{ form.get('details', '') }}</textarea>
         </div>
 
         <div class="form-actions">
