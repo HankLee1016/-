@@ -27,6 +27,27 @@
         </div>
     </div>
 
+    {% if announcements %}
+    <section class="card">
+        <div class="card-title">
+            <h2 class="section-title">📣 里辦公處公告</h2>
+        </div>
+        <ul class="announcement-list">
+            {% for a in announcements %}
+            <li class="announcement-item">
+                <div class="announcement-head">
+                    {% if a.priority == '緊急' %}<span class="badge badge-danger">緊急</span>
+                    {% elif a.priority == '重要' %}<span class="badge badge-warning">重要</span>{% endif %}
+                    <strong>{{ a.title }}</strong>
+                    {% if a.created_at %}<span class="text-muted announcement-date">{{ a.created_at[:10] }}</span>{% endif %}
+                </div>
+                {% if a.content %}<p class="announcement-content">{{ a.content }}</p>{% endif %}
+            </li>
+            {% endfor %}
+        </ul>
+    </section>
+    {% endif %}
+
     <section class="card">
         <div class="card-title">
             <h2 class="section-title">📢 長者服務功能</h2>

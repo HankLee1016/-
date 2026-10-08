@@ -38,7 +38,7 @@
                     <h3>{{ content.title }}</h3>
                     <div class="content-meta">
                         <strong>分類：</strong> {{ content.category }} 
-                        <strong>|作者：</strong> {{ content.author }}
+                        <strong>|作者：</strong> {{ content.author or '—' }}
                     </div>
                     <div class="content-description">{{ content.content[:100] }}{% if content.content|length > 100 %}...{% endif %}</div>
                     <span class="content-status {{ content.status }}">{{ content.status }}</span>

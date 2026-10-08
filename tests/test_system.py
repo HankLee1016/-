@@ -1,30 +1,46 @@
 """長者安心服務平台系統測試（以 Flask test client 進行整合測試）。
 
 執行方式：python -m unittest tests.test_system -v
-測試前會備份所有 JSON 資料檔，結束後自動還原，不影響既有資料。
+測試於獨立的資料庫 schema（elder_test）中進行：開始時建立資料表並匯入服務資源與福利資訊範例資料，
+結束後刪除整個 schema，不影響正式資料。
 """
 import json
-import shutil
+import os
 import sys
 import unittest
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
+os.environ["DB_SCHEMA"] = "elder_test"
+
+from psycopg2 import sql  # noqa: E402
 
 import app as M  # noqa: E402
+import db_store  # noqa: E402
+from db_config import get_db_connection  # noqa: E402
+from init_database import init_database  # noqa: E402
 
-DATA_FILES = ["users.json", "help_requests.json", "services.json", "activities.json", "registrations.json",
-              "attendances.json", "cases.json", "announcements.json", "contents.json", "welfare.json"]
+
+def _drop_test_schema():
+    conn = get_db_connection()
+    with conn.cursor() as cur:
+        cur.execute(sql.SQL("DROP SCHEMA IF EXISTS {} CASCADE").format(sql.Identifier("elder_test")))
+    conn.commit()
+    conn.close()
+
+
+def _seed(name):
+    return json.loads((ROOT / f"{name}.json").read_text(encoding="utf-8")).get(name, [])
 
 
 class SystemTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.backup = {}
-        for f in DATA_FILES:
-            p = ROOT / f
-            cls.backup[f] = p.read_bytes() if p.exists() else None
+        _drop_test_schema()
+        init_database("elder_test")
+        db_store.save("services", [{**s, "username": ""} for s in _seed("services")])
+        db_store.save("welfare", _seed("welfare"))
         M.app.testing = True
         M.openai_client = None  # 測試 AI 備援流程，不呼叫外部 API
         M.create_user("t_user", "pass1234", "user")
@@ -41,12 +57,9 @@ class SystemTest(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        for f, data in cls.backup.items():
-            p = ROOT / f
-            if data is None:
-                p.unlink(missing_ok=True)
-            else:
-                p.write_bytes(data)
+        while not db_store._pool.empty():
+            db_store._pool.get_nowait().close()
+        _drop_test_schema()
 
     def client(self, username=None, role=None):
         c = M.app.test_client()
@@ -148,8 +161,12 @@ class SystemTest(unittest.TestCase):
         self.assertIn("已安排", item["history"][0]["message"])
 
     def test_TC16_service_type_required(self):
-        self.client("t_admin", "admin").post("/admin/services/create", data={"service_name": "無類型服務", "service_type": ""})
+        admin = self.client("t_admin", "admin")
+        admin.post("/admin/services/create", data={"service_name": "無類型服務", "service_type": ""})
         self.assertFalse(any(s["service_name"] == "無類型服務" for s in M.load_services()))
+        admin.post("/admin/services/create", data={"service_name": "有類型服務", "service_type": "餐食協助"})
+        created = next(s for s in M.load_services() if s["service_name"] == "有類型服務")
+        self.assertEqual(created["username"], "t_admin")                       # 記錄實際建立者帳號
 
     # ---------------- 里民活動 ----------------
     def test_TC17_register_activity(self):
@@ -203,6 +220,18 @@ class SystemTest(unittest.TestCase):
         self.client("t_admin", "admin").post("/admin/welfare/create", data={
             "title": "測試福利", "category": "其他", "eligibility": "65 歲以上", "apply_method": "洽里辦公處"})
         self.assertEqual(len(M.load_welfare()), before + 1)
+        self.assertEqual(M.load_welfare()[-1]["updated_by"], "t_admin")         # 記錄維護者帳號
+
+    # ---------------- 公告 ----------------
+    def test_TC26_published_announcements_on_user_home(self):
+        admin = self.client("t_admin", "admin")
+        admin.post("/admin/announcements/create", data={"title": "測試一般公告", "content": "一般內容", "priority": "普通", "status": "已發佈"})
+        admin.post("/admin/announcements/create", data={"title": "測試緊急公告", "content": "停水通知", "priority": "緊急", "status": "已發佈"})
+        admin.post("/admin/announcements/create", data={"title": "測試草稿公告", "content": "尚未發佈", "priority": "重要", "status": "草稿"})
+        page = self.client("t_user", "user").get("/user").get_data(as_text=True)
+        self.assertIn("測試緊急公告", page)
+        self.assertNotIn("測試草稿公告", page)
+        self.assertLess(page.index("測試緊急公告"), page.index("測試一般公告"))   # 緊急公告排在前面
 
     def test_TC25_proposal_admin_only(self):
         self.assertEqual(self.client("t_admin", "admin").get("/admin/proposal").status_code, 200)

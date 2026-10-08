@@ -5,8 +5,7 @@ import random
 import uuid
 import datetime
 from html import escape
-from pathlib import Path
-from flask import Flask, request, jsonify, render_template, send_from_directory, redirect, url_for, session, Response, flash
+from flask import Flask, request, jsonify, render_template, redirect, url_for, session, Response, flash
 from werkzeug.utils import secure_filename
 
 try:
@@ -14,37 +13,25 @@ try:
 except ImportError:
     OpenAI = None
 
-from psycopg2 import OperationalError
-from db_config import get_db_connection
-from features import (
-    StatsReportManager, NotificationManager, SearchFilterManager,
-    FileManager, WorkflowManager, BackupManager, PermissionManager
-)
+import db_store
 
 app = Flask(__name__, template_folder="templates")
 app.secret_key = os.getenv("SECRET_KEY", "dev_secret_key")
 
-# 導入功能路由
-from routes_features import bp as features_bp
-app.register_blueprint(features_bp)
+
+@app.errorhandler(db_store.DatabaseError)
+def database_unavailable(error):
+    """資料庫無法連線或執行失敗時，顯示友善訊息而非程式錯誤畫面。"""
+    app.logger.error("資料庫錯誤：%s", error)
+    if request.path.startswith("/api/"):
+        return jsonify({"error": "資料庫暫時無法連線，請稍後再試。"}), 503
+    return Response("<h2>系統暫時無法存取資料</h2><p>資料庫暫時無法連線，請稍後再試，或洽里辦公處。</p>"
+                    '<p><a href="/">回首頁</a></p>', status=503, mimetype="text/html")
+
 
 # ==========================================
 # 檔案路徑與全域設定 (融合雙方設定)
 # ==========================================
-USERS_FILE = Path(app.root_path) / "users.json"
-WELFARE_FILE = Path(app.root_path) / "welfare.json"
-CASES_FILE = Path(app.root_path) / "cases.json"
-ACTIVITIES_FILE = Path(app.root_path) / "activities.json"
-SERVICES_FILE = Path(app.root_path) / "services.json"
-CONTENTS_FILE = Path(app.root_path) / "contents.json"
-ANNOUNCEMENTS_FILE = Path(app.root_path) / "announcements.json"
-REGISTRATIONS_FILE = Path(app.root_path) / "registrations.json"
-ATTENDANCES_FILE = Path(app.root_path) / "attendances.json"
-HELP_REQUESTS_FILE = Path(app.root_path) / "help_requests.json"
-
-UPLOAD_FOLDER = Path(app.root_path) / "uploads"
-UPLOAD_FOLDER.mkdir(parents=True, exist_ok=True)
-ALLOWED_EXTENSIONS = {"pdf"}
 
 ADMIN_REG_CODE = os.getenv("ADMIN_REG_CODE", "ADMIN2026")
 
@@ -73,20 +60,8 @@ if OpenAI and OPENAI_API_KEY and not AI_MOCK_MODE:
     openai_client = OpenAI(api_key=OPENAI_API_KEY, timeout=AI_TIMEOUT_SECONDS)
 
 # ==========================================
-# 基礎輔助函式 (檔案處理、密碼雜湊等)
+# 基礎輔助函式 (密碼雜湊等)
 # ==========================================
-def allowed_file(filename):
-    return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
-
-def save_uploaded_file(uploaded_file, prefix):
-    if uploaded_file and uploaded_file.filename and allowed_file(uploaded_file.filename):
-        filename = secure_filename(uploaded_file.filename)
-        unique_name = f"{prefix}_{uuid.uuid4().hex}_{filename}"
-        dest = UPLOAD_FOLDER / unique_name
-        uploaded_file.save(dest)
-        return unique_name
-    return None
-
 def hash_password(password):
     return hashlib.sha256(password.encode("utf-8")).hexdigest()
 
@@ -96,16 +71,10 @@ def hash_password(password):
 
 # --- Users ---
 def load_users():
-    if not USERS_FILE.exists(): return []
-    try:
-        with USERS_FILE.open("r", encoding="utf-8") as f:
-            return json.load(f).get("users", [])
-    except json.JSONDecodeError:
-        return []
+    return db_store.load("users")
 
 def save_users(users):
-    with USERS_FILE.open("w", encoding="utf-8") as f:
-        json.dump({"users": users}, f, ensure_ascii=False, indent=2)
+    db_store.save("users", users)
 
 def find_user(username):
     for user in load_users():
@@ -154,15 +123,10 @@ WELFARE_CATEGORIES = ["經濟補助", "長期照顧", "醫療保健", "生活照
 WELFARE_FIELDS = ["title", "category", "agency", "eligibility", "benefit", "apply_method", "contact", "source_url"]
 
 def load_welfare():
-    if not WELFARE_FILE.exists(): return []
-    try:
-        with WELFARE_FILE.open("r", encoding="utf-8") as f:
-            return json.load(f).get("welfare", [])
-    except json.JSONDecodeError: return []
+    return db_store.load("welfare")
 
 def save_welfare(items):
-    with WELFARE_FILE.open("w", encoding="utf-8") as f:
-        json.dump({"welfare": items}, f, ensure_ascii=False, indent=2)
+    db_store.save("welfare", items)
 
 def search_welfare(category, keyword):
     items = load_welfare()
@@ -180,32 +144,14 @@ def welfare_from_form(form):
     return {k: form.get(k, "").strip() for k in WELFARE_FIELDS}
 
 # --- Cases ---
-def load_cases():
-    if not CASES_FILE.exists(): return []
-    try:
-        with CASES_FILE.open("r", encoding="utf-8") as f: return json.load(f).get("cases", [])
-    except json.JSONDecodeError: return []
 
-def save_cases(cases):
-    with CASES_FILE.open("w", encoding="utf-8") as f:
-        json.dump({"cases": cases}, f, ensure_ascii=False, indent=2)
 
 # --- Help Requests / Elderly Service Needs ---
 def load_help_requests():
-    if not HELP_REQUESTS_FILE.exists():
-        save_help_requests([])
-        return []
-    try:
-        with HELP_REQUESTS_FILE.open("r", encoding="utf-8") as f:
-            return json.load(f).get("help_requests", [])
-    except json.JSONDecodeError:
-        return []
-
+    return db_store.load("help_requests")
 
 def save_help_requests(help_requests):
-    with HELP_REQUESTS_FILE.open("w", encoding="utf-8") as f:
-        json.dump({"help_requests": help_requests}, f, ensure_ascii=False, indent=2)
-
+    db_store.save("help_requests", help_requests)
 
 def create_help_request(username, need_type, need_when, location, duration, details="", status="待處理", contact_name="", contact_phone="", elder_name="", age_group="", district="", urgency="一般", household_status="", care_level="", assigned_unit="", assigned_service=""):
     help_requests = load_help_requests()
@@ -341,50 +287,14 @@ def get_help_request_matches(request_item):
     return matches
 
 
-def create_case(case_name, member_name, issue_description, status="進行中"):
-    cases = load_cases()
-    new_case = {
-        "id": str(uuid.uuid4()), "case_name": case_name, "member_name": member_name,
-        "issue_description": issue_description, "status": status,
-        "created_at": str(uuid.uuid4().hex[:8]), "created_date": str(uuid.uuid4().hex[:8])
-    }
-    cases.append(new_case)
-    save_cases(cases)
-    return new_case
-
-def delete_case(case_id):
-    cases = [case for case in load_cases() if case["id"] != case_id]
-    save_cases(cases)
-
-def get_case(case_id):
-    for case in load_cases():
-        if case["id"] == case_id: return case
-    return None
-
-def update_case(case_id, case_name=None, member_name=None, issue_description=None, status=None):
-    cases = load_cases()
-    for case in cases:
-        if case["id"] == case_id:
-            if case_name is not None: case["case_name"] = case_name
-            if member_name is not None: case["member_name"] = member_name
-            if issue_description is not None: case["issue_description"] = issue_description
-            if status is not None: case["status"] = status
-            break
-    save_cases(cases)
 
 # --- Activities ---
 def load_activities(username=None):
-    if not ACTIVITIES_FILE.exists(): return []
-    try:
-        with ACTIVITIES_FILE.open("r", encoding="utf-8") as f:
-            all_activities = json.load(f).get("activities", [])
-            if username: return [a for a in all_activities if a.get("username") == username]
-            return all_activities
-    except json.JSONDecodeError: return []
+    activities = db_store.load("activities")
+    return [a for a in activities if a.get("username") == username] if username else activities
 
 def save_activities(activities):
-    with ACTIVITIES_FILE.open("w", encoding="utf-8") as f:
-        json.dump({"activities": activities}, f, ensure_ascii=False, indent=2)
+    db_store.save("activities", activities)
 
 def create_activity(username, activity_name, description, category, start_date="", end_date="", location="", max_capacity=0, registration_deadline="", status="進行中"):
     activities = load_activities()
@@ -392,7 +302,7 @@ def create_activity(username, activity_name, description, category, start_date="
         "id": str(uuid.uuid4()), "username": username, "activity_name": activity_name,
         "description": description, "category": category, "start_date": start_date,
         "end_date": end_date, "location": location, "max_capacity": int(max_capacity) if max_capacity else 0,
-        "registration_deadline": registration_deadline, "status": status, "created_at": str(uuid.uuid4().hex[:8])
+        "registration_deadline": registration_deadline, "status": status, "created_at": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     }
     activities.append(new_activity)
     save_activities(activities)
@@ -425,14 +335,10 @@ def get_activity(activity_id):
 
 # --- Registrations ---
 def load_registrations():
-    if not REGISTRATIONS_FILE.exists(): return []
-    try:
-        with REGISTRATIONS_FILE.open("r", encoding="utf-8") as f: return json.load(f).get("registrations", [])
-    except json.JSONDecodeError: return []
+    return db_store.load("registrations")
 
 def save_registrations(registrations):
-    with REGISTRATIONS_FILE.open("w", encoding="utf-8") as f:
-        json.dump({"registrations": registrations}, f, ensure_ascii=False, indent=2)
+    db_store.save("registrations", registrations)
 
 def create_registration(activity_id, username, email, phone, status="待審核"):
     registrations = load_registrations()
@@ -460,14 +366,10 @@ def delete_registration(registration_id):
 
 # --- Attendances ---
 def load_attendances():
-    if not ATTENDANCES_FILE.exists(): return []
-    try:
-        with ATTENDANCES_FILE.open("r", encoding="utf-8") as f: return json.load(f).get("attendances", [])
-    except json.JSONDecodeError: return []
+    return db_store.load("attendances")
 
 def save_attendances(attendances):
-    with ATTENDANCES_FILE.open("w", encoding="utf-8") as f:
-        json.dump({"attendances": attendances}, f, ensure_ascii=False, indent=2)
+    db_store.save("attendances", attendances)
 
 def create_attendance(activity_id, username, check_in_time, check_out_time=None):
     attendances = load_attendances()
@@ -514,17 +416,11 @@ def registration_block_reason(activity, username):
 
 # --- Services ---
 def load_services(username=None):
-    if not SERVICES_FILE.exists(): return []
-    try:
-        with SERVICES_FILE.open("r", encoding="utf-8") as f:
-            all_services = json.load(f).get("services", [])
-            if username: return [s for s in all_services if s.get("username") == username]
-            return all_services
-    except json.JSONDecodeError: return []
+    services = db_store.load("services")
+    return [s for s in services if s.get("username") == username] if username else services
 
 def save_services(services):
-    with SERVICES_FILE.open("w", encoding="utf-8") as f:
-        json.dump({"services": services}, f, ensure_ascii=False, indent=2)
+    db_store.save("services", services)
 
 def create_service(username, service_name, description, service_type, target_group="", contact="", status="開放申請", district="", service_scope="全區"):
     services = load_services()
@@ -532,7 +428,7 @@ def create_service(username, service_name, description, service_type, target_gro
         "id": str(uuid.uuid4()), "username": username, "service_name": service_name,
         "description": description, "service_type": service_type, "target_group": target_group,
         "contact": contact, "status": status, "district": district, "service_scope": service_scope,
-        "created_at": str(uuid.uuid4().hex[:8])
+        "created_at": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     }
     services.append(new_service)
     save_services(services)
@@ -564,21 +460,17 @@ def update_service(service_id, service_name=None, description=None, service_type
 
 # --- Contents ---
 def load_contents():
-    if not CONTENTS_FILE.exists(): return []
-    try:
-        with CONTENTS_FILE.open("r", encoding="utf-8") as f: return json.load(f).get("contents", [])
-    except json.JSONDecodeError: return []
+    return db_store.load("contents")
 
 def save_contents(contents):
-    with CONTENTS_FILE.open("w", encoding="utf-8") as f:
-        json.dump({"contents": contents}, f, ensure_ascii=False, indent=2)
+    db_store.save("contents", contents)
 
-def create_content(title, category, content_text, image_url="", author="admin", status="已發佈"):
+def create_content(title, category, content_text, image_url="", author="", status="已發佈"):
     contents = load_contents()
     new_content = {
         "id": str(uuid.uuid4()), "title": title, "category": category,
         "content": content_text, "image_url": image_url, "author": author,
-        "status": status, "created_at": str(uuid.uuid4().hex[:8])
+        "status": status, "created_at": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     }
     contents.append(new_content)
     save_contents(contents)
@@ -607,20 +499,17 @@ def update_content(content_id, title=None, category=None, content_text=None, ima
 
 # --- Announcements ---
 def load_announcements():
-    if not ANNOUNCEMENTS_FILE.exists(): return []
-    try:
-        with ANNOUNCEMENTS_FILE.open("r", encoding="utf-8") as f: return json.load(f).get("announcements", [])
-    except json.JSONDecodeError: return []
+    return db_store.load("announcements")
 
 def save_announcements(announcements):
-    with ANNOUNCEMENTS_FILE.open("w", encoding="utf-8") as f:
-        json.dump({"announcements": announcements}, f, ensure_ascii=False, indent=2)
+    db_store.save("announcements", announcements)
 
-def create_announcement(title, announcement_text, priority="普通", status="已發佈"):
+def create_announcement(title, announcement_text, priority="普通", status="已發佈", author=""):
     announcements = load_announcements()
     new_announcement = {
         "id": str(uuid.uuid4()), "title": title, "content": announcement_text,
-        "priority": priority, "status": status, "created_at": str(uuid.uuid4().hex[:8])
+        "priority": priority, "status": status, "author": author,
+        "created_at": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     }
     announcements.append(new_announcement)
     save_announcements(announcements)
@@ -634,6 +523,15 @@ def get_announcement(announcement_id):
     for announcement in load_announcements():
         if announcement["id"] == announcement_id: return announcement
     return None
+
+ANNOUNCEMENT_PRIORITY = {"緊急": 0, "重要": 1, "普通": 2}
+
+def get_published_announcements(limit=5):
+    """里民首頁顯示之公告：僅已發佈者，依重要程度排序，同級者新公告在前。"""
+    items = sorted((a for a in load_announcements() if a.get("status") == "已發佈"),
+                   key=lambda a: a.get("created_at") or "", reverse=True)
+    items.sort(key=lambda a: ANNOUNCEMENT_PRIORITY.get(a.get("priority"), 2))
+    return items[:limit]
 
 def update_announcement(announcement_id, title=None, announcement_text=None, priority=None, status=None):
     announcements = load_announcements()
@@ -945,7 +843,8 @@ def user_dashboard():
         "arranged": sum(1 for r in my_requests if r.get("status") in ("已安排", "已完成")),
         "activities": sum(1 for r in load_registrations() if r.get("username") == username),
     }
-    return render_template("user.html", username=username, stats=stats)
+    return render_template("user.html", username=username, stats=stats,
+                           announcements=get_published_announcements())
 
 
 @app.route("/user/help-request", methods=["GET", "POST"])
@@ -1529,9 +1428,8 @@ def admin_dashboard():
     users = load_users()
     members_count = sum(1 for user in users if user.get("role") != "admin")
     
-    # 待處理個案
-    cases = load_cases()
-    pending_cases_count = sum(1 for case in cases if case.get("status") == "待處理")
+    # 待處理之長者需求
+    pending_requests_count = sum(1 for r in load_help_requests() if r.get("status") == "待處理")
     
     # 系統公告
     announcements = load_announcements()
@@ -1542,7 +1440,7 @@ def admin_dashboard():
         username=session.get("username"),
         activities_count=activities_count,
         members_count=members_count,
-        pending_cases_count=pending_cases_count,
+        pending_requests_count=pending_requests_count,
         announcements_count=announcements_count
     )
 
@@ -1567,50 +1465,6 @@ def admin_change_member_role(username):
     return redirect(url_for("admin_members"))
 
 # --- Admin: Cases ---
-@app.route("/admin/cases")
-def admin_cases():
-    if session.get("role") != "admin": return redirect(url_for("home"))
-    return render_template("cases.html", cases=load_cases(), username=session.get("username"))
-
-@app.route("/admin/cases/create", methods=["GET", "POST"])
-def admin_create_case():
-    if session.get("role") != "admin": return redirect(url_for("home"))
-    error = None
-    if request.method == "POST":
-        case_name = request.form.get("case_name", "").strip()
-        member_name = request.form.get("member_name", "").strip()
-        issue_description = request.form.get("issue_description", "").strip()
-        status = request.form.get("status", "進行中")
-        if not case_name or not member_name: error = "請輸入個案名稱與成員名稱。"
-        else:
-            create_case(case_name, member_name, issue_description, status)
-            return redirect(url_for("admin_cases"))
-    return render_template("case_create.html", username=session.get("username"), error=error)
-
-@app.route("/admin/cases/<case_id>/edit", methods=["GET", "POST"])
-def admin_edit_case(case_id):
-    if session.get("role") != "admin": return redirect(url_for("home"))
-    case = get_case(case_id)
-    if not case: return redirect(url_for("admin_cases"))
-    error = None
-    if request.method == "POST":
-        case_name = request.form.get("case_name", "").strip()
-        member_name = request.form.get("member_name", "").strip()
-        issue_description = request.form.get("issue_description", "").strip()
-        status = request.form.get("status", "進行中")
-        if not case_name or not member_name: error = "請輸入個案名稱與成員名稱。"
-        else:
-            update_case(case_id, case_name, member_name, issue_description, status)
-            return redirect(url_for("admin_cases"))
-    return render_template("case_edit.html", case=case, username=session.get("username"), error=error)
-
-@app.route("/admin/cases/<case_id>/delete", methods=["POST"])
-def admin_delete_case(case_id):
-    if session.get("role") != "admin": return redirect(url_for("home"))
-    delete_case(case_id)
-    return redirect(url_for("admin_cases"))
-
-# --- User: Activities ---
 @app.route("/user/activities")
 def user_activities():
     if session.get("role") != "user": return redirect(url_for("home"))
@@ -1687,6 +1541,7 @@ def admin_welfare_form(welfare_id=None):
             item = {**item, **data}
         else:
             data["updated_at"] = datetime.date.today().isoformat()
+            data["updated_by"] = session.get("username")
             if welfare_id:
                 item.update(data)
             else:
@@ -1736,7 +1591,7 @@ def admin_create_activity():
         status = request.form.get("status", "進行中")
         if not activity_name: error = "請輸入活動名稱。"
         else:
-            create_activity("admin", activity_name, description, category, start_date, end_date, location, max_capacity, registration_deadline, status)
+            create_activity(session.get("username"), activity_name, description, category, start_date, end_date, location, max_capacity, registration_deadline, status)
             return redirect(url_for("admin_activities"))
     return render_template("admin_activity_create.html", username=session.get("username"), error=error)
 
@@ -1848,7 +1703,7 @@ def admin_create_service():
         if not service_name: error = "請輸入服務名稱。"
         elif service_type not in NEED_TYPES: error = "請選擇服務類型。"
         else:
-            create_service("admin", service_name, description, service_type, target_group, contact, status, district, service_scope)
+            create_service(session.get("username"), service_name, description, service_type, target_group, contact, status, district, service_scope)
             return redirect(url_for("admin_services"))
     return render_template("admin_service_create.html", username=session.get("username"), error=error,
                            need_types=NEED_TYPES, districts=DISTRICTS)
@@ -1900,7 +1755,7 @@ def admin_create_content():
         status = request.form.get("status", "已發佈")
         if not title or not content_text: error = "請輸入標題與內容。"
         else:
-            create_content(title, category, content_text, image_url, "admin", status)
+            create_content(title, category, content_text, image_url, session.get("username"), status)
             return redirect(url_for("admin_contents"))
     return render_template("admin_content_create.html", username=session.get("username"), error=error)
 
@@ -1945,7 +1800,7 @@ def admin_create_announcement():
         status = request.form.get("status", "已發佈")
         if not title or not announcement_text: error = "請輸入標題與公告內容。"
         else:
-            create_announcement(title, announcement_text, priority, status)
+            create_announcement(title, announcement_text, priority, status, session.get("username"))
             return redirect(url_for("admin_announcements"))
     return render_template("admin_announcement_create.html", username=session.get("username"), error=error)
 

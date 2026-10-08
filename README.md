@@ -5,9 +5,9 @@
 ## 主要檔案
 
 - `app.py`：Flask 主程式，網站入口。
-- `routes_features.py`：額外功能路由。
-- `features.py`：功能模組集合，例如報表、通知、搜尋、權限等。
-- `welfare.json`：長者福利資訊資料（由管理者於後台維護）。
+- `db_store.py`：資料存取層，負責讀寫 PostgreSQL 資料表。
+- `migrate_json_to_db.py`：將 JSON 範例資料匯入資料庫。
+- `*.json`：初始範例資料（匯入資料庫用）。
 - `db_config.py`：資料庫連線設定。
 - `create_database.py`：建立資料庫。
 - `init_database.py`：建立資料表。
@@ -25,10 +25,10 @@ python -m venv .venv
 ### 2. 安裝套件
 
 ```bash
-pip install requests psycopg2-binary python-dotenv flask werkzeug
+pip install flask werkzeug openai psycopg2-binary python-dotenv
 ```
 
-如果專案還有其他相依套件，請依 `app.py` 與 `features.py` 實際 import 的模組補裝。
+如需使用 AI 功能，另需安裝 `openai` 套件並設定 `OPENAI_API_KEY`。
 
 ### 3. 建立 `.env`
 
@@ -40,11 +40,14 @@ pip install requests psycopg2-binary python-dotenv flask werkzeug
 python create_database.py
 ```
 
-### 5. 建立資料表
+### 5. 建立資料表並匯入資料
 
 ```bash
 python init_database.py
+python migrate_json_to_db.py
 ```
+
+`init_database.py` 會在 `elder` schema 建立 9 張資料表；`migrate_json_to_db.py` 將專案中的 JSON 範例資料（使用者、服務資源、活動、福利資訊等）匯入資料庫，只需執行一次。
 
 ### 6. 啟動 Flask 網站
 
@@ -56,3 +59,11 @@ python app.py
 
 - `OPENAI_API_KEY`：設定後，AI 福利小幫手與企劃書產生器會使用 OpenAI；未設定時改用內建規則回覆與範本。
 - `ADMIN_REG_CODE`：註冊管理者帳號所需的驗證代碼。
+
+## 測試
+
+```bash
+python -m unittest tests.test_system -v
+```
+
+測試在獨立的 `elder_test` schema 中進行，結束後自動刪除，不影響正式資料。

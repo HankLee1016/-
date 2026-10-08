@@ -272,3 +272,38 @@
 .mt-3 {
     margin-top: 1rem;
 }
+
+/* 里民首頁公告 */
+.announcement-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.announcement-item {
+    padding: 0.9rem 0;
+    border-bottom: 1px solid var(--border);
+}
+
+.announcement-item:last-child {
+    border-bottom: none;
+}
+
+.announcement-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 1.1rem;
+}
+
+.announcement-date {
+    margin-left: auto;
+    font-size: 0.95rem;
+}
+
+.announcement-content {
+    margin: 0.4rem 0 0;
+    white-space: pre-line;
+    line-height: 1.7;
+}
