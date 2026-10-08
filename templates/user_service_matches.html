@@ -10,7 +10,7 @@
     <div class="hero-copy">
         <span class="eyebrow">服務媒合</span>
         <h1>🔍 為「{{ req.need_type }}」選擇服務</h1>
-        <p>以下是服務類型與此需求相符、目前開放申請的在地服務，並依所在區域排序。選擇一項提出申請，里辦公處確認後會在申請進度中通知您。</p>
+        <p>以下是服務類型與此需求相符、目前開放申請、且服務範圍涵蓋長者所在區域的在地服務，同區服務排在前面。選擇一項提出申請，里辦公處確認後會在申請進度中通知您。</p>
     </div>
 </header>
 
@@ -44,12 +44,10 @@
     <div class="request-card">
         <div class="request-card-header">
             <h3>{{ svc.service_name }}</h3>
-            {% if match.score == 3 %}
+            {% if match.score == 2 %}
             <span class="badge badge-success">📍 同區服務</span>
-            {% elif match.score == 2 %}
-            <span class="badge badge-info">🗺️ 全區皆可服務</span>
             {% else %}
-            <span class="badge badge-warning">↔️ 跨區服務</span>
+            <span class="badge badge-info">🗺️ 全區皆可服務</span>
             {% endif %}
         </div>
         <div class="request-meta">
@@ -59,7 +57,6 @@
             <div><span>聯絡方式：</span> {{ svc.contact or '請聯絡服務單位' }}</div>
         </div>
         {% if svc.description %}<div class="request-description">{{ svc.description }}</div>{% endif %}
-        {% if match.score == 1 %}<p class="text-muted">此服務位於{{ svc.district }}，申請前建議先電話確認是否可跨區服務。</p>{% endif %}
         <div class="request-actions">
             {% if req.service_id == svc.id %}
             <span class="badge badge-success">✅ 已申請此服務</span>
@@ -73,7 +70,7 @@
     {% else %}
     <div class="empty-state">
         <p>📌</p>
-        <p>目前沒有「{{ req.need_type }}」類型的開放服務。</p>
+        <p>目前沒有可服務{{ req.district or '此區域' }}的「{{ req.need_type }}」開放服務。</p>
         <p class="text-muted">您的需求已送出，里辦公處會收到並協助安排，處理結果可在申請進度查看。</p>
     </div>
     {% endfor %}

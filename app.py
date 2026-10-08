@@ -311,7 +311,7 @@ def apply_help_request_service(request_id, service_id):
 
 
 def get_help_request_matches(request_item):
-    """只推薦服務類型與需求相符的開放服務，依「同區 → 全區 → 跨區」排序。"""
+    """只推薦服務類型與需求相符、且服務範圍涵蓋長者所在區域的開放服務，同區服務優先。"""
     if not request_item:
         return []
     need_type = str(request_item.get("need_type", "")).strip()
@@ -330,11 +330,11 @@ def get_help_request_matches(request_item):
         service_district = str(service.get("district", "")).strip()
         citywide = str(service.get("service_scope", "")).strip() in CITYWIDE_SCOPES or not service_district
         if district and service_district == district:
-            score, area = 3, "同區服務"
+            score, area = 2, "同區服務"
         elif citywide:
-            score, area = 2, "全區皆可服務"
+            score, area = 1, "全區皆可服務"
         else:
-            score, area = 1, f"跨區服務（{service_district}），申請前請先聯絡確認"
+            continue  # 服務範圍不涵蓋長者所在區域，不推薦
         matches.append({"service": service, "score": score, "area": area, "reason": f"需求類型相符・{area}"})
 
     matches.sort(key=lambda m: m["score"], reverse=True)
