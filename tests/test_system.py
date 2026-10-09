@@ -258,6 +258,25 @@ class SystemTest(unittest.TestCase):
         self.assertNotIn("測試草稿公告", page)
         self.assertLess(page.index("測試緊急公告"), page.index("測試一般公告"))   # 緊急公告排在前面
 
+    def test_TC29_planning_assistant_guided_fallback(self):
+        c = self.client("t_admin", "admin")
+        with c.session_transaction() as s:
+            s["chat_history"] = []
+        self.assertIn("【第 0 題】", c.post("/api/chat", json={"message": "你好"}).get_json()["reply"])
+        reply = c.post("/api/chat", json={"message": "幸福里獨居長者關懷送餐計畫"}).get_json()["reply"]
+        self.assertIn("已記錄「計畫名稱」", reply)
+        self.assertIn("【第 1 題】", reply)
+        self.assertIn("【第 1 題】", c.post("/api/chat", json={"message": "我不知道"}).get_json()["reply"])   # 含糊回答：再問同一題
+        draft = c.post("/api/chat", json={"message": "目前草稿"}).get_json()["reply"]
+        self.assertIn("計畫名稱：幸福里獨居長者關懷送餐計畫", draft)
+        # 選取匯出：只匯出勾選的訊息（依對話順序），並保留中文檔名
+        r = c.get("/admin/assistant/export_selected?idx=3&idx=2&filename=幸福里企劃")
+        body = r.get_data(as_text=True)
+        self.assertTrue(body.startswith("您：幸福里獨居長者關懷送餐計畫"))
+        self.assertIn("已記錄「計畫名稱」", body)
+        self.assertNotIn("你好", body)
+        self.assertIn("filename*=UTF-8''%E5%B9%B8%E7%A6%8F%E9%87%8C%E4%BC%81%E5%8A%83.txt", r.headers["Content-Disposition"])
+
     def test_TC25_proposal_admin_only(self):
         self.assertEqual(self.client("t_admin", "admin").get("/admin/proposal").status_code, 200)
         self.assertEqual(self.client("t_user", "user").post("/api/welfare-chat", json={"message": ""}).status_code, 200)
