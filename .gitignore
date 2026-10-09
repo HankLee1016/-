@@ -1,1 +1,7 @@
-db_config.py
+# 環境設定（含資料庫密碼與 API 金鑰），不可提交
+.env
+
+# Python
+__pycache__/
+*.pyc
+.venv/
