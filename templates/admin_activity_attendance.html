@@ -29,20 +29,30 @@
                 <h2>簽到系統</h2>
             </div>
 
+            {% with messages = get_flashed_messages(with_categories=true) %}
+            {% for category, message in messages %}
+            <div class="{{ 'error-message' if category == 'error' else 'success-message' }}" style="margin: 0 0 1rem;">{{ message }}</div>
+            {% endfor %}
+            {% endwith %}
+
             <div class="checkin-form">
+                {% if not pending %}
+                <p style="color: var(--text-secondary);">目前沒有可代為簽到的里民（僅限已通過報名且尚未簽到者）。</p>
+                {% elif period_reason %}
+                <p style="color: var(--text-secondary);">{{ period_reason }}（已通過報名、尚未簽到：{{ pending|map(attribute='username')|join('、') }}）</p>
+                {% else %}
                 <form method="post" action="/admin/activities/{{ activity.id }}/checkin">
                     <div class="checkin-form-row" style="display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: flex-end;">
                         <div>
-                            <label for="username">參與者名稱</label>
-                            <input type="text" id="username" name="username" required list="pending-users" placeholder="輸入或選擇已報名的使用者">
-                            <datalist id="pending-users">
-                                {% for r in pending %}<option value="{{ r.username }}">{% endfor %}
-                            </datalist>
-                            {% if pending %}<p style="margin-top:6px; color: var(--text-secondary);">已通過報名、尚未簽到：{{ pending|map(attribute='username')|join('、') }}</p>{% endif %}
+                            <label for="username">代為簽到（已通過報名、尚未簽到之里民）</label>
+                            <select id="username" name="username" required>
+                                {% for r in pending %}<option value="{{ r.username }}">{{ r.username }}{% if r.phone %}（{{ r.phone }}）{% endif %}</option>{% endfor %}
+                            </select>
                         </div>
                         <button type="submit" style="background-color: var(--primary); color: white; padding: 10px 20px; border-radius: 6px; cursor: pointer; border: none;">簽到</button>
                     </div>
                 </form>
+                {% endif %}
             </div>
 
             <div class="card-title" style="margin-top: 32px;">

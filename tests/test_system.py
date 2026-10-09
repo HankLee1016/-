@@ -4,6 +4,7 @@
 測試於獨立的資料庫 schema（elder_test）中進行：開始時建立資料表並匯入服務資源與福利資訊範例資料，
 結束後刪除整個 schema，不影響正式資料。
 """
+import datetime
 import json
 import os
 import sys
@@ -68,10 +69,17 @@ class SystemTest(unittest.TestCase):
                 s["username"], s["role"] = username, role
         return c
 
-    def new_activity(self, capacity=0, deadline="2099-12-31"):
-        act = M.create_activity("t_admin", "測試活動", "", "其他", "2099-01-01", "2099-01-01", "里民活動中心",
+    def new_activity(self, capacity=0, deadline="2099-12-31", start=None, end="2099-12-31"):
+        """預設活動期間為今天起至 2099 年底，可直接簽到。"""
+        start = start or datetime.date.today().isoformat()
+        act = M.create_activity("t_admin", "測試活動", "", "其他", start, end, "里民活動中心",
                                 capacity, deadline, "進行中")
         return act["id"]
+
+    def approved(self, aid, username="t_user"):
+        self.client(username, "user").post(f"/user/activities/{aid}/register")
+        reg = M.get_user_registration(aid, username)
+        self.client("t_admin", "admin").post(f"/admin/registrations/{reg['id']}/approve")
 
     # ---------------- 會員與權限 ----------------
     def test_TC01_register_user(self):
@@ -204,6 +212,23 @@ class SystemTest(unittest.TestCase):
         self.client("t_user", "user").post(f"/user/activities/{aid}/register")
         r = self.client("t_user2", "user").post(f"/user/activities/{aid}/register", follow_redirects=True)
         self.assertIn("報名人數已額滿", r.get_data(as_text=True))
+
+    def test_TC27_checkin_only_during_activity(self):
+        aid = self.new_activity(start="2099-01-01", end="2099-01-02")
+        self.approved(aid)
+        r = self.client("t_user", "user").post(f"/user/activities/{aid}/checkin", follow_redirects=True)
+        self.assertIn("活動尚未開始", r.get_data(as_text=True))
+        self.assertIsNone(M.get_user_attendance(aid, "t_user"))
+
+    def test_TC28_admin_checkin_requires_approved_registration(self):
+        aid = self.new_activity()
+        admin = self.client("t_admin", "admin")
+        r = admin.post(f"/admin/activities/{aid}/checkin", data={"username": "t_user2"}, follow_redirects=True)
+        self.assertIn("報名審核通過後才可簽到", r.get_data(as_text=True))   # 未報名者不可代為簽到
+        self.assertIsNone(M.get_user_attendance(aid, "t_user2"))
+        self.approved(aid)
+        admin.post(f"/admin/activities/{aid}/checkin", data={"username": "t_user"})
+        self.assertIsNotNone(M.get_user_attendance(aid, "t_user"))           # 已通過報名者可代為簽到
 
     # ---------------- 長者福利資訊 ----------------
     def test_TC22_welfare_search(self):

@@ -110,12 +110,12 @@ TABLES = [
         UNIQUE (activity_id, username)
     )
     """,
-    # 6. 活動簽到表（管理者可代為簽到未註冊之參加者，故 username 不設外鍵）
+    # 6. 活動簽到表（僅限已通過報名之里民簽到，username 參照使用者）
     """
     CREATE TABLE IF NOT EXISTS attendances (
         id VARCHAR(64) PRIMARY KEY,
         activity_id VARCHAR(64) NOT NULL REFERENCES activities(id) ON DELETE CASCADE,
-        username VARCHAR(50) NOT NULL,
+        username VARCHAR(50) NOT NULL REFERENCES users(username) ON DELETE CASCADE ON UPDATE CASCADE,
         check_in_time TIMESTAMP NOT NULL,
         check_out_time TIMESTAMP,
         created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -201,6 +201,12 @@ def init_database(schema=SCHEMA):
                 cursor.execute(sql.SQL("ALTER TABLE {t} ADD CONSTRAINT {n} FOREIGN KEY ({c}) REFERENCES users(username) "
                                        "ON DELETE SET NULL ON UPDATE CASCADE").format(
                     t=sql.Identifier(table), n=sql.Identifier(name), c=sql.Identifier(col)))
+        # 既有資料庫升級：活動簽到改為參照使用者（簽到者須為已報名之里民）
+        cursor.execute("SELECT 1 FROM pg_constraint c JOIN pg_namespace n ON n.oid = c.connamespace "
+                       "WHERE n.nspname = %s AND c.conname = 'attendances_username_fkey'", (schema,))
+        if cursor.fetchone() is None:
+            cursor.execute("ALTER TABLE attendances ADD CONSTRAINT attendances_username_fkey FOREIGN KEY (username) "
+                           "REFERENCES users(username) ON DELETE CASCADE ON UPDATE CASCADE")
         for ddl in INDEXES:
             cursor.execute(ddl)
         conn.commit()

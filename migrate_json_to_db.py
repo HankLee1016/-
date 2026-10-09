@@ -60,7 +60,7 @@ def main():
     atts, seen = [], set()
     for a in read("attendances"):
         key = (a.get("activity_id"), a.get("username"))
-        if a.get("activity_id") not in activity_ids or key in seen:
+        if a.get("activity_id") not in activity_ids or a.get("username") not in names or key in seen:
             skipped.append(("attendances", a.get("id")))
             continue
         seen.add(key)

@@ -8,7 +8,7 @@
     <div class="hero-copy">
         <span class="eyebrow">社區活動</span>
         <h1>📅 社區活動報名與簽到</h1>
-        <p>瀏覽社區活動並線上報名；報名經管理者審核通過後，活動當天即可在此簽到。</p>
+        <p>瀏覽社區活動並線上報名；報名經管理者審核通過後，於活動期間即可在此簽到。</p>
     </div>
     <div class="hero-panel">
         <div class="mini-stat">
@@ -31,7 +31,7 @@
 <section class="card">
     <div class="card-title">
         <h2 class="section-title">活動列表</h2>
-        <p class="text-muted">報名 → 管理者審核 → 活動當天簽到</p>
+        <p class="text-muted">報名 → 管理者審核 → 活動期間簽到</p>
     </div>
 
     {% if items %}
@@ -73,10 +73,12 @@
         <div class="request-actions">
             {% if item.attendance %}
                 <span class="text-muted">簽到時間：{{ item.attendance.check_in_time }}</span>
-            {% elif reg and reg.status == '已通過' %}
+            {% elif reg and reg.status == '已通過' and not item.checkin_reason %}
                 <form method="post" action="/user/activities/{{ a.id }}/checkin" style="display:inline;">
                     <button type="submit" class="button">✅ 我要簽到</button>
                 </form>
+            {% elif reg and reg.status == '已通過' %}
+                <span class="text-muted">報名已通過；{{ item.checkin_reason }}</span>
             {% elif reg and reg.status == '待審核' %}
                 <span class="text-muted">報名時間：{{ reg.registered_at }}，審核通過後即可簽到。</span>
                 <form method="post" action="/user/activities/{{ a.id }}/cancel" style="display:inline;" onsubmit="return confirm('確定要取消報名嗎？');">

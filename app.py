@@ -414,6 +414,19 @@ def registration_block_reason(activity, username):
         if len(taken) >= capacity: return "報名人數已額滿。"
     return None
 
+def checkin_block_reason(activity, username):
+    """回傳無法簽到的原因；可簽到時回傳 None。里民自行簽到與管理者代為簽到皆適用。"""
+    if activity.get("status") != "進行中": return "此活動目前不開放簽到。"
+    reg = get_user_registration(activity["id"], username)
+    if not reg or reg.get("status") != "已通過": return "報名審核通過後才可簽到。"
+    if get_user_attendance(activity["id"], username): return "您已完成簽到。"
+    today = datetime.date.today().isoformat()
+    start = activity.get("start_date") or ""
+    end = activity.get("end_date") or start
+    if start and today < start: return f"活動尚未開始，{start} 起開放簽到。"
+    if end and today > end: return "活動已結束，無法簽到。"
+    return None
+
 # --- Services ---
 def load_services(username=None):
     services = db_store.load("services")
@@ -1477,6 +1490,7 @@ def user_activities():
             "registration": get_user_registration(activity["id"], username),
             "attendance": get_user_attendance(activity["id"], username),
             "block_reason": registration_block_reason(activity, username),
+            "checkin_reason": checkin_block_reason(activity, username),
         })
     return render_template("user_activities.html", username=username, items=items,
                            phone=get_user_profile(username).get("phone", ""))
@@ -1510,11 +1524,11 @@ def user_cancel_registration(activity_id):
 def user_check_in(activity_id):
     if session.get("role") != "user": return redirect(url_for("home"))
     username = session.get("username")
-    reg = get_user_registration(activity_id, username)
-    if not reg or reg.get("status") != "已通過":
-        flash("報名審核通過後才可簽到。", "error")
-    elif get_user_attendance(activity_id, username):
-        flash("您已完成簽到。", "error")
+    activity = get_activity(activity_id)
+    if not activity: return redirect(url_for("user_activities"))
+    reason = checkin_block_reason(activity, username)
+    if reason:
+        flash(reason, "error")
     else:
         create_attendance(activity_id, username, datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
         flash("簽到成功！", "success")
@@ -1658,17 +1672,26 @@ def admin_activity_attendance(activity_id):
     attendances = get_activity_attendances(activity_id)
     checked_in = {a["username"] for a in attendances}
     pending = [r for r in get_activity_registrations(activity_id) if r.get("status") == "已通過" and r["username"] not in checked_in]
+    period_reason = None
+    if pending:   # 已通過報名者皆受相同之活動期間限制，以第一位判斷是否開放簽到
+        period_reason = checkin_block_reason(activity, pending[0]["username"])
     return render_template("admin_activity_attendance.html", activity=activity, attendances=attendances,
-                           pending=pending, username=session.get("username"))
+                           pending=pending, period_reason=period_reason, username=session.get("username"))
 
 @app.route("/admin/activities/<activity_id>/checkin", methods=["POST"])
 def admin_check_in(activity_id):
+    """管理者代為簽到：僅限已通過報名且尚未簽到之里民，並須於活動期間內。"""
     if session.get("role") != "admin": return redirect(url_for("home"))
+    activity = get_activity(activity_id)
+    if not activity: return redirect(url_for("admin_activities"))
     username = request.form.get("username", "").strip()
-    if username and not get_user_attendance(activity_id, username):
-        check_in_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        create_attendance(activity_id, username, check_in_time)
-    return redirect(request.referrer or url_for("admin_activities"))
+    reason = checkin_block_reason(activity, username)
+    if reason:
+        flash(reason.replace("您已", "此里民已"), "error")
+    else:
+        create_attendance(activity_id, username, datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+        flash(f"{username} 簽到成功。", "success")
+    return redirect(url_for("admin_activity_attendance", activity_id=activity_id))
 
 @app.route("/admin/attendances/<attendance_id>/checkout", methods=["POST"])
 def admin_check_out(attendance_id):
