@@ -58,7 +58,11 @@
         </div>
         {% endfor %}
       {% else %}
+        {% if ai_enabled %}
         <div class="msg-row"><div class="message bot show">您好，歡迎使用對話式企劃助理。請描述您的組織、服務對象或申請補助類型，我會協助整理內容。</div></div>
+        {% else %}
+        <div class="msg-row"><div class="message bot show">您好，我是企劃助理！我會依企劃書八大章節一步步協助您整理內容，完成後自動彙整成企劃書草稿。請先跟我打聲招呼，或直接描述您想辦的計畫。</div></div>
+        {% endif %}
       {% endif %}
     </div>
 
@@ -74,6 +78,7 @@
 
   <script>
   let isLoading = false;  // 防止連續輸入
+  let nextIdx = {{ chat_history|length }};  // 下一則訊息在伺服器對話紀錄中的位置（選取匯出用）
   
   // 初始化標題
   function initializeTitle(){
@@ -99,11 +104,6 @@
     div.innerText = text;
     const row = document.createElement('div');
     row.className = 'msg-row';
-    const chk = document.createElement('input');
-    chk.type = 'checkbox';
-    chk.className = 'msg-checkbox';
-    chk.style.display = document.body.classList.contains('selection-mode') ? 'inline-block' : 'none';
-    row.appendChild(chk);
     row.appendChild(div);
     document.getElementById('chat').appendChild(row);
     
@@ -112,8 +112,24 @@
       const title = text.substring(0, 50) + (text.length > 50 ? '...' : '');
       document.getElementById('header-title').innerText = title;
     }
-    
+
     scrollToBottom();
+    return row;
+  }
+
+  // 為已存入伺服器對話紀錄的訊息加上勾選框與編號，使其可被選取匯出
+  function setMessageIndex(row, idx){
+    const div = row.querySelector('.message');
+    const chk = document.createElement('input');
+    chk.type = 'checkbox';
+    chk.className = 'msg-checkbox';
+    chk.id = 'chk-' + idx;
+    chk.value = idx;
+    chk.style.display = document.body.classList.contains('selection-mode') ? 'inline-block' : 'none';
+    chk.onchange = () => div.classList.toggle('selected', chk.checked);
+    row.insertBefore(chk, div);
+    div.dataset.idx = idx;
+    div.onclick = () => messageClicked(idx);
   }
 
   function addLoading(){
@@ -149,7 +165,7 @@
     if(btn) btn.disabled = true;
     if(inputField) inputField.disabled = true;
     
-    addMessage(text, 'user');
+    const userRow = addMessage(text, 'user');
     input.value = '';
     addLoading();
     
@@ -166,7 +182,11 @@
       }
       const data = await res.json();
       removeLoading();
-      addMessage(data.reply, 'bot');
+      const botRow = addMessage(data.reply, 'bot');
+      // 伺服器已將「提問＋回覆」依序存入對話紀錄
+      setMessageIndex(userRow, nextIdx);
+      setMessageIndex(botRow, nextIdx + 1);
+      nextIdx += 2;
     }catch(e){
       removeLoading();
       addMessage('網路錯誤，請稍後再試。', 'bot');
