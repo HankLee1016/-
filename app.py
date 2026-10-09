@@ -1558,7 +1558,7 @@ def admin_change_member_role(username):
     if new_role in ("user", "admin"): update_user_role(username, new_role)
     return redirect(url_for("admin_members"))
 
-# --- Admin: Cases ---
+# --- User: Activities ---
 @app.route("/user/activities")
 def user_activities():
     if session.get("role") != "user": return redirect(url_for("home"))
