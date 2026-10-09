@@ -4,8 +4,10 @@ import hashlib
 import random
 import uuid
 import datetime
+import re
 from html import escape
 from flask import Flask, request, jsonify, render_template, redirect, url_for, session, Response, flash
+from urllib.parse import quote
 from werkzeug.utils import secure_filename
 
 try:
@@ -62,6 +64,17 @@ if OpenAI and OPENAI_API_KEY and not AI_MOCK_MODE:
 # ==========================================
 # 基礎輔助函式 (密碼雜湊等)
 # ==========================================
+def text_download(text, filename, default):
+    """以文字檔下載；保留中文檔名（RFC 5987 filename*），並確保副檔名為 .txt。"""
+    name = re.sub(r'[\\/:*?"<>|\r\n]+', "_", (filename or "").strip()).strip(". ") or default
+    if not name.lower().endswith(".txt"):
+        name += ".txt"
+    ascii_name = secure_filename(name)
+    if not ascii_name.lower().endswith(".txt") or len(ascii_name) <= 4:
+        ascii_name = default
+    disposition = f"attachment; filename=\"{ascii_name}\"; filename*=UTF-8''{quote(name)}"
+    return Response(text, mimetype="text/plain; charset=utf-8", headers={"Content-Disposition": disposition})
+
 def hash_password(password):
     return hashlib.sha256(password.encode("utf-8")).hexdigest()
 
@@ -704,23 +717,101 @@ def build_assistant_messages(user_input, history, subsidy_summary=""):
     return messages
 
 
-def _chat_fallback_response(user_input, history):
-    lower_text = _normalize_text(user_input).lower()
-    if any(token in lower_text for token in ["服務對象", "族群", "對象", "受眾"]):
-        return "請先明確列出服務對象的年齡層、身份背景與目前面臨的困難，這樣後續目標與服務方法會更精準。"
-    if any(token in lower_text for token in ["目標", "預期", "成效", "成果", "指標"]):
-        return "成果指標建議分成數量、品質與時程三類，例如服務人次、滿意度、改善率與完成期限。"
-    if any(token in lower_text for token in ["預算", "經費", "費用", "成本"]):
-        return "經費規劃可先拆成人事費、業務費與雜支，再依補助規定補上金額與比例。"
-    if any(token in lower_text for token in ["風險", "困難", "挑戰", "問題"]):
-        return "風險可先從人力、經費、對象參與與執行期程四個面向整理，再為每項安排對應措施。"
-    if any(token in lower_text for token in ["時程", "期程", "多久", "期限"]):
-        return "常見做法是分成籌備期、執行期與評估期三段，並標示每一階段的月數與主要工作。"
-    if any(token in lower_text for token in ["補助", "申請", "案件", "方案"]):
-        return "請提供補助名稱、申請期限與服務重點，我可以幫您把內容整理成更接近正式送件格式。"
-    if len(history) < 4:
-        return "您好，請先簡單說明組織背景、服務族群與申請目的，我會依序幫您補齊企劃內容。"
-    return "請補充目前可運用的資源、服務方式與期望成效，我會協助整理成更完整的企劃書。"
+# 未啟用 OpenAI 時之「引導問答」：依企劃書章節逐題詢問，答完自動整理成草稿。
+# 每題以「【第 N 題】」標記，狀態由對話紀錄推得，載入舊對話也能接續。
+GUIDE_STEPS = [
+    ("計畫名稱", "請先告訴我計畫名稱。", "例：幸福里獨居長者關懷送餐計畫"),
+    ("一、計畫緣起", "為什麼要辦這個計畫？請描述里內長者的現況與觀察到的需求。",
+     "例：本里 65 歲以上長者約 800 人，其中獨居者約 120 人，里辦公處近一年接獲多起長者三餐不便之求助。"),
+    ("二、問題分析", "長者目前遇到哪些具體困難？", "例：行動不便無法外出購餐、子女上班白天無人照應、缺乏與人互動的機會。"),
+    ("三、計畫目標", "這個計畫希望達成什麼目標？", "例：每週提供 3 次送餐並同步關懷訪視，降低獨居長者營養不良與孤立風險。"),
+    ("四、服務對象", "服務對象是誰？大約多少人？如何篩選？", "例：本里 65 歲以上獨居或雙老長者約 40 人，優先服務行動不便或低收入者。"),
+    ("五、執行方式", "要怎麼執行？請說明活動內容、頻率、地點與人力。",
+     "例：與鄰近餐飲業者合作，每週一、三、五中午由里幹事與志工送餐到府，並填寫關懷紀錄。"),
+    ("六、預期效益", "預期有什麼成果？最好有可衡量的數字。", "例：全年送餐 4,800 人次、關懷訪視 1,500 人次，長者滿意度達 85% 以上。"),
+    ("七、經費概算", "需要哪些經費？請列出項目與大約金額。", "例：餐費每餐 80 元 × 4,800 餐 = 384,000 元；志工保險 10,000 元；雜支 6,000 元。"),
+    ("八、風險與因應", "可能遇到哪些困難？打算怎麼因應？", "例：志工人力不足時由里幹事支援；長者臨時不在家時改電話關懷並通知家屬。"),
+]
+_GUIDE_MARK = re.compile(r"【第 (\d+) 題】")
+_GUIDE_RESET = "【重新開始】"
+_VAGUE = ("不知道", "不會", "不清楚", "幫我", "你寫", "你想", "隨便", "都可以", "沒有", "?", "？", "嗎", "啦", "吧", "我要", "你是", "笨")
+_CN_NUM = {"一": 1, "二": 2, "三": 3, "四": 4, "五": 5, "六": 6, "七": 7, "八": 8}
+
+
+def _guide_answers(history):
+    """依對話紀錄整理各題之回答：某題提問之後的下一則使用者訊息即為該題答案。"""
+    answers, asked = {}, None
+    first = history[0] if history else None
+    if first and first.get("role") == "user" and not _is_vague(first.get("content", "")) \
+            and len(_normalize_text(first.get("content", ""))) >= 15:
+        answers[1] = _normalize_text(first["content"])      # 第一句已具體描述計畫時，記為計畫緣起
+    for item in history:
+        content = item.get("content", "")
+        if item.get("role") == "assistant":
+            if _GUIDE_RESET in content:
+                answers = {}
+            marks = _GUIDE_MARK.findall(content)
+            asked = int(marks[-1]) if marks else None
+        elif asked is not None and not _is_vague(content):
+            answers[asked] = _normalize_text(content)
+            asked = None
+    return answers
+
+
+def _is_vague(text):
+    text = _normalize_text(text)
+    return len(text) < 6 or (len(text) < 20 and any(word in text for word in _VAGUE))
+
+
+def _guide_question(step, prefix=""):
+    title, question, example = GUIDE_STEPS[step]
+    return f"{prefix}【第 {step} 題】{title}\n{question}\n{example}"
+
+
+def _guide_draft(answers):
+    lines = [f"計畫名稱：{answers.get(0, '（尚未填寫）')}"]
+    for step in range(1, len(GUIDE_STEPS)):
+        title, question, _ = GUIDE_STEPS[step]
+        lines += ["", title, answers.get(step, f"（尚未填寫：{question}）")]
+    return "\n".join(lines)
+
+
+def _chat_guided_response(user_input, history):
+    text = _normalize_text(user_input)
+    answers = _guide_answers(history)
+    total = len(GUIDE_STEPS)
+    if any(word in text for word in ("重新開始", "重來")):
+        return f"{_GUIDE_RESET}好的，我們重新開始。\n\n" + _guide_question(0)
+    if any(word in text for word in ("目前草稿", "看草稿", "整理", "產生企劃書", "生成")):
+        return "以下是依您目前的回答整理的企劃書草稿：\n\n" + _guide_draft(answers)
+    edit = re.fullmatch(r"(?:修改)?\s*(?:第)?\s*([0-8一二三四五六七八])\s*(?:章|題)?", text)
+    if edit:
+        step = _CN_NUM.get(edit.group(1)) or int(edit.group(1))
+        return _guide_question(step, "請輸入新的內容：\n")
+
+    asked = None
+    for item in reversed(history):
+        if item.get("role") == "assistant":
+            marks = _GUIDE_MARK.findall(item.get("content", ""))
+            asked = int(marks[-1]) if marks else None
+            break
+    if asked is None and not history:
+        # 第一句話：若已具體描述計畫，當作計畫背景記下
+        if not _is_vague(text) and len(text) >= 15:
+            return ("好的，我們一起把企劃書完成！您剛才的描述我先記在「一、計畫緣起」，"
+                    "接下來我會一章一章跟您確認內容。\n\n" + _guide_question(0))
+        return ("您好！我來協助您完成企劃書，我們一章一章來，每題都有範例可以參考。"
+                "過程中想看進度可以輸入「目前草稿」，想修改某一章輸入章節編號（如「3」）即可。\n\n" + _guide_question(0))
+    if asked is not None and _is_vague(text):
+        return _guide_question(asked, "沒關係，可以先寫個大概，之後再修改。請參考下面的範例：\n\n")
+    if asked is not None:
+        answers[asked] = text
+    remaining = [s for s in range(total) if s not in answers]
+    if not remaining:
+        return ("八大章節都填寫完成了！以下是整理後的企劃書草稿，可複製到企劃書產生器或匯出對話紀錄；"
+                "如要修改某一章，請輸入章節編號（例如「3」）。\n\n" + _guide_draft(answers))
+    done = f"已記錄「{GUIDE_STEPS[asked][0]}」（{total - len(remaining)}／{total}）。\n\n" if asked is not None else ""
+    return _guide_question(remaining[0], done)
 
 
 def generate_chat_response(user_input, history, subsidy_summary=""):
@@ -729,7 +820,7 @@ def generate_chat_response(user_input, history, subsidy_summary=""):
         return "請先輸入要優化的內容，我會協助整理成正式企劃語氣。"
 
     if openai_client is None:
-        return _chat_fallback_response(normalized_input, history)
+        return _chat_guided_response(normalized_input, history)
 
     try:
         completion = openai_client.chat.completions.create(
@@ -740,10 +831,10 @@ def generate_chat_response(user_input, history, subsidy_summary=""):
         )
         content = completion.choices[0].message.content
         if not content:
-            return _chat_fallback_response(normalized_input, history)
+            return _chat_guided_response(normalized_input, history)
         return polish_text(content.strip())
     except Exception:
-        return _chat_fallback_response(normalized_input, history)
+        return _chat_guided_response(normalized_input, history)
 
 # ==========================================
 # 路由 (Routes) - 基礎認證與個人設定
@@ -987,10 +1078,7 @@ def download_proposal_index(idx):
     history = session.get('proposal_history', [])
     if not history or idx < 0 or idx >= len(history): return redirect(url_for('admin_proposal'))
     text = history[idx]
-    filename = request.args.get('filename', f"proposal_{idx+1}.txt").strip()
-    try: filename = secure_filename(filename)
-    except: pass
-    return Response(text, mimetype="text/plain; charset=utf-8", headers={"Content-Disposition": f"attachment; filename={filename}"})
+    return text_download(text, request.args.get('filename'), f"proposal_{idx+1}.txt")
 
 @app.route("/admin/assistant", methods=["GET", "POST"])
 def admin_assistant():
@@ -1030,7 +1118,8 @@ def admin_assistant():
             chat_history.append({"role": "assistant", "content": assistant_response})
             session["chat_history"] = chat_history
 
-    return render_template("assistant.html", username=session.get("username"), chat_history=chat_history, subsidy_summary=subsidy_summary)
+    return render_template("assistant.html", username=session.get("username"), chat_history=chat_history, subsidy_summary=subsidy_summary,
+                           ai_enabled=openai_client is not None)
 
 @app.route('/api/generate-proposal', methods=['POST'])
 def api_generate_proposal():
@@ -1272,18 +1361,13 @@ def assistant_export_selected():
     if not idx_list: return redirect(url_for('assistant_export', subsidy_summary=subsidy_summary))
     lines = []
     if subsidy_summary: lines.extend([f"補助摘要：{subsidy_summary}", ""])
-    for idx_str in idx_list:
-        try: idx = int(idx_str)
-        except ValueError: continue
-        if 0 <= idx < len(chat_history):
-            m = chat_history[idx]
-            role = "您" if m.get('role') == 'user' else '助理'
-            lines.extend([f"{role}：{m.get('content','')}", ""])
-    if not lines: lines = ["未找到選取的訊息。"]
-    filename = request.args.get('filename', 'assistant_selected.txt').strip()
-    try: filename = secure_filename(filename)
-    except: pass
-    return Response("\n".join(lines), mimetype="text/plain; charset=utf-8", headers={"Content-Disposition": f"attachment; filename={filename}"})
+    picked = sorted({int(i) for i in idx_list if i.isdigit() and int(i) < len(chat_history)})   # 依對話順序、去除重複
+    for idx in picked:
+        m = chat_history[idx]
+        role = "您" if m.get('role') == 'user' else '助理'
+        lines.extend([f"{role}：{m.get('content','')}", ""])
+    if not picked: lines.append("未找到選取的訊息。")
+    return text_download("\n".join(lines), request.args.get('filename'), "assistant_selected.txt")
 
 @app.route('/admin/assistant/load_conversation/<int:idx>')
 def load_conversation(idx):
@@ -1305,10 +1389,7 @@ def download_conversation(idx):
     for m in conv.get('chat', []):
         role = '您' if m.get('role') == 'user' else '助理'
         lines.extend([f"{role}：{m.get('content','')}", ""])
-    filename = request.args.get('filename', f"conversation_{idx+1}.txt").strip()
-    try: filename = secure_filename(filename)
-    except: pass
-    return Response("\n".join(lines), mimetype='text/plain; charset=utf-8', headers={"Content-Disposition": f"attachment; filename={filename}"})
+    return text_download("\n".join(lines), request.args.get('filename'), f"conversation_{idx+1}.txt")
 
 @app.route('/admin/assistant/rename_conversation/<int:idx>', methods=['POST'])
 def rename_conversation(idx):
