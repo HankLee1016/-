@@ -5,3 +5,6 @@
 __pycache__/
 *.pyc
 .venv/
+
+# 伺服器端 Session 檔
+instance/

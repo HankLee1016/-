@@ -6,6 +6,8 @@
 """
 import datetime
 import json
+import shutil
+import tempfile
 import os
 import sys
 import unittest
@@ -43,6 +45,8 @@ class SystemTest(unittest.TestCase):
         db_store.save("services", [{**s, "username": ""} for s in _seed("services")])
         db_store.save("welfare", _seed("welfare"))
         M.app.testing = True
+        cls._session_dir = tempfile.mkdtemp(prefix="elder_test_sessions_")
+        M.app.session_interface = M.FileSessionInterface(cls._session_dir)   # 測試之 Session 檔放暫存資料夾
         M.openai_client = None  # 測試 AI 備援流程，不呼叫外部 API
         M.create_user("t_user", "pass1234", "user")
         M.create_user("t_user2", "pass1234", "user")
@@ -58,6 +62,7 @@ class SystemTest(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
+        shutil.rmtree(cls._session_dir, ignore_errors=True)
         while not db_store._pool.empty():
             db_store._pool.get_nowait().close()
         _drop_test_schema()

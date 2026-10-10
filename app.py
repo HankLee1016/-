@@ -5,8 +5,12 @@ import random
 import uuid
 import datetime
 import re
+import secrets
+import time
 from html import escape
 from flask import Flask, request, jsonify, render_template, redirect, url_for, session, Response, flash
+from flask.sessions import SessionInterface, SessionMixin
+from werkzeug.datastructures import CallbackDict
 from urllib.parse import quote
 from werkzeug.utils import secure_filename
 
@@ -19,6 +23,75 @@ import db_store
 
 app = Flask(__name__, template_folder="templates")
 app.secret_key = os.getenv("SECRET_KEY", "dev_secret_key")
+
+
+class ServerSession(CallbackDict, SessionMixin):
+    def __init__(self, initial=None, sid=None):
+        super().__init__(initial)
+        self.sid = sid
+
+
+class FileSessionInterface(SessionInterface):
+    """伺服器端 Session：資料存於 instance/sessions，Cookie 僅保存隨機編號。
+
+    AI 對話紀錄與企劃書草稿內容較長，若放在 Cookie 會超過瀏覽器 4KB 上限而遺失。
+    """
+    SID = re.compile(r"^[0-9a-f]{32}$")
+    MAX_AGE = 7 * 24 * 3600     # 超過 7 天未使用之 Session 檔於建立新 Session 時清除
+
+    def __init__(self, directory):
+        self.directory = directory
+        os.makedirs(directory, exist_ok=True)
+
+    def _path(self, sid):
+        return os.path.join(self.directory, sid + ".json")
+
+    def open_session(self, app, request):
+        sid = request.cookies.get(app.config["SESSION_COOKIE_NAME"], "")
+        if self.SID.match(sid):
+            try:
+                with open(self._path(sid), encoding="utf-8") as f:
+                    raw = f.read()
+                session = ServerSession(json.loads(raw), sid)
+                session._loaded = raw
+                os.utime(self._path(sid))
+                return session
+            except (OSError, ValueError):
+                pass
+        self._purge()
+        session = ServerSession(sid=secrets.token_hex(16))
+        session._loaded = "{}"
+        return session
+
+    def save_session(self, app, session, response):
+        name = app.config["SESSION_COOKIE_NAME"]
+        if not session:
+            try:
+                os.remove(self._path(session.sid))
+            except OSError:
+                pass
+            response.delete_cookie(name, path="/")
+            return
+        raw = json.dumps(dict(session), ensure_ascii=False)
+        if raw != session._loaded:        # 內容有變動才寫入（含巢狀資料之修改）
+            tmp = self._path(session.sid) + ".tmp"
+            with open(tmp, "w", encoding="utf-8") as f:
+                f.write(raw)
+            os.replace(tmp, self._path(session.sid))
+        response.set_cookie(name, session.sid, max_age=self.MAX_AGE, httponly=True, samesite="Lax", path="/")
+
+    def _purge(self):
+        limit = time.time() - self.MAX_AGE
+        try:
+            for fn in os.listdir(self.directory):
+                path = os.path.join(self.directory, fn)
+                if os.path.getmtime(path) < limit:
+                    os.remove(path)
+        except OSError:
+            pass
+
+
+app.session_interface = FileSessionInterface(os.path.join(app.instance_path, "sessions"))
 
 
 @app.errorhandler(db_store.DatabaseError)
@@ -55,11 +128,18 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 AI_MOCK_MODE = os.getenv("AI_MOCK_MODE", "false").strip().lower() in {"1", "true", "yes", "on"}
 AI_TIMEOUT_SECONDS = int(os.getenv("AI_TIMEOUT_SECONDS", "15"))
 AI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
+# 具「思考」能力之模型（如 Gemini）可設為 low，避免思考過程耗盡回覆字數上限；不支援之模型請留空
+AI_REASONING_EFFORT = os.getenv("AI_REASONING_EFFORT", "").strip()
 
 # 依環境變數決定是否啟用真實 OpenAI；開發/展示時可用 mock mode 保持穩定
 openai_client = None
 if OpenAI and OPENAI_API_KEY and not AI_MOCK_MODE:
-    openai_client = OpenAI(api_key=OPENAI_API_KEY, timeout=AI_TIMEOUT_SECONDS)
+    # 以作業系統之憑證庫驗證 HTTPS：防毒軟體或公司網路會以自有根憑證掃描連線，
+    # Python 內建之憑證清單不含該憑證，會造成連線失敗。
+    import ssl
+    import httpx
+    openai_client = OpenAI(api_key=OPENAI_API_KEY, timeout=AI_TIMEOUT_SECONDS,
+                           http_client=httpx.Client(verify=ssl.create_default_context(), timeout=AI_TIMEOUT_SECONDS))
 
 # ==========================================
 # 基礎輔助函式 (密碼雜湊等)
@@ -593,6 +673,29 @@ def choose_ai_agent(background, issues):
     if any(keyword in combined for keyword in ["工作", "就業", "收入", "經濟", "社區"]): return AI_AGENTS[2]
     return AI_AGENTS[0]
 
+def clean_ai_text(text):
+    """移除 AI 回覆中之 Markdown 符號（畫面以純文字顯示），保留換行與條列。"""
+    lines = []
+    for line in (text or "").replace("\r\n", "\n").split("\n"):
+        stripped = line.strip()
+        if re.fullmatch(r"[-*_]{3,}", stripped):          # 分隔線
+            continue
+        line = re.sub(r"^(\s*)#{1,6}\s*", r"\1", line)     # 標題
+        line = re.sub(r"^(\s*)[*\-+]\s+", r"\1・", line)    # 條列
+        line = re.sub(r"(\*\*|__|`)", "", line)            # 粗體、程式碼
+        lines.append(line.rstrip())
+    return re.sub(r"\n{3,}", "\n\n", "\n".join(lines)).strip()
+
+
+def ai_complete(messages, temperature, max_tokens):
+    """呼叫語言模型並回傳整理後之文字；無內容時回傳 None。例外由呼叫端處理（改用備援）。"""
+    extra = {"reasoning_effort": AI_REASONING_EFFORT} if AI_REASONING_EFFORT else {}
+    completion = openai_client.chat.completions.create(model=AI_MODEL, messages=messages, temperature=temperature,
+                                                       max_tokens=max_tokens, **extra)
+    content = completion.choices[0].message.content
+    return clean_ai_text(content) or None
+
+
 def polish_text(text):
     if not text: return ""
     cleaned = " ".join(text.replace("\n", " ").replace("　", " ").split())
@@ -685,17 +788,8 @@ def request_openai_proposal(title, background, issues, goals):
     )
 
     try:
-        completion = openai_client.chat.completions.create(
-            model=AI_MODEL,
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt},
-            ],
-            temperature=0.2,
-            max_tokens=1400,
-        )
-        content = completion.choices[0].message.content
-        return content.strip() if content else None
+        return ai_complete([{"role": "system", "content": system_prompt},
+                            {"role": "user", "content": user_prompt}], temperature=0.2, max_tokens=3000)
     except Exception:
         return None
 
@@ -823,16 +917,9 @@ def generate_chat_response(user_input, history, subsidy_summary=""):
         return _chat_guided_response(normalized_input, history)
 
     try:
-        completion = openai_client.chat.completions.create(
-            model=AI_MODEL,
-            messages=build_assistant_messages(normalized_input, history, subsidy_summary),
-            temperature=0.35,
-            max_tokens=900,
-        )
-        content = completion.choices[0].message.content
-        if not content:
-            return _chat_guided_response(normalized_input, history)
-        return polish_text(content.strip())
+        content = ai_complete(build_assistant_messages(normalized_input, history, subsidy_summary),
+                              temperature=0.35, max_tokens=2000)
+        return content or _chat_guided_response(normalized_input, history)
     except Exception:
         return _chat_guided_response(normalized_input, history)
 
@@ -1480,9 +1567,7 @@ def generate_welfare_response(question, history):
         messages.append({"role": item.get("role", "user"), "content": _normalize_text(item.get("content", ""))})
     messages.append({"role": "user", "content": question})
     try:
-        completion = openai_client.chat.completions.create(model=AI_MODEL, messages=messages, temperature=0.3, max_tokens=700)
-        content = completion.choices[0].message.content
-        return content.strip() if content else _welfare_fallback(question)
+        return ai_complete(messages, temperature=0.3, max_tokens=1200) or _welfare_fallback(question)
     except Exception:
         return _welfare_fallback(question)
 
